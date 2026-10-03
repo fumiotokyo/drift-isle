@@ -1,7 +1,7 @@
 # 漂流島 DRIFT ISLE — Claude向け開発メモ
 
 ブラウザで動くローポリ無人島サバイバルFPS。`index.html` 1ファイル完結（three.js r128 を cdnjs から UMD で読み込み）。
-セーブは localStorage キー `driftisle_save_v5`（地形生成を変えたら番号を上げる）。
+セーブは localStorage キー `driftisle_save_v6`（地形生成を変えたら番号を上げる）。
 
 ## 作業ルール（ユーザー方針）
 - 返答の説明は短く。テストは変更部分に関係するものだけ（Node での構文チェック程度）。
@@ -12,18 +12,22 @@
 
 ## 主な構成
 - 地形: 自作の非インデックスメッシュ（SEG=150, `terrainH` は三角補間）。`rawHeight` に第2の山・尾根・段丘の崖・西側の海食崖。池 `ponds`（輪郭は `pondRa` で不規則）、鉱脈 `veins`。
+- 登坂: `canStep` で進行方向の地形勾配が `MAXSLOPE`(=1.0) を超えると登れない（空中で崖に入るのも不可）。到達性は `fixConnectivity` が格子グラフ（`terrComps`）で検査し、孤立した台地へ `buildRamp` で直線スロープを掘る（池・洞窟周辺はロック）。
 - 洞窟 `caves`（`genCaves`）: 格子軸にそろえた崖（`caveHeight`）に横穴。崖面の3マスは地形から抜き（`caveSkip`）、`buildCaves` の岩面＋トンネルで置換。洞窟ごとに幅・高さ・奥行き・断面がランダム（`hw/ah/L/ws/sk`）。中の床は `caveFloor`／壁は `collide`／雨よけは `inCave`。
 - 木・岩・採取物: 40m 区画×種類ごとの InstancedMesh。`cullChunks` で手動カリング。選択判定は自前（`rayEnt`）。
 - 竹林: `take`（ホウライチク）。fbm マスクで群生。素手などで叩くと `sasa`（笹：燃料・寝床）、斧で伐ると `bamboo`（燃料・竹槍）。竹林に `takenoko`（F で採取、焚き火で焼く）。
 - 草・シダ: 24m 区画を起動時に全生成（`DEC`）。
 - 立てる場所: `standAt`（地形＋岩の上面 `rockSurf`＋設備の上面 `stTop`）。
+- 担ぐ物: `I[id].carry`（丸太 `log`・岩 `boulder`）は持ち物に入らず `carries` の地面オブジェクト。左クリックで担ぐ（`pl.carry`、手持ち不可・低速・ジャンプ不可）／下ろす。丸太は火の設備に左クリックでくべる。クラフトは半径6mの物を `countItem`/`removeItem` で数える。
+- 採集物: 伐採・採掘の収穫は `dropAt` で足元の落とし物袋へ（2.2m 以内なら同じ袋にまとめる）。石は 小石`pebble`／石`stone`／岩`boulder` の3段階。
 - インベントリ: Tarkov 式グリッド（`bag{w,h,items[{id,n,d,x,y,r}]}`）＋手持ち8枠 `hot`＋防具 `armor`。
 - 設備: `PROC` / `SLOTS` / `FUEL`。`s.st={fuel,tool?,in,out,prog,lit,burn}` を `updateStations` で処理。
 - クラフト: 配列 `R`。`r.s` の設備を F で開いている（火の設備は点火中）時のみ可能。`cheat` で無条件。
-- 時間付き動作: `startAction(label,dur,done,ctx)`。走る・インベントリ開閉で中断。
+- 時間付き動作: `startAction(label,dur,done,ctx)`。食事4.5秒・飲水4秒・解体8秒・クラフト6〜12秒（`craftDur`）。走る・インベントリ開閉で中断。
 - 動物: ノヤギ／リュウキュウイノシシ。倒すと死体 → ナイフで解体（`BUTCH`, 収量 `KQ`）。
 - 音: WebAudio で合成（`SFX`, `updateAudio` が環境音）。
 - 地図: `buildMap`（最初から全域表示）/ M キー。洞窟も表示。
+- 粘土は池のほとりの緩い土の斜面だけに湧き、斜面に沿って傾く（`entMat`）。
 - 焚き火の上に乗ると火傷ダメージ（`updatePlayer`）。
 
 ## 操作
