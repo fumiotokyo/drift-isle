@@ -61,6 +61,7 @@ img.px{image-rendering:pixelated;image-rendering:crisp-edges}
 .it b{position:absolute;right:3px;bottom:1px;font-size:12px;text-shadow:0 1px 2px #000,0 0 2px #000;pointer-events:none}
 .it .dur{pointer-events:none}
 .hl{position:absolute;pointer-events:none;background:rgba(124,200,106,.28);outline:2px solid #8fbf6a;z-index:3}.hl.ng{background:rgba(224,96,62,.28);outline-color:#e0603e}
+.eqr{display:flex;gap:10px;align-items:flex-start;margin:6px 0}.eqn{width:56px;font-size:12.5px;color:var(--wood);padding-top:4px}.eqv{font-size:12.5px;color:var(--dim);padding-top:4px}.eqg{display:flex;gap:10px}
 .equip{display:flex;gap:14px;align-items:flex-start;margin-top:10px}
 #hotI{display:flex;gap:4px}
 #craftP{width:390px;display:flex;flex-direction:column;max-height:calc(100vh - 40px)}
@@ -120,9 +121,9 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
   <div id="invWrap">
     <div class="panel chamf" id="invP">
       <h3>持ち物 <small id="bagName"></small></h3>
-      <div class="ggrid" id="bagG" data-g="bag"></div>
+      <div id="equipW"></div>
       <div class="equip">
-        <div><div class="lbl" style="margin-top:0">手持ち（1〜8）</div><div id="hotI"></div></div>
+        <div><div class="lbl" style="margin-top:0">手持ち（1）</div><div id="hotI"></div></div>
         <div><div class="lbl" style="margin-top:0">防具</div><div id="armorS"></div></div>
       </div>
       <div class="lbl">ドラッグで移動・ドラッグ中に R で回転・右クリックでメニュー（分ける／捨てる）・持ち物の枠の外へドラッグで捨てる・Shift+クリックで一括移動</div><div id="ctxM"></div>
@@ -163,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v10';
+const SAVE_KEY='driftisle_save_v11';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -184,8 +185,8 @@ const GOALS=[
  '鉄の道具がそろった。作業台で外洋カヌーを作り、島を脱出しよう。'
 ];
 const I={
- stick:{n:'枝',st:20},log:{n:'丸太',st:8,sz:[2,1],carry:1},boulder:{n:'岩',st:1,sz:[2,2],carry:1},pebble:{n:'小石',st:30},stone:{n:'石',st:20},chert:{n:'チャート（燧石）',st:20},
- fiber:{n:'苧麻の繊維',st:30},bamboo:{n:'竹',st:10,sz:[1,2]},sasa:{n:'笹',st:30},leaf:{n:'葉',st:40},driftwood:{n:'流木',st:3,sz:[4,1]},takenoko:{n:'たけのこ',st:6,food:{h:6,w:2,sick:.3}},yaki_takenoko:{n:'焼きたけのこ',st:6,food:{h:18,w:3}},cord:{n:'紐',st:20},
+ stick:{n:'枝',st:1},log:{n:'丸太',st:8,sz:[2,1],carry:1},boulder:{n:'岩',st:1,sz:[2,2],carry:1},pebble:{n:'小石',st:30},stone:{n:'石',st:20},chert:{n:'チャート（燧石）',st:20},
+ fiber:{n:'苧麻の繊維',st:30},bamboo:{n:'竹',st:10,sz:[1,2]},sasa:{n:'笹',st:30},leaf:{n:'葉',st:40},driftwood:{n:'流木',st:1,sz:[4,1]},takenoko:{n:'たけのこ',st:6,food:{h:6,w:2,sick:.3}},yaki_takenoko:{n:'焼きたけのこ',st:6,food:{h:18,w:3}},cord:{n:'紐',st:20},
  berries:{n:'リュウキュウイチゴ',st:10,food:{h:6,w:4}},adan_fruit:{n:'アダンの実',st:4,food:{h:9,w:6}},
  raw_meat:{n:'生肉',st:5,food:{h:10,w:0,sick:.5}},cooked_meat:{n:'焼いた肉',st:5,food:{h:35,w:-2}},
  hide:{n:'生皮',st:4,sz:[2,2]},bone:{n:'骨',st:10},fat:{n:'脂肪',st:10},bone_needle:{n:'骨の針'},clay:{n:'粘土',st:20},
@@ -214,8 +215,8 @@ const I={
  foundation:{n:'木の土台',st:5,sz:[2,2],place:'foundation'},wall:{n:'木の壁',st:5,sz:[2,2],place:'wall'},doorway:{n:'木の戸口',st:5,sz:[2,2],place:'doorway'},ceiling:{n:'木の天井',st:5,sz:[2,2],place:'ceiling'},
  basket:{n:'背負いかご',sz:[2,2]},leather_pack:{n:'革の背負い袋',sz:[2,2]},canoe:{n:'外洋カヌー',sz:[2,1]}
 };
-const UPG={basket:{lv:1,w:9,h:6},leather_pack:{lv:2,w:10,h:8}};
-const BAGNAME=['ポケット 7×5','背負いかご 9×6','革の背負い袋 10×8'];
+const UPG={basket:{lv:1,w:4,h:4},leather_pack:{lv:2,w:5,h:5}};
+const BAGNAME=['鞄なし','背負いかご 4×4','革の背負い袋 5×5'];
 const SD={
  campfire:{n:'焚き火',r:.8,station:1,light:1,warm:1},shelter:{n:'簡易シェルター',r:0},bed:{n:'寝床',r:0},workbench:{n:'作業台',r:.9,station:1},box:{n:'木箱',r:.6},
  kiln:{n:'土窯',r:1.2,station:1,light:1,warm:1},bloomery:{n:'製錬炉',r:1.0,station:1,light:1,warm:1},anvil:{n:'金床',r:.5,station:1},
@@ -732,7 +733,7 @@ function spawnAnimal(far){for(let k=0;k<60;k++){const x=(rng()*2-1)*190,z=(rng()
 
 // ================= Game state =================
 const pl={x:0,y:5,z:0,vy:0,yaw:0,pitch:0,hp:100,food:85,water:85,warm:55,stam:100,sick:0,onG:false,swim:false,placeRot:0,eye:1.62};
-let bag={w:7,h:5,items:[]},hot=new Array(8).fill(null),armor=null,bagLv=0,sel=0,era=0,day=1,hours=7.5;
+let GR={pl:{w:1,h:2,items:[]},pr:{w:1,h:2,items:[]},pk:null},hot=new Array(1).fill(null),armor=null,bagLv=0,sel=0,era=0,day=1,hours=7.5;
 let structs=[],foundMap=new Map(),wallMap=new Map(),ceilMap=new Map();
 let removed={},fruitEmpty={},spawnBed=null,won=false,cheat=false,carcasses=[],action=null;let state='menu',openCont=null,invDirty=true;
 const weather={rain:0,target:0,timer:200};
@@ -783,7 +784,13 @@ function addGItem(id,n,d,x,z){const st=STK(id);if(st>1)for(const o of gitems)if(
   const hit=new THREE.Mesh(GHIT,GHITM);hit.position.y=.2;g.add(hit);const ox=x+(Math.random()-.5)*.5,oz=z+(Math.random()-.5)*.5;g.position.set(ox,groundAt(ox,oz),oz);
   const o={id,n:k,d,x:ox,z:oz,mesh:g};g.userData.ref={kind:'gitem',o};scene.add(g);gitems.push(o);}}
 function removeGItem(o){scene.remove(o.mesh);const i=gitems.indexOf(o);if(i>=0)gitems.splice(i,1);}
-function pickGItem(o){removeGItem(o);addItem(o.id,o.n,o.d);}
+function pickGItem(o){const rem=invAdd(o.id,o.n,o.d);if(rem===o.n){msg('ポケットに入らない（左クリックで手に持てる）','bad');return;}pickToast(o.id,o.n-rem);invDirty=true;if(rem>0)o.n=rem;else removeGItem(o);}
+const isUsable=d=>!!(d.tool||d.place||d.food||d.pot||d.light||d.shape);
+function handPick(o){const h=hot[sel],st=STK(o.id);
+ if(!h){const k=Math.min(st,o.n);hot[sel]={id:o.id,n:k};if(o.d!=null)hot[sel].d=o.d;o.n-=k;if(!o.n)removeGItem(o);pl.bare=false;sfx('pick');invDirty=true;return;}
+ if(h.id===o.id&&st>1&&h.n<st){const k=Math.min(st-h.n,o.n);h.n+=k;o.n-=k;if(!o.n)removeGItem(o);pl.bare=false;sfx('pick');invDirty=true;return;}
+ msg(st>1&&h.id===o.id?'これ以上は持てない':'手がふさがっている（左クリックで手の物を下ろす）','bad');}
+function handDrop(){const h=hot[sel];if(!h)return;hot[sel]=null;dropItems([h],pl.x-Math.sin(pl.yaw)*.9,pl.z-Math.cos(pl.yaw)*.9);sfx('thud');invDirty=true;}
 function dropItems(list,x,z){list=list.filter(Boolean);list.forEach((it,k)=>{const a=k*2.4,r=list.length>1?.3+k*.08:0;addGItem(it.id,it.n,it.d,x+Math.cos(a)*r,z+Math.sin(a)*r);});return null;}
 // ---- carried objects (log / boulder) and drops at the feet ----
 const carries=[];let carryMesh=null;
@@ -808,16 +815,20 @@ function fits(c,id,x,y,r,ign){const s=SZ(id),w=r?s[1]:s[0],h=r?s[0]:s[1];if(x<0|
 function findSpot(c,id){for(const r of[0,1])for(let y=0;y<c.h;y++)for(let x=0;x<c.w;x++)if(fits(c,id,x,y,r))return{x,y,r};return null;}
 function gridAdd(c,id,n,d){const st=STK(id);if(st>1)for(const o of c.items)if(o.id===id&&o.n<st){const k=Math.min(st-o.n,n);o.n+=k;n-=k;if(!n)return 0;}
  while(n>0){const sp=findSpot(c,id);if(!sp)break;const k=Math.min(st,n);const it={id,n:k,x:sp.x,y:sp.y,r:sp.r};if(I[id].dur)it.d=d!=null?d:I[id].dur;c.items.push(it);n-=k;}return n;}
+const grids=()=>[GR.pl,GR.pr].concat(GR.pk?[GR.pk]:[]);
+const allInv=()=>grids().flatMap(g=>g.items);
+function invAdd(id,n,d){for(const g of grids()){n=gridAdd(g,id,n,d);if(!n)return 0;}return n;}
+function nearGItems(id){return gitems.filter(o=>o.id===id&&Math.hypot(o.x-pl.x,o.z-pl.z)<6).sort((a,b)=>Math.hypot(a.x-pl.x,a.z-pl.z)-Math.hypot(b.x-pl.x,b.z-pl.z));}
 function addItem(id,n,d,silent){const def=I[id],st=STK(id);let rem=n;if(def.carry){for(let k=0;k<n;k++)addCarry(id,pl.x-Math.sin(pl.yaw)*1.5+(Math.random()-.5),pl.z-Math.cos(pl.yaw)*1.5+(Math.random()-.5),Math.random()*6.28);return;}
- if(st>1)for(let i=0;i<8&&rem>0;i++){const h=hot[i];if(h&&h.id===id&&h.n<st){const k=Math.min(st-h.n,rem);h.n+=k;rem-=k;}}
- if(rem>0&&(def.tool||def.place||def.light))for(let i=0;i<8&&rem>0;i++)if(!hot[i]){const k=Math.min(st,rem);hot[i]={id,n:k};if(def.dur)hot[i].d=d!=null?d:def.dur;rem-=k;}
- if(rem>0)rem=gridAdd(bag,id,rem,d);
+ rem=invAdd(id,rem,d);
+ if(rem>0){const h=hot[sel];if(!h){const k=Math.min(st,rem);hot[sel]={id,n:k};if(def.dur)hot[sel].d=d!=null?d:def.dur;rem-=k;pl.bare=false;}else if(h.id===id&&st>1&&h.n<st){const k=Math.min(st-h.n,rem);h.n+=k;rem-=k;}}
  if(rem>0){dropItems([{id,n:rem,d}],pl.x-Math.sin(pl.yaw)*1.2,pl.z-Math.cos(pl.yaw)*1.2);msg('持ちきれない分を足元に置いた','bad');}
  invDirty=true;if(!silent&&n-rem>0)pickToast(id,n-rem);}
-function countItem(id){if(I[id].carry)return nearCarries(id).length+(pl.carry===id?1:0);let c=0;for(const o of bag.items)if(o.id===id)c+=o.n;for(const h of hot)if(h&&h.id===id)c+=h.n;return c;}
-function removeItem(id,n){if(I[id].carry){for(const o of nearCarries(id)){if(n<=0)break;removeCarry(o);n--;}if(n>0&&pl.carry===id){setCarry(null);n--;}invDirty=true;return;}for(let i=bag.items.length-1;i>=0&&n>0;i--){const o=bag.items[i];if(o.id===id){const k=Math.min(o.n,n);o.n-=k;n-=k;if(!o.n)bag.items.splice(i,1);}}
- for(let i=7;i>=0&&n>0;i--){const h=hot[i];if(h&&h.id===id){const k=Math.min(h.n,n);h.n-=k;n-=k;if(!h.n)hot[i]=null;}}invDirty=true;}
-const hasKnife=()=>bag.items.some(o=>I[o.id].knife)||hot.some(h=>h&&I[h.id].knife);
+function countItem(id){if(I[id].carry)return nearCarries(id).length+(pl.carry===id?1:0);let c=0;for(const o of allInv())if(o.id===id)c+=o.n;for(const h of hot)if(h&&h.id===id)c+=h.n;for(const o of nearGItems(id))c+=o.n;return c;}
+function removeItem(id,n){if(I[id].carry){for(const o of nearCarries(id)){if(n<=0)break;removeCarry(o);n--;}if(n>0&&pl.carry===id){setCarry(null);n--;}invDirty=true;return;}for(const g of grids())for(let i=g.items.length-1;i>=0&&n>0;i--){const o=g.items[i];if(o.id===id){const k=Math.min(o.n,n);o.n-=k;n-=k;if(!o.n)g.items.splice(i,1);}}
+ for(let i=hot.length-1;i>=0&&n>0;i--){const h=hot[i];if(h&&h.id===id){const k=Math.min(h.n,n);h.n-=k;n-=k;if(!h.n)hot[i]=null;}}
+ for(const o of nearGItems(id)){if(n<=0)break;const k=Math.min(o.n,n);o.n-=k;n-=k;if(!o.n)removeGItem(o);}invDirty=true;}
+const hasKnife=()=>allInv().some(o=>I[o.id].knife)||hot.some(h=>h&&I[h.id].knife);
 const held=()=>pl.carry||pl.bare?null:hot[sel];
 function heldTool(k){const s=held();if(!s)return 0;const t=I[s.id].tool;return t&&t[k]?t[k]:0;}
 function useDur(a){const s=held();if(s&&s.d!=null){s.d-=a||1;if(s.d<=0){msg(I[s.id].n+'が壊れた','bad');hot[sel]=null;}invDirty=true;}}
@@ -830,14 +841,16 @@ const STATS=[['hp','体力','#e0603e'],['food','満腹','#d9a24a'],['water','水
 $('#stats').innerHTML=STATS.map(s=>`<div class="stat"><span>${s[1]}</span><div class="bar"><i id="b_${s[0]}" style="background:${s[2]}"></i></div><span id="v_${s[0]}"></span></div>`).join('');
 function durHTML(it){const d=I[it.id];if(it.d==null||!d.dur)return'';const f=clamp(it.d/d.dur,0,1);return`<div class="dur"><i style="width:${f*100}%;${f<.25?'background:#e0603e':''}"></i></div>`;}
 function slotHTML(it,attr,num){let h=`<div class="slot" ${attr}>`;if(num)h+=`<span class="num">${num}</span>`;if(it){h+=`<img class="px" src="${icon(it.id)}" alt="">`;if(it.n>1)h+=`<b>${it.n}</b>`;h+=durHTML(it);}return h+'</div>';}
-function renderHotbar(){let h='';for(let i=0;i<8;i++)h+=slotHTML(hot[i],'',i+1);const hb=$('#hotbar');hb.innerHTML=h;if(!pl.bare)hb.children[sel].classList.add('sel');}
+function renderHotbar(){let h='';for(let i=0;i<hot.length;i++)h+=slotHTML(hot[i],'',i+1);const hb=$('#hotbar');hb.innerHTML=h;if(!pl.bare)hb.children[sel].classList.add('sel');}
 let CELLPX=48;
 function renderGrid(el,c,key){el.style.width=c.w*CELLPX+'px';el.style.height=c.h*CELLPX+'px';let h='';
  c.items.forEach((it,k)=>{const[w,hh]=isz(it);h+=`<div class="it" data-g="${key}" data-k="${k}" style="left:${it.x*CELLPX}px;top:${it.y*CELLPX}px;width:${w*CELLPX}px;height:${hh*CELLPX}px"><img class="px" src="${icon(it.id,it.r)}" alt="">${it.n>1?`<b>${it.n}</b>`:''}${durHTML(it)}</div>`;});
  el.innerHTML=h+'<div class="hl" style="display:none"></div>';}
 function renderInv(){CELLPX=innerWidth<1400?40:48;document.documentElement.style.setProperty('--cell',CELLPX+'px');
- $('#bagName').textContent=BAGNAME[bagLv];renderGrid($('#bagG'),bag,'bag');
- let h='';for(let i=0;i<8;i++)h+=slotHTML(hot[i],`data-h="${i}"`,i+1);$('#hotI').innerHTML=h;$('#armorS').innerHTML=slotHTML(armor,'data-a="1"');
+ $('#bagName').textContent='Tシャツ・ジーンズ'+(GR.pk?'・'+I[bagLv===2?'leather_pack':'basket'].n:'');
+ $('#equipW').innerHTML=`<div class="eqr"><span class="eqn">服</span><span class="eqv">Tシャツ（収納なし）</span></div><div class="eqr"><span class="eqn">ジーンズ</span><div class="eqg"><div><div class="lbl">左ポケット</div><div class="ggrid" id="g_pl" data-g="pl"></div></div><div><div class="lbl">右ポケット</div><div class="ggrid" id="g_pr" data-g="pr"></div></div></div></div><div class="eqr"><span class="eqn">鞄</span>${GR.pk?'<div class="ggrid" id="g_pk" data-g="pk"></div>':'<span class="eqv">なし（背負いかごを作ると装備できる）</span>'}</div>`;
+ renderGrid($('#g_pl'),GR.pl,'pl');renderGrid($('#g_pr'),GR.pr,'pr');if(GR.pk)renderGrid($('#g_pk'),GR.pk,'pk');
+ let h='';for(let i=0;i<hot.length;i++)h+=slotHTML(hot[i],`data-h="${i}"`,i+1);$('#hotI').innerHTML=h;$('#armorS').innerHTML=slotHTML(armor,'data-a="1"');
  if(openCont&&(openCont.cont||openCont.st)){$('#contP').style.display='';$('#contT').textContent=SD[openCont.t].n;
   if(openCont.cont){$('#contG').style.display='';$('#stBody').innerHTML='';renderGrid($('#contG'),openCont.cont,'cont');}else{$('#contG').style.display='none';renderStation();}}else $('#contP').style.display='none';
  $('#spawnP').style.display=cheat?'':'none';if(cheat&&!$('#spw').children.length)$('#spw').innerHTML=Object.keys(I).filter(k=>k!=='canoe'&&!UPG[k]).map(k=>`<div data-sp="${k}" title="${I[k].n}"><img class="px" src="${icon(k)}" alt=""></div>`).join('');
@@ -883,7 +896,7 @@ function descItem(id){const d=I[id];const L=[];
  if(d.tool){const t=d.tool;if(t.tree)L.push('伐採 '+t.tree);if(t.rock)L.push(`採掘 ${t.rock}（${TIERN[t.tier]}等級）`);if(t.anim)L.push('攻撃 '+t.anim);}
  if(d.knife)L.push('手に持って獲物の死体を解体できる');if(d.dur&&!d.light)L.push('耐久 '+d.dur);if(d.light)L.push('手に持つと明るい（約4分で燃え尽きる）');
  if(d.armor)L.push('防具欄に入れると雨や水濡れで体が冷えにくい');if(d.place)L.push('手持ちに入れて左クリックで設置');
- if(UPG[id])L.push(`持ち物の枠が ${UPG[id].w}×${UPG[id].h} に広がる`);
+ if(UPG[id])L.push(`作ると鞄として背負う（収納 ${UPG[id].w}×${UPG[id].h}）`);
  if(I[id].carry)L.push('大きいので持ち物には入らない。左クリックで担いで運び、もう一度左クリックで下ろす。近く（6m以内）に置けばクラフトの材料になる');if(id==='driftwood')L.push('砂浜に流れ着く。燃料になり、割ると枝が3本取れる');if(id==='leaf')L.push('シェルターの屋根葺きや燃料に使う。低木（シャリンバイ）を手でむしる・広葉樹を伐り倒す・カラムシや野イチゴから取れる');if(id==='pebble')L.push('焚き火の石組みに使える');
  if(id==='bamboo')L.push('燃料や竹槍の材料になる');if(id==='sasa')L.push('燃料や寝床の材料になる');if(id==='takenoko')L.push('生はえぐい。焚き火で焼こう');if(id==='pot_empty')L.push('水辺で F を押すと水を汲める／雨の中で手に持つと雨水が溜まる');if(id==='pot_fresh')L.push('右クリックで飲む（水分 +40）');if(id==='pot_salt')L.push('焚き火で煮沸すると真水になる');
  if(FUEL[id])L.push(`燃料 ${FUEL[id]}秒`);if(id==='bone_needle')L.push('蓑や背負い袋を縫うのに使う（消費しない）');if(KQ[id])L.push(`解体の収量 ${Math.round(KQ[id]*100)}%`);
@@ -895,13 +908,13 @@ function craftQueue(r,n){if(!canCraft(r))return;if(!craftDur(r)){craft(r);if(sta
 function checkEra(id){const t=ERA_TRIG[id];if(t!=null&&t>era)setEra(t);}
 function craft(r){if(!cheat)for(const k in r.i)removeItem(k,r.i[k]);
  if(r.o==='canoe'){winGame();return;}
- if(UPG[r.o]){const u=UPG[r.o];bagLv=u.lv;bag.w=Math.max(bag.w,u.w);bag.h=Math.max(bag.h,u.h);msg(`${I[r.o].n}を背負った。持ち物が ${u.w}×${u.h} に広がった`,'good');return;}
+ if(UPG[r.o]){const u=UPG[r.o];bagLv=u.lv;const old=GR.pk;GR.pk={w:u.w,h:u.h,items:[]};if(old)old.items.forEach(it=>{const rm=gridAdd(GR.pk,it.id,it.n,it.d);if(rm)dropItems([{id:it.id,n:rm,d:it.d}],pl.x,pl.z);});msg(`${I[r.o].n}を背負った（鞄 ${u.w}×${u.h}）`,'good');invDirty=true;return;}
  sfx('craft');addItem(r.o,r.q,null,true);msg(`作成：${I[r.o].n}${r.q>1?' ×'+r.q:''}`,'good');const t=ERA_TRIG[r.o];if(t!=null&&t>era)setEra(t);}
 function setEra(e){era=e;$('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#eraName').textContent=ERA[era];const b=$('#eraBanner');b.classList.add('on');setTimeout(()=>b.classList.remove('on'),4200);invDirty=true;}
 
 // --- drag & drop ---
 let drag=null;const ghostEl=$('#dragG'),tipEl=$('#tip');
-const contOf=key=>key==='bag'?bag:openCont.cont;
+const contOf=key=>GR[key]||openCont.cont;
 function canAccept(key,id){const t=openCont.t;if(key==='fuel')return fuelOK(t,id);if(key==='tool')return id==='crucible';if(key==='in')return !!PROC[t][id];return false;}
 function addToSlots(arr,id,n,d){const st=STK(id);if(st>1)for(const o of arr)if(o&&o.id===id&&o.n<st){const k=Math.min(st-o.n,n);o.n+=k;n-=k;if(!n)return 0;}for(let i=0;i<arr.length&&n>0;i++)if(!arr[i]){const k=Math.min(st,n);arr[i]={id,n:k};if(d!=null)arr[i].d=d;n-=k;}return n;}
 function srcRemove(src){if(src.type==='st'){openCont.st[src.key][src.i]=null;return;}if(src.type==='grid'){const c=contOf(src.key);c.items.splice(c.items.indexOf(src.it),1);}else if(src.type==='hot')hot[src.i]=null;else armor=null;}
@@ -920,14 +933,14 @@ function returnDrag(){const d=drag;if(d.split){d.orig.n+=d.it.n;return;}const s=
  else if(s.type==='hot'&&!hot[s.i])hot[s.i]=d.it;else if(s.type==='armor'&&!armor)armor=d.it;else addItem(d.it.id,d.it.n,d.it.d,true);}
 function giveBack(it){const s=drag.src;if(s.type==='st'&&!openCont.st[s.key][s.i]&&canAccept(s.key,it.id)){openCont.st[s.key][s.i]=it;return;}if(s.type==='hot'&&!hot[s.i]){hot[s.i]=it;return;}if(s.type==='armor'&&!armor&&I[it.id].armor){armor=it;return;}
  if(s.type==='grid'){const c=contOf(s.key);if(fits(c,it.id,s.ox,s.oy,it.r||0)){it.x=s.ox;it.y=s.oy;c.items.push(it);return;}const rem=gridAdd(c,it.id,it.n,it.d);if(!rem)return;it={...it,n:rem};}
- const rem=gridAdd(bag,it.id,it.n,it.d);if(rem)dropItems([{...it,n:rem}],pl.x,pl.z);}
+ const rem=invAdd(it.id,it.n,it.d);if(rem)dropItems([{...it,n:rem}],pl.x,pl.z);}
 function quickMove(src){const it=src.it;srcRemove(src);let rem=it.n;
- if(src.type==='grid'&&src.key==='bag'&&openCont&&openCont.st){const st=openCont.st,t=openCont.t;rem=fuelOK(t,it.id)?addToSlots(st.fuel,it.id,it.n,it.d):(st.tool&&it.id==='crucible')?addToSlots(st.tool,it.id,it.n,it.d):PROC[t][it.id]?addToSlots(st.in,it.id,it.n,it.d):it.n;}
- else if(src.type==='st')rem=gridAdd(bag,it.id,it.n,it.d);
- else if(src.type==='grid'&&src.key==='bag'&&openCont&&openCont.cont)rem=gridAdd(openCont.cont,it.id,it.n,it.d);
- else if(src.type==='grid'&&src.key==='cont')rem=gridAdd(bag,it.id,it.n,it.d);
+ if(src.type==='grid'&&GR[src.key]&&openCont&&openCont.st){const st=openCont.st,t=openCont.t;rem=fuelOK(t,it.id)?addToSlots(st.fuel,it.id,it.n,it.d):(st.tool&&it.id==='crucible')?addToSlots(st.tool,it.id,it.n,it.d):PROC[t][it.id]?addToSlots(st.in,it.id,it.n,it.d):it.n;}
+ else if(src.type==='st')rem=invAdd(it.id,it.n,it.d);
+ else if(src.type==='grid'&&GR[src.key]&&openCont&&openCont.cont)rem=gridAdd(openCont.cont,it.id,it.n,it.d);
+ else if(src.type==='grid'&&src.key==='cont')rem=invAdd(it.id,it.n,it.d);
  else if(src.type==='grid'){if(I[it.id].armor&&!armor){armor={id:it.id,n:1};rem=0;}else{const i=hot.findIndex(h=>!h);if(i>=0){hot[i]={id:it.id,n:it.n};if(it.d!=null)hot[i].d=it.d;rem=0;}}}
- else rem=gridAdd(bag,it.id,it.n,it.d);
+ else rem=invAdd(it.id,it.n,it.d);
  if(rem>0){it.n=rem;if(src.type==='grid'){contOf(src.key).items.push(it);}else if(src.type==='hot')hot[src.i]=it;else if(src.type==='st')openCont.st[src.key][src.i]=it;else armor=it;}
  cleanupDrop();renderInv();}
 function cleanupDrop(){}
@@ -991,7 +1004,7 @@ addEventListener('keydown',e=>{
  if(state!=='play')return;keys[e.code]=true;
  if(e.code==='KeyM')openMap();
  if(e.code==='Tab'||e.code==='KeyI')openInv();
- if(e.code.startsWith('Digit')){const n=+e.code.slice(5);if(n>=1&&n<=8){if(sel===n-1&&!pl.bare)pl.bare=true;else{sel=n-1;pl.bare=false;}invDirty=true;}}
+ if(e.code.startsWith('Digit')){const n=+e.code.slice(5);if(n>=1&&n<=hot.length){if(sel===n-1&&!pl.bare)pl.bare=true;else{sel=n-1;pl.bare=false;}invDirty=true;}}
  if(e.code==='KeyF')interact();
  if(e.code==='KeyR')pl.placeRot=(pl.placeRot+1)%8;
  if(e.code==='KeyZ')dismantle();
@@ -1011,7 +1024,7 @@ addEventListener('mouseup',e=>{if(e.button===0)mouseL=false;dragLook=null;});
 addEventListener('mousemove',e=>{if(state!=='play')return;let dx=0,dy=0;
  if(locked||(state==='play'&&!dragMode)){dx=e.movementX;dy=e.movementY;}else if(dragMode&&dragLook){dx=e.clientX-dragLook.x;dy=e.clientY-dragLook.y;dragLook.x=e.clientX;dragLook.y=e.clientY;dragLook.moved+=Math.abs(dx)+Math.abs(dy);if(dragLook.moved>6)mouseL=false;dx*=1.6;dy*=1.6;}else return;
  pl.yaw-=dx*.0022;pl.pitch=clamp(pl.pitch-dy*.0022,-1.5,1.5);});
-addEventListener('wheel',e=>{if(state!=='play')return;sel=(sel+(e.deltaY>0?1:7))%8;pl.bare=false;invDirty=true;},{passive:true});
+addEventListener('wheel',e=>{if(state!=='play')return;sel=(sel+(e.deltaY>0?1:hot.length-1))%hot.length;pl.bare=false;invDirty=true;},{passive:true});
 
 // ================= Timed actions =================
 function startAction(label,dur,done,ctx){if(action){msg('ほかの作業中だ','bad');return false;}action={label,dur,t:0,done,ctx};$('#tlabel').textContent=label;$('#timer').style.display='flex';$('#tarc').style.strokeDashoffset=113.1;return true;}
@@ -1038,7 +1051,7 @@ function updateAim(){camera.getWorldDirection(vDir);vEye.copy(camera.position);
  for(let s=.2;s<=7;s+=.1){const x=vEye.x+vDir.x*s,y=vEye.y+vDir.y*s,z=vEye.z+vDir.z*s;const g=groundAt(x,z),wl=waterLevel(x,z);
   if(!water&&!ground&&y<wl&&wl>g&&s<=Math.min(td,REACH))water={fresh:!!inPond(x,z,.3)};if(y<g){ground={x,y:g,z,s};break;}}
  aim={t,water:t?null:water,ground,rockFace:!t&&!water&&ground&&ground.s<=REACH&&normalY(ground.x,ground.z)<.72&&!foundMap.get(fKey(ground.x,ground.z))};}
-function targetInfo(){const t=aim.t;if(t&&t.kind==='gitem')return[I[t.o.id].n+(t.o.n>1?' ×'+t.o.n:''),'F: 拾う'];if(t&&t.kind==='carry')return[I[t.o.t].n,pl.carry?'':'左クリック: 担ぐ'];if(pl.carry&&!(t&&t.kind==='struct'&&pl.carry==='log'&&t.o.st&&fuelOK(t.o.t,'log')))return[I[pl.carry].n+'を担いでいる','左クリック: 下ろす'];if(pl.carry)return[SD[t.o.t].n,'左クリック: 丸太をくべる'];
+function targetInfo(){const t=aim.t;if(t&&t.kind==='gitem')return[I[t.o.id].n+(t.o.n>1?' ×'+t.o.n:''),'F: ポケットに入れる ／ 左クリック: 手に持つ'];{const h=held();if(h&&!isUsable(I[h.id])&&!(t&&t.kind==='struct'&&t.o.t==='shelter'))return[I[h.id].n+(h.n>1?' ×'+h.n:'')+'を持っている','左クリック: 足元に置く'];}if(t&&t.kind==='carry')return[I[t.o.t].n,pl.carry?'':'左クリック: 担ぐ'];if(pl.carry&&!(t&&t.kind==='struct'&&pl.carry==='log'&&t.o.st&&fuelOK(t.o.t,'log')))return[I[pl.carry].n+'を担いでいる','左クリック: 下ろす'];if(pl.carry)return[SD[t.o.t].n,'左クリック: 丸太をくべる'];
  if(!t){if(aim.water){const s=held();return[aim.water.fresh?'湧き水の池（真水）':'海（海水）',s&&s.id==='pot_empty'?'F: 壺に水を汲む':(aim.water.fresh?'F: 水を飲む':'F: 飲む（危険）')];}
   if(aim.rockFace){const v=veinAt(aim.ground.x,aim.ground.z);return['岩肌',heldTool('rock')?'左クリック: 採掘':'つるはしで掘れる'];}return null;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
@@ -1085,7 +1098,9 @@ function consumeNow(slot){const s=hot[slot];if(!s)return;const d=I[s.id];
  if(s.id==='pot_fresh'){sfx('drink');pl.water=Math.min(100,pl.water+40);hot[slot]={id:'pot_empty',n:1};msg('真水を飲んだ');invDirty=true;return true;}
  if(s.id==='pot_salt'){msg('海水は飲めない。焚き火で煮沸しよう','bad');return true;}return false;}
 function primaryClick(){if(pl.carry){const t=aim.t;if(!(pl.carry==='log'&&t&&t.kind==='struct'&&feedLog(t.o)))dropCarry();mouseL=false;return;}
- if(aim.t&&aim.t.kind==='carry'){pickCarry(aim.t.o);mouseL=false;return;}const s=held();if(!s)return;const d=I[s.id];if(d.food||d.pot){if(d.pot&&aim.water)interact();else consume();mouseL=false;return;}if(d.place){tryPlace();mouseL=false;}}
+ if(aim.t&&aim.t.kind==='carry'){if(hot[sel]&&!pl.bare){msg('両手を空けないと担げない（左クリックで手の物を下ろす）','bad');mouseL=false;return;}pickCarry(aim.t.o);mouseL=false;return;}
+ if(aim.t&&aim.t.kind==='gitem'){if(pl.bare&&hot[sel]){msg('手持ちの枠がふさがっている（1 で持ち替える）','bad');}else handPick(aim.t.o);mouseL=false;return;}
+ const s=held();if(!s)return;const d=I[s.id];if(!isUsable(d)){handDrop();mouseL=false;return;}if(d.food||d.pot){if(d.pot&&aim.water)interact();else consume();mouseL=false;return;}if(d.place){tryPlace();mouseL=false;}}
 let swingT=-1,hitDone=false,swingCd=0;
 function mineYield(vein,big){const tier=heldTool('tier');
  if(Math.random()<.18)dropAt('pebble',1+Math.floor(Math.random()*2));if(Math.random()<(big?.08:.12))dropAt('stone',1);if(Math.random()<.02)dropAt('chert',1);
@@ -1206,7 +1221,7 @@ function newDay(){for(const c of carcasses.slice())if(c.exp<=day)removeCarcass(c
 for(const id in removed){if(removed[id]<=day){const e=ENT[id];if(Math.hypot(e.x-pl.x,e.z-pl.z)>12){e.alive=true;e.hp=ED[e.t].hp||1;if(e.t==='clay')e.uses=4;setEntVisible(e,true);delete removed[id];}}}
  for(const id in fruitEmpty){if(fruitEmpty[id]<=day){setFruit(ENT[id],true);delete fruitEmpty[id];}}}
 function die(cause){if(state==='dead')return;if(pl.carry)dropCarry();state='dead';document.exitPointerLock&&document.exitPointerLock();
- const L=bag.items.map(o=>({id:o.id,n:o.n,d:o.d}));hot.forEach(h=>h&&L.push(h));if(armor)L.push(armor);dropItems(L,pl.x,pl.z);bag.items=[];hot=new Array(8).fill(null);armor=null;invDirty=true;
+ const L=allInv().map(o=>({id:o.id,n:o.n,d:o.d}));hot.forEach(h=>h&&L.push(h));if(armor)L.push(armor);dropItems(L,pl.x,pl.z);grids().forEach(g=>g.items=[]);hot=new Array(hot.length).fill(null);armor=null;invDirty=true;
  $('#deadWhy').textContent=`${day}日目、${cause}のため倒れた。`;$('#dead').classList.add('on');save();}
 function respawn(){const p=spawnBed||SPAWN;pl.x=p.x+.8;pl.z=p.z+.8;pl.y=groundAt(pl.x,pl.z)+.5;pl.vy=0;pl.hp=70;pl.food=Math.max(pl.food,55);pl.water=Math.max(pl.water,55);pl.warm=50;pl.stam=100;pl.sick=0;$('#dead').classList.remove('on');state='play';lock(true);save();}
 function winGame(){won=true;state='win';document.exitPointerLock&&document.exitPointerLock();$('#winTxt').textContent=`${day}日目、あなたは鉄器時代の技術で外洋カヌーを組み上げ、黒潮の向こうへ漕ぎ出した。`;$('#win').classList.add('on');save();}
@@ -1294,7 +1309,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:10,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:11,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1321,8 +1336,9 @@ const twistG=new THREE.Group();camera.add(twistG);twistG.position.set(0,-.24,-.4
 function updateTwist(t){const on=!!(action&&action.anim==='twist');twistG.visible=on;if(!on)return;const u=twistG.userData,a=t*7;
  u.L.rotation.x=Math.sin(a)*.6;u.R.rotation.x=-Math.sin(a)*.6;u.L.position.y=Math.cos(a)*.015;u.R.position.y=-Math.cos(a)*.015;u.F.rotation.x=a*1.4;u.T.rotation.z=Math.sin(t*2.3)*.4;
  const p=action.t/action.dur;u.F.scale.x=.6+p*.6;}
-const handM=new THREE.Mesh(M([P(new THREE.BoxGeometry(.085,.1,.1),'#c99a74',{y:-.01}),P(new THREE.BoxGeometry(.09,.03,.08),'#b88a66',{y:.035,z:-.01}),P(new THREE.BoxGeometry(.03,.05,.04),'#b88a66',{x:-.05,y:.01,z:-.03}),cyl(V3(.01,-.05,.03),V3(.1,-.36,.3),.045,.055,'#8a6a48',6)],0),MAT);heldG.add(handM);
-function updateHeld(t){updateTwist(t);const tw=!!(action&&action.anim==='twist');handM.visible=!tw&&!pl.carry;if(tw){if(heldMesh)heldMesh.visible=false;return;}if(heldMesh)heldMesh.visible=true;const s=held();const id=s?s.id:null;if(id!==heldId){if(heldMesh)heldG.remove(heldMesh);heldMesh=id?buildHeld(id):null;if(heldMesh)heldG.add(heldMesh);heldId=id;}
+const handGeo=sx=>M([P(new THREE.BoxGeometry(.085,.075,.115),'#c8986f',{y:-.005}),P(new THREE.BoxGeometry(.075,.03,.1),'#b98a62',{y:.04,z:-.005}),cyl(V3(0,-.03,.05),V3(.09*sx,-.38,.34),.04,.05,'#b98a62',6)],0);
+const handM=new THREE.Mesh(handGeo(1),MAT);heldG.add(handM);const handL=new THREE.Mesh(handGeo(-1),MAT);camera.add(handL);
+function updateHeld(t){updateTwist(t);const tw=!!(action&&action.anim==='twist');handM.visible=!tw&&!pl.carry;handL.visible=!tw&&!pl.carry;{const bb=pl.moving&&pl.onG?Math.sin(bobPh+1.2)*.016:0,emp=!held();handL.position.set(emp?-.3:-.36,(emp?-.27:-.38)+Math.abs(bb),emp?-.55:-.6);handL.rotation.set(emp?.15:0,0,emp?.12:.05);}if(tw){if(heldMesh)heldMesh.visible=false;return;}if(heldMesh)heldMesh.visible=true;const s=held();const id=s?s.id:null;if(id!==heldId){if(heldMesh)heldG.remove(heldMesh);heldMesh=id?buildHeld(id):null;if(heldMesh)heldG.add(heldMesh);heldId=id;}
  if(pl.carry)return;const bob=pl.moving&&pl.onG?Math.sin(bobPh)*.018:0;let px=.34+bob*.5,py=-.34+Math.abs(bob),pz=-.6,rx=0,rz=0;const u=swingT>=0?Math.min(1,swingT):-1;
  if(!heldMesh){px-=.04;py+=.1;}
  if(u>=0&&!heldMesh){const j=u<.3?-u/.3*.06:u<.5?-.06+(u-.3)/.2*.42:.36*(1-(u-.5)/.5);pz-=j;px-=j*.35;py+=j*.15;}
@@ -1341,7 +1357,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  stUiT-=dt;if(stUiT<=0){stUiT=.3;if(state==='inv'&&openCont&&openCont.st&&!drag)renderStation();}
  mapT-=dt;if(mapT<=0){mapT=.25;drawMini();if(state==='map')drawBigMap();}
  if(playing){
-  swingCd-=dt;const h=held(),hd=h&&I[h.id];if(mouseL&&!pl.carry&&swingT<0&&swingCd<=0&&pl.stam>3&&!(hd&&(hd.place||hd.food||hd.pot))){swingT=0;hitDone=false;pl.stam-=6;swingCd=1.35;sfx('swing');}
+  swingCd-=dt;const h=held(),hd=h&&I[h.id];if(mouseL&&!pl.carry&&!(held()&&!isUsable(I[held().id]))&&swingT<0&&swingCd<=0&&pl.stam>3&&!(hd&&(hd.place||hd.food||hd.pot))){swingT=0;hitDone=false;pl.stam-=6;swingCd=1.35;sfx('swing');}
   if(swingT>=0){swingT+=dt/1.0;if(!hitDone&&swingT>.55){hitDone=true;doHit();}if(swingT>=1)swingT=-1;}}
  if(pl.moving&&pl.onG&&playing){bobPh+=dt*(pl.sprint?11:8);bobAmp=Math.min(1,bobAmp+dt*4);}else bobAmp=Math.max(0,bobAmp-dt*4);
  camY+=(pl.y-camY)*Math.min(1,dt*18);if(Math.abs(pl.y-camY)>1.5)camY=pl.y;
@@ -1383,7 +1399,7 @@ function startGame(data){auInit();$('#loading').style.display='block';
  SEED=data?data.seed:Math.floor(Math.random()*1e9);initNoise(SEED);rng=mulberry32(SEED*7+3);
  buildGeos();buildTerrain();buildCaves();buildSky();buildWater();buildRain();genEntities();
  if(data){Object.assign(pl,data.pl);day=data.day;hours=data.hours;era=data.era;won=!!data.won;spawnBed=data.spawnBed;sel=data.sel||0;bagLv=data.bagLv||0;
-  bag=data.bag;hot=data.hot;armor=data.armor;removed=data.removed||{};fruitEmpty=data.fruitEmpty||{};
+  GR=data.GR||GR;hot=data.hot&&data.hot.length?data.hot:[null];if(sel>=hot.length)sel=0;armor=data.armor;removed=data.removed||{};fruitEmpty=data.fruitEmpty||{};
   for(const id in removed){const e=ENT[id];if(e){e.alive=false;setEntVisible(e,false);}}for(const id in fruitEmpty){const e=ENT[id];if(e&&e.fim)setFruit(e,false);}
   data.structs.forEach(s=>addStruct(s.t,s.x,s.y,s.z,s.rot,s.cont,s.st));(data.gitems||[]).forEach(o=>addGItem(o.id,o.n,o.d,o.x,o.z));(data.carries||[]).forEach(o=>addCarry(o.t,o.x,o.z,o.ry));if(pl.carry)setCarry(pl.carry);cheat=!!data.cheat;
   (data.carcasses||[]).forEach(c=>{const m=makeAnimal(c.t);const o={t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp,mesh:m.g,legs:m.legs,alive:true};scene.add(m.g);layCarcass(o);carcasses.push(o);});}
@@ -1392,9 +1408,9 @@ function startGame(data){auInit();$('#loading').style.display='block';
  for(let a=-10;a<10;a++)for(let b=-10;b<10;b++)DEC.set(a+','+b,buildDecor(a,b));updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===10)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===11)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===10&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===11&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
