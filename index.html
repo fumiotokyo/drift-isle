@@ -134,7 +134,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
   </div>
 </div>
 <div id="timer"><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" id="tarc" cx="22" cy="22" r="18"/></svg><span id="tlabel"></span></div>
-<div id="mapOv"><canvas id="mapC" width="640" height="640"></canvas><p>M または Esc で閉じる ／ ■ 設置物　★ 寝床　◓ 洞窟（シェルター）　▲ 現在地</p></div>
+<div id="mapOv"><canvas id="mapC" width="640" height="640"></canvas><p>M または Esc で閉じる ／ ■ 設置物　★ 寝床　■ 洞窟（暗い影・シェルター）　▲ 現在地</p></div>
 <div id="tip"></div><div id="dragG"><img class="px" alt=""></div>
 <div class="overlay on" id="title">
   <h1>漂流島</h1><div class="sub">DRIFT ISLE</div>
@@ -164,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v4';
+const SAVE_KEY='driftisle_save_v5';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -186,7 +186,7 @@ const GOALS=[
 ];
 const I={
  stick:{n:'枝',st:20},log:{n:'丸太',st:8,sz:[2,1]},stone:{n:'石',st:20},chert:{n:'チャート（燧石）',st:20},
- fiber:{n:'苧麻の繊維',st:30},bamboo:{n:'竹',st:10,sz:[1,2]},cord:{n:'紐',st:20},
+ fiber:{n:'苧麻の繊維',st:30},bamboo:{n:'竹',st:10,sz:[1,2]},sasa:{n:'笹',st:30},takenoko:{n:'たけのこ',st:6,food:{h:6,w:2,sick:.3}},yaki_takenoko:{n:'焼きたけのこ',st:6,food:{h:18,w:3}},cord:{n:'紐',st:20},
  berries:{n:'リュウキュウイチゴ',st:10,food:{h:6,w:4}},adan_fruit:{n:'アダンの実',st:4,food:{h:9,w:6}},
  raw_meat:{n:'生肉',st:5,food:{h:10,w:0,sick:.5}},cooked_meat:{n:'焼いた肉',st:5,food:{h:35,w:-2}},
  hide:{n:'生皮',st:4,sz:[2,2]},bone:{n:'骨',st:10},fat:{n:'脂肪',st:10},bone_needle:{n:'骨の針'},clay:{n:'粘土',st:20},
@@ -226,7 +226,7 @@ const STN={'':'手作業',campfire:'焚き火',workbench:'作業台',kiln:'土�
 const R=[
  {o:'cord',i:{fiber:3},e:0},{o:'stone_knife',i:{chert:2,stick:1,fiber:2},e:0},{o:'stone_axe',i:{chert:2,stick:2,cord:1},e:0},
  {o:'stone_pick',i:{stone:3,stick:2,cord:2},e:0},{o:'wood_spear',i:{stick:3,chert:1,cord:1},e:0},{o:'wood_spear',i:{bamboo:1,chert:1,cord:1},e:0},{o:'campfire',i:{stick:6,stone:5},e:0},
- {o:'bed',i:{fiber:10,stick:8},e:0},{o:'bone_needle',i:{bone:1,chert:1},e:1},{o:'basket',i:{fiber:16,cord:4,stick:4},e:0},
+ {o:'bed',i:{fiber:10,stick:8},e:0},{o:'bed',i:{sasa:14,stick:8},e:0},{o:'bone_needle',i:{bone:1,chert:1},e:1},{o:'basket',i:{fiber:16,cord:4,stick:4},e:0},
  {o:'workbench',i:{log:6,stick:4,cord:2},e:1},{o:'kiln',i:{clay:10,stone:8,stick:4},e:1},
  {o:'unfired_pot',i:{clay:4},e:1},{o:'unfired_crucible',i:{clay:6},e:1},{o:'unfired_mold',i:{clay:3},e:1},{o:'bloomery',i:{brick:16,clay:6,stone:6},e:4},
  {o:'torch',i:{stick:1,fiber:2},s:'campfire',e:1},{o:'torch',i:{stick:1,fat:1},s:'campfire',e:1},
@@ -240,8 +240,8 @@ const R=[
  {o:'iron_knife',i:{iron_ingot:1,stick:1},s:'anvil',e:5},{o:'iron_axe',i:{iron_ingot:2,stick:2},s:'anvil',e:5},{o:'iron_pick',i:{iron_ingot:2,stick:2},s:'anvil',e:5},{o:'iron_spear',i:{iron_ingot:2,stick:3},s:'anvil',e:5}
 ];
 R.forEach((r,k)=>{r.id=k;r.q=r.q||1;r.s=r.s||'';});
-const FUEL={bamboo:25,stick:15,log:60,fat:40,charcoal:120,fiber:5};
-const PROC={campfire:{raw_meat:['cooked_meat',20],pot_salt:['pot_fresh',30]},
+const FUEL={sasa:6,bamboo:25,stick:15,log:60,fat:40,charcoal:120,fiber:5};
+const PROC={campfire:{raw_meat:['cooked_meat',20],takenoko:['yaki_takenoko',15],pot_salt:['pot_fresh',30]},
  kiln:{unfired_pot:['pot_empty',40],unfired_crucible:['crucible',40],unfired_mold:['mold',35],clay:['brick',25],log:['charcoal',40],copper_ore:['copper_ingot',45,'crucible']},
  bloomery:{iron_ore:['iron_bloom',60]}};
 const SLOTS={campfire:{in:3,out:3},kiln:{tool:1,in:4,out:4},bloomery:{in:3,out:3}};
@@ -253,14 +253,15 @@ const ED={
  shii:{n:'スダジイ',k:'tree',r:.42,hp:110,logs:[3,5],re:4},tabu:{n:'タブノキ',k:'tree',r:.4,hp:100,logs:[3,5],re:4},
  gajumaru:{n:'ガジュマル',k:'tree',r:.8,hp:150,logs:[4,6],re:5},matsu:{n:'リュウキュウマツ',k:'tree',r:.3,hp:90,logs:[3,4],re:4},
  biro:{n:'ビロウ',k:'tree',r:.25,hp:60,logs:[2,3],re:4,fib:2},hego:{n:'ヘゴ',k:'tree',r:.2,hp:40,logs:[1,1],re:3,fib:3},
- take:{n:'竹（ホウライチク）',k:'tree',r:.55,hp:35,logs:[3,5],wood:'bamboo',re:3,ph:7},
+ take:{n:'竹（ホウライチク）',k:'tree',r:.55,hp:35,logs:[3,5],wood:'bamboo',leaf:'sasa',re:3,ph:7},
+ takenoko:{n:'たけのこ',k:'pick',give:['takenoko',1],re:4},
  sotetsu:{n:'ソテツ',k:'tree',r:.35,hp:50,logs:[1,2],re:4},adan:{n:'アダン',k:'tree',r:.6,hp:50,logs:[1,2],re:3,fib:3,fruit:'adan_fruit',pr:1.0,ph:2.8},
  ichigo:{n:'リュウキュウイチゴ',k:'bush',fruit:'berries'},karamushi:{n:'カラムシ（苧麻）',k:'fiber',give:['fiber',3],re:1},
  rock:{n:'岩',k:'rock',r:.95,hp:100,re:4,sc:[.35,1.05]},shore:{n:'海岸の岩',k:'rock',r:1.0,hp:120,re:5,sc:[.25,1.1]},outcrop:{n:'岩盤の露頭',k:'rock',r:1.8,hp:200,re:5,bed:1,sc:[.5,2.0]},
  stick:{n:'枝',k:'pick',give:['stick',1],re:1},stone:{n:'小石',k:'pick',give:['stone',1],re:1},chert:{n:'チャートの欠片',k:'pick',give:['chert',1],re:1},
  clay:{n:'粘土の堆積',k:'clay',give:['clay',2],re:2}
 };
-const VN={take:2,shii:3,tabu:3,gajumaru:2,matsu:3,biro:3,hego:2,adan:2,sotetsu:2,ichigo:2,karamushi:2,rock:3,shore:2,outcrop:3,stick:1,stone:1,chert:1,clay:1};
+const VN={takenoko:1,take:2,shii:3,tabu:3,gajumaru:2,matsu:3,biro:3,hego:2,adan:2,sotetsu:2,ichigo:2,karamushi:2,rock:3,shore:2,outcrop:3,stick:1,stone:1,chert:1,clay:1};
 const VEIN={copper:{n:'孔雀石',ore:'copper_ore',need:1,hint:'岩肌に緑青色の染みが見える'},tin:{n:'錫石',ore:'tin_ore',need:2,hint:'黒褐色の重い粒が混じっている'},iron:{n:'赤鉄鉱',ore:'iron_ore',need:3,hint:'赤錆色の岩肌だ'}};
 const AD={goat:{n:'ノヤギ',hp:40,spd:6.8,meat:2,hide:1,scare:13},boar:{n:'リュウキュウイノシシ',hp:70,spd:7.2,meat:4,hide:2,scare:11}};
 const TIERN=['','石','銅','青銅','鉄'];
@@ -281,6 +282,9 @@ function potDraw(p,col,wc){p.r(11,3,10,3,col);p.r(12,6,8,4,col);p.e(16,18,11,10.
 const DR={
  stick:p=>{p.l(3,13,12,3,'#8a5a32',2);p.l(8,8,11,10,'#7a4e2a');},
  bamboo:p=>{p.l(8,30,8,3,'#8ab048',4);p.l(9,30,9,3,'#a8c860',1);[9,16,23].forEach(y=>p.l(5,y,11,y,'#5f7f2e',1));p.l(9,6,14,2,'#4f8a34',2);p.l(8,12,3,9,'#4f8a34',2);},
+ sasa:p=>{p.l(3,14,9,8,'#6a5a30',1);[[2,4,9,9],[6,1,11,8],[11,3,10,9],[13,8,10,10]].forEach(([a,b,c,d])=>p.poly([[a,b],[c,d],[c-1,d+1],[a+1,b+2]],'#4f8a34'));p.l(6,2,10,8,'#7aa84a');},
+ takenoko:p=>{p.poly([[8,1],[13,14],[3,14]],'#8a6a3a');p.poly([[8,1],[11,9],[6,10]],'#a88450');p.l(4,11,12,9,'#6a4e2a');p.l(5,7,10,6,'#6a4e2a');p.r(3,14,10,1,'#5a4a2a');p.l(8,1,9,0,'#7aa84a');},
+ yaki_takenoko:p=>{p.poly([[8,2],[12,14],[4,14]],'#d8b878');p.l(8,4,8,13,'#b08a50');p.l(5,10,11,10,'#8a5a2a');p.l(6,7,10,6,'#8a5a2a');p.sp(4,6,8,8,'#5a3a1a',.15,21);},
  log:p=>{p.r(2,4,25,9,'#6e4a2c');for(let k=0;k<5;k++)p.l(5+k*5,5,6+k*5,11,'#583a22');p.e(27,8.5,3.2,4.6,'#d8b07a');p.e(27,8.5,1.8,2.8,'#c0925a');p.s(27,8,'#9a6a3a');},
  stone:p=>{p.e(8,9,5.5,4.5,'#8d8a84');p.e(6.5,7.5,2,1.3,'#a6a39c');p.sp(3,5,11,9,'#77746e',.15,3);},
  chert:p=>{p.poly([[3,10],[6,4],[11,3],[13,8],[10,13],[5,13]],'#4e5560');p.l(6,5,9,11,'#6e7884');p.sp(3,3,11,11,'#3a4048',.12,4);},
@@ -454,6 +458,7 @@ function buildGeos(){const C=THREE;
   GEO['shore'+v]=M([P(jit(new C.IcosahedronGeometry(1.1,1),.5,v+61),'#4a4844',{y:.25,sx:1.4,sy:.55,top:'#6a665e'})],.12,v+6);
   GEO['F_adan'+v]=ADANF[v];GEO['F_ichigo'+v]=ICHF[v];}
  GEO.stick0=M([P(new C.CylinderGeometry(.04,.05,1,4),'#7a5534',{y:.05,rz:Math.PI/2}),P(new C.CylinderGeometry(.025,.03,.35,4),'#6d4a2c',{x:.2,y:.05,z:.1,rz:Math.PI/2,ry:.8})],.1,6);
+ GEO.takenoko0=M([P(jit(new C.ConeGeometry(.15,.55,6),.03,1101),'#7a5a32',{y:.22,top:'#c0a060'}),P(new C.ConeGeometry(.05,.18,4),'#7aa04a',{y:.55,rz:.2})],.12,1101);
  GEO.stone0=M([P(jit(new C.IcosahedronGeometry(.2,0),.07,7),'#8d8a84',{y:.08,sy:.65})],.15,7);
  GEO.chert0=M([P(new C.OctahedronGeometry(.16,0),'#4e5560',{y:.08,sy:.55}),P(new C.OctahedronGeometry(.1,0),'#444a54',{x:.18,y:.05,sy:.55})],.15,8);
  GEO.clay0=M([P(new C.CylinderGeometry(.9,1.05,.18,8),'#8a5e3e',{y:.02}),P(jit(new C.DodecahedronGeometry(.3,0),.1,9),'#a0704a',{x:.3,y:.12,sy:.5}),P(jit(new C.DodecahedronGeometry(.25,0),.1,10),'#7e5638',{x:-.35,y:.1,z:.2,sy:.5})],.1,9);
@@ -496,7 +501,9 @@ const HI=(i,j)=>heights[j*(SEG+1)+i];
 function terrainH(x,z){const fx=(x+HALF)/CELL,fz=(z+HALF)/CELL;const i=Math.floor(fx),j=Math.floor(fz);if(i<0||j<0||i>=SEG||j>=SEG)return -14;
  const u=fx-i,v=fz-j;if(u+v<=1){const ha=HI(i,j);return ha+(HI(i+1,j)-ha)*u+(HI(i,j+1)-ha)*v;}const hc=HI(i+1,j+1);return hc+(HI(i,j+1)-hc)*(1-u)+(HI(i+1,j)-hc)*(1-v);}
 function normalY(x,z){const gx=terrainH(x+.5,z)-terrainH(x-.5,z),gz=terrainH(x,z+.5)-terrainH(x,z-.5);return 1/Math.sqrt(1+gx*gx+gz*gz);}
-function inPond(x,z,m){for(const p of ponds)if(Math.hypot(x-p.x,z-p.z)<p.r+m)return p;return null;}
+function pondRa(p,a){return p.r*(1+p.k[0]*Math.sin(2*a+p.k[1])+p.k[2]*Math.sin(3*a+p.k[3])+p.k[4]*Math.sin(5*a+p.k[5]));}
+function pondR(p,x,z){return pondRa(p,Math.atan2(z-p.z,x-p.x));}
+function inPond(x,z,m){for(const p of ponds)if(Math.hypot(x-p.x,z-p.z)<pondR(p,x,z)+m)return p;return null;}
 function waterLevel(x,z){const p=inPond(x,z,.3);return p?p.level:0;}
 function forestAt(x,z){return clamp((fbm(x*.011+200,z*.011+200,4)-.36)/.2,0,1);}
 // caves: tunnel cut into a grid-aligned cliff. local u=lateral from tunnel centre, v=inward depth
@@ -513,19 +520,19 @@ function caveHeight(c,i,j,h){const p=(i-c.i0)*c.lx+(j-c.j0)*c.lz,q=(i-c.i0)*c.ix
 function buildCaves(){caves.forEach((c,k)=>{const r=mulberry32(SEED+900+k),pos=[],col=[],cc=new THREE.Color();
   const W=(u,h,w)=>[c.ox+c.lx*(c.sc+u)+c.ix*w,c.y+h,c.oz+c.lz*(c.sc+u)+c.iz*w];
   const tri=(a,b,d,hex,f)=>{cc.set(hex).multiplyScalar(f*(.93+r()*.14));pos.push(...a,...b,...d);for(let q=0;q<3;q++)col.push(cc.r,cc.g,cc.b);};
-  const N=11,arch=[];for(let q=0;q<N;q++){const t=Math.PI*(1-q/(N-1)),cs=Math.cos(t),sn=Math.sin(t);let u=c.hw*Math.sign(cs)*Math.pow(Math.abs(cs),.55),h=c.ah*Math.pow(Math.abs(sn),.45);
-   if(q>0&&q<N-1){u+=(r()-.5)*.45;h+=(r()-.5)*.35;}arch.push([u,h]);}
+  const N=11,arch=[];for(let q=0;q<N;q++){const t=Math.PI*(1-q/(N-1)),cs=Math.cos(t),sn=Math.sin(t);let h=c.ah*Math.pow(Math.abs(sn),c.pe),u=c.hw*Math.sign(cs)*Math.pow(Math.abs(cs),.55)+c.sk*h/c.ah;
+   if(q>0&&q<N-1){u+=(r()-.5)*.7;h+=(r()-.5)*.6;}arch.push([u,h]);}
   // facade: planar cliff band with the cave mouth notched out (edges match the terrain band exactly)
   const C3=3*CELL,cont=[new THREE.Vector2(-c.sc,0)];arch.forEach(a=>cont.push(new THREE.Vector2(a[0],a[1])));cont.push(new THREE.Vector2(C3-c.sc,0),new THREE.Vector2(C3-c.sc,c.H),new THREE.Vector2(-c.sc,c.H));
   const fp=v2=>W(v2.x,v2.y,v2.y/c.H*CELL);
   THREE.ShapeUtils.triangulateShape(cont,[]).forEach(f=>tri(fp(cont[f[0]]),fp(cont[f[1]]),fp(cont[f[2]]),'#5f5c56',1));
   // tunnel rings
-  const rings=[arch.map(a=>W(a[0],a[1],a[1]/c.H*CELL))],WS=[2.1,3.9,5.7,7.5,9.3,c.L];
-  WS.forEach((w0,n)=>{const fw=.95+r()*.25,fh=.95+r()*.28;rings.push(arch.map((a,q)=>{const foot=q===0||q===N-1;return W(a[0]*fw+(r()-.5)*.4,foot?-.15:a[1]*fh+(r()-.5)*.3,w0+(n?(r()-.5)*.5:(r()-.5)*.2));}));});
+  const rings=[arch.map(a=>W(a[0],a[1],a[1]/c.H*CELL))],w1=Math.max(2.1,(c.ah+.8)/c.H*CELL+.3),WS=[w1,w1+(c.L-w1)*.2,w1+(c.L-w1)*.4,w1+(c.L-w1)*.6,w1+(c.L-w1)*.8,c.L];
+  WS.forEach((w0,n)=>{const fw=n?c.ws[n]:1,fh=n?.9+r()*.35:.92,sh=(r()-.5)*.8;rings.push(arch.map((a,q)=>{const foot=q===0||q===N-1;return W(a[0]*fw+sh+(r()-.5)*.6,foot?-.15:a[1]*fh+(r()-.5)*.5,w0+(n?(r()-.5)*.5:(r()-.5)*.2));}));});
   for(let n=0;n<rings.length-1;n++){const f=1-n/rings.length*.5;for(let q=0;q<N-1;q++){tri(rings[n][q],rings[n+1][q],rings[n][q+1],'#56524b',f);tri(rings[n][q+1],rings[n+1][q],rings[n+1][q+1],'#56524b',f);}}
   const end=W((r()-.5)*.6,c.ah*.45,c.L+1.4),lr=rings[rings.length-1];for(let q=0;q<N-1;q++)tri(lr[q],end,lr[q+1],'#4a463f',.5);tri(lr[N-1],end,lr[0],'#4a463f',.5);
   // floor
-  const fw=c.hw*1.3+.4,steps=6;for(let n=0;n<steps;n++){const w0=n/steps*(c.L+1.4),w1=(n+1)/steps*(c.L+1.4),f=1-n/steps*.4;
+  const fw=c.hw*1.5+.9,steps=6;for(let n=0;n<steps;n++){const w0=n/steps*(c.L+1.4),w1=(n+1)/steps*(c.L+1.4),f=1-n/steps*.4;
    const a=W(-fw,.02,w0),b=W(fw,.02,w0),d=W(-fw,.02,w1),e=W(fw,.02,w1);tri(a,d,b,'#5e5446',f);tri(b,d,e,'#5e5446',f);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(col),3));g.computeVertexNormals();
   const m=new THREE.Mesh(g,MATV);m.castShadow=true;m.receiveShadow=true;scene.add(m);});}
@@ -535,17 +542,17 @@ function genCaves(){caves=[];const cr=mulberry32(SEED+777),D=[[1,0],[-1,0],[0,1]
   if(!best||bv<6)continue;const[di,dj]=best,li=-dj,lj=di;
   const fr=rawHeight(x-di*CELL*1.5,z-dj*CELL*1.5);if(fr<1||fr>h0+1)continue;
   const i0=i-li,j0=j-lj,ox=-HALF+i0*CELL,oz=-HALF+j0*CELL,sc=1.5*CELL;
-  const c={i0,j0,ix:di,iz:dj,lx:li,lz:lj,ox,oz,sc,y:h0,H:7,hw:2.2,ah:3.4,L:10.8};
+  const c={i0,j0,ix:di,iz:dj,lx:li,lz:lj,ox,oz,sc,y:h0,H:7,hw:1.9+cr()*.7,ah:3+cr()*1.1,L:8.5+cr()*3.5,sk:(cr()-.5)*1.2,pe:.35+cr()*.35,ws:[0,1,2,3,4,5,6].map(()=>.75+cr()*.55)};
   c.x=ox+li*sc;c.z=oz+lj*sc;c.cx=c.x+di*5;c.cz=c.z+dj*5;
   if(ponds.some(p=>Math.hypot(p.x-c.cx,p.z-c.cz)<p.r+22)||caves.some(o=>Math.hypot(o.cx-c.cx,o.cz-c.cz)<70))continue;caves.push(c);}}
 function veinAt(x,z){for(const v of veins)if(Math.hypot(x-v.x,z-v.z)<v.r)return v.t;return null;}
 function genVeins(){veins=[];[['copper',6,5,26],['tin',4,11,60],['iron',4,16,60]].forEach(([t,n,lo,hi])=>{let k=0,tr=0;while(k<n&&tr<3000){tr++;const x=(rng()*2-1)*170,z=(rng()*2-1)*170;const h=terrainH(x,z);if(h<lo||h>hi||inPond(x,z,10))continue;if(veins.some(v=>Math.hypot(v.x-x,v.z-z)<35))continue;veins.push({t,x,z,r:15+rng()*8});k++;}});}
 function buildTerrain(){
  heights=new Float32Array((SEG+1)*(SEG+1));ponds=[];let tries=0;
- while(ponds.length<4&&tries<5000){tries++;const x=(rng()*2-1)*150,z=(rng()*2-1)*150;const h=rawHeight(x,z);if(h<4||h>13)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<70))continue;ponds.push({x,z,r:6.5+rng()*3.5,level:h-.5});}
+ while(ponds.length<4&&tries<5000){tries++;const x=(rng()*2-1)*150,z=(rng()*2-1)*150;const h=rawHeight(x,z);if(h<4||h>13)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<70))continue;{const kr=mulberry32(SEED+31*ponds.length+5);var pk=[.12+kr()*.14,kr()*6.28,.08+kr()*.1,kr()*6.28,.04+kr()*.05,kr()*6.28];}ponds.push({x,z,k:pk,r:6.5+rng()*3.5,level:h-.5});}
  genCaves();
  for(let j=0;j<=SEG;j++)for(let i=0;i<=SEG;i++){const x=-HALF+i*CELL,z=-HALF+j*CELL;let h=rawHeight(x,z);
-  for(const p of ponds){const d=Math.hypot(x-p.x,z-p.z);if(d<p.r)h=p.level-.15-2.4*(1-(d/p.r)**2);else if(d<p.r*1.7){const t=(d-p.r)/(p.r*.7),s=t*t*(3-2*t);h=(p.level+.25)*(1-s)+h*s;}}
+  for(const p of ponds){const d=Math.hypot(x-p.x,z-p.z),pr=pondR(p,x,z);if(d<pr)h=p.level-.15-2.4*(1-(d/pr)**2);else if(d<pr*1.7){const t=(d-pr)/(pr*.7),s=t*t*(3-2*t);h=(p.level+.25)*(1-s)+h*s;}}
   for(const c of caves)h=caveHeight(c,i,j,h);
   heights[j*(SEG+1)+i]=h;}
  genVeins();
@@ -573,7 +580,7 @@ function buildWater(){
   col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;}
  seaGeo.setAttribute('color',new THREE.BufferAttribute(col,3));
  const sea=new THREE.Mesh(seaGeo,new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,transparent:true,opacity:.82,shininess:90,specular:0x6688aa}));sea.position.y=-.05;sea.receiveShadow=true;scene.add(sea);
- ponds.forEach(p=>{const g=new THREE.CircleGeometry(p.r+.35,18);g.rotateX(-Math.PI/2);const m=new THREE.Mesh(g,new THREE.MeshPhongMaterial({color:0x2c6e70,flatShading:true,transparent:true,opacity:.85,shininess:80}));m.position.set(p.x,p.level,p.z);scene.add(m);});
+ ponds.forEach(p=>{const sh=new THREE.Shape();for(let k=0;k<48;k++){const a=k/48*6.2832,r=pondRa(p,a)+.35;if(k)sh.lineTo(Math.cos(a)*r,-Math.sin(a)*r);else sh.moveTo(Math.cos(a)*r,-Math.sin(a)*r);}const g=new THREE.ShapeGeometry(sh);g.rotateX(-Math.PI/2);const m=new THREE.Mesh(g,new THREE.MeshPhongMaterial({color:0x2c6e70,flatShading:true,side:THREE.DoubleSide,transparent:true,opacity:.85,shininess:80}));m.position.set(p.x,p.level,p.z);scene.add(m);});
  for(let k=0;k<26;k++){const c=new THREE.Mesh(GEO.cloud,new THREE.MeshLambertMaterial({vertexColors:true,emissive:0x404850,fog:false}));c.position.set((rng()*2-1)*320,80+rng()*30,(rng()*2-1)*320);c.rotation.y=rng()*6;c.scale.setScalar(.9+rng()*1.1);scene.add(c);clouds.push(c);}}
 
 // sky dome
@@ -605,7 +612,7 @@ function genEntities(){
  for(let gx=-62;gx<62;gx++)for(let gz=-62;gz<62;gz++){const x=gx*CS+(rng()-.5)*CS*.9,z=gz*CS+(rng()-.5)*CS*.9;const h=terrainH(x,z);if(h<.6||inPond(x,z,1.6))continue;const ny=normalY(x,z);
   if(h<2.2){const p=rng();if(p<.08)push('adan',x,z,.8+rng()*.4);else if(p<.12)push('biro',x,z,.85+rng()*.3);else if(p<.135)push('sotetsu',x,z);continue;}
   if(ny<.7){if(rng()<.09)push('sotetsu',x,z);continue;}
-  if(h>3&&h<20&&ny>.78&&fbm(x*.02+500,z*.02-300,3)>.6){if(rng()<.8)push('take',x,z,.85+rng()*.3);continue;}
+  if(h>3&&h<20&&ny>.78&&fbm(x*.02+500,z*.02-300,3)>.6){if(rng()<.8)push('take',x,z,.85+rng()*.3);else if(rng()<.22)push('takenoko',x,z,.9+rng()*.3);continue;}
   const f=forestAt(x,z)*(h>26?.55:1);
   if(rng()<f*.85+.07){const q=rng();let t;
    if(h<5)t=q<.3?'biro':q<.5?'adan':q<.75?'gajumaru':'matsu';else if(h>20)t=q<.45?'matsu':q<.82?'shii':'tabu';else t=q<.42?'shii':q<.66?'tabu':q<.76?'gajumaru':q<.9?'hego':'matsu';
@@ -616,7 +623,7 @@ function genEntities(){
  veins.forEach(v=>{for(let k=0;k<5;k++){const a=rng()*6.283,d=rng()*v.r*.7;const x=v.x+Math.cos(a)*d,z=v.z+Math.sin(a)*d;if(terrainH(x,z)>1)push('outcrop',x,z,.8+rng()*.4);}});
  sc('stick',260,(h)=>h>1&&h<22);sc('stone',170,(h)=>h>.5&&h<30);sc('chert',70,(h)=>h>.4&&h<3);sc('chert',50,(h,ny)=>h>3&&ny<.9);
  const sa=[SPAWN.x,SPAWN.z,24];sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
- ponds.forEach(p=>{for(let k=0;k<8;k++){const a=k/8*6.283+rng()*.4,r=p.r+1.6+rng()*2.2;push('clay',p.x+Math.cos(a)*r,p.z+Math.sin(a)*r,1);}});
+ ponds.forEach(p=>{for(let k=0;k<8;k++){const a=k/8*6.283+rng()*.4,r=pondRa(p,a)+1.6+rng()*2.2;push('clay',p.x+Math.cos(a)*r,p.z+Math.sin(a)*r,1);}});
  // build instanced meshes
  const groups={};L.forEach(e=>{const ck=Math.floor(e.x/ECS)+','+Math.floor(e.z/ECS);e.ck=ck;(groups[e.t+e.v+'|'+ck]=groups[e.t+e.v+'|'+ck]||[]).push(e);});
  for(const gkey in groups){const G=groups[gkey];const key=gkey.split('|')[0];const t=G[0].t;const d=ED[t];const veg=d.k==='tree'||d.k==='bush'||d.k==='fiber';
@@ -790,7 +797,7 @@ function descItem(id){const d=I[id];const L=[];
  if(d.knife)L.push('手に持って獲物の死体を解体できる');if(d.dur&&!d.light)L.push('耐久 '+d.dur);if(d.light)L.push('手に持つと明るい（約4分で燃え尽きる）');
  if(d.armor)L.push('防具欄に入れると雨や水濡れで体が冷えにくい');if(d.place)L.push('手持ちに入れて左クリックで設置');
  if(UPG[id])L.push(`持ち物の枠が ${UPG[id].w}×${UPG[id].h} に広がる`);
- if(id==='bamboo')L.push('燃料や竹槍の材料になる');if(id==='pot_empty')L.push('水辺で F を押すと水を汲める／雨の中で手に持つと雨水が溜まる');if(id==='pot_fresh')L.push('右クリックで飲む（水分 +40）');if(id==='pot_salt')L.push('焚き火で煮沸すると真水になる');
+ if(id==='bamboo')L.push('燃料や竹槍の材料になる');if(id==='sasa')L.push('燃料や寝床の材料になる');if(id==='takenoko')L.push('生はえぐい。焚き火で焼こう');if(id==='pot_empty')L.push('水辺で F を押すと水を汲める／雨の中で手に持つと雨水が溜まる');if(id==='pot_fresh')L.push('右クリックで飲む（水分 +40）');if(id==='pot_salt')L.push('焚き火で煮沸すると真水になる');
  if(FUEL[id])L.push(`燃料 ${FUEL[id]}秒`);if(id==='bone_needle')L.push('蓑や背負い袋を縫うのに使う（消費しない）');if(KQ[id])L.push(`解体の収量 ${Math.round(KQ[id]*100)}%`);
  if(id==='canoe')L.push('これを作れば島を脱出できる');const s=SZ(id);L.push(`大きさ ${s[0]}×${s[1]}`);return L.join(' ／ ');}
 $('#recipes').addEventListener('click',e=>{const r=e.target.closest('.rec');if(!r)return;selRec=+r.dataset.r;renderCraft();});
@@ -938,7 +945,7 @@ function targetInfo(){const t=aim.t;
  if(!t){if(aim.water){const s=held();return[aim.water.fresh?'湧き水の池（真水）':'海（海水）',s&&s.id==='pot_empty'?'F: 壺に水を汲む':(aim.water.fresh?'F: 水を飲む':'F: 飲む（危険）')];}
   if(aim.rockFace){const v=veinAt(aim.ground.x,aim.ground.z);return['岩肌',heldTool('rock')?'左クリック: 採掘':'つるはしで掘れる',v?VEIN[v].hint:''];}return null;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
-  if(d.k==='tree'){let s=heldTool('tree')>=10?'左クリック: 伐採':'左クリック: 枝を採る（斧で伐採できる）';if(d.fruit)s=(e.fruit?'F: 実を採る ／ ':'')+s;return[d.n,s];}
+  if(d.k==='tree'){let s=heldTool('tree')>=10?'左クリック: 伐採':(d.leaf?'左クリック: 笹を採る（斧で根元から伐ると竹が取れる）':'左クリック: 枝を採る（斧で伐採できる）');if(d.fruit)s=(e.fruit?'F: 実を採る ／ ':'')+s;return[d.n,s];}
   if(d.k==='rock'){const tier=heldTool('tier');return[d.n,!heldTool('rock')?'つるはしで掘れる':'左クリック: 採掘',e.vein?VEIN[e.vein].hint:''];}
   if(d.k==='bush')return[d.n,e.fruit?'F: 実を摘む':'実は再生待ち'];
   if(d.k==='fiber')return[d.n,'F: 繊維を採る'];if(d.k==='pick')return[d.n,'F: 拾う'];if(d.k==='clay')return[d.n,'F: 粘土を掘る'];}
@@ -974,7 +981,7 @@ function consume(){const s=held();if(!s)return false;const d=I[s.id];if(!(d.food
  const slot=sel;startAction(d.food?`${d.n}を食べている`:'水を飲んでいる',cheat?.3:(d.food?1.6:2),()=>{if(hot[slot]!==s)return;consumeNow(slot);},'play');return true;}
 function consumeNow(slot){const s=hot[slot];if(!s)return;const d=I[s.id];
  if(d.food){sfx('eat');pl.food=Math.min(100,pl.food+d.food.h);pl.water=clamp(pl.water+d.food.w,0,100);
-  if(d.food.sick&&Math.random()<d.food.sick){pl.sick=25;msg('お腹の調子が悪い…（生肉は焼こう）','bad');}s.n--;if(!s.n)hot[slot]=null;invDirty=true;return true;}
+  if(d.food.sick&&Math.random()<d.food.sick){pl.sick=25;msg(s.id==='raw_meat'?'お腹の調子が悪い…（生肉は焼こう）':'えぐみでお腹を壊した…（焼いて食べよう）','bad');}s.n--;if(!s.n)hot[slot]=null;invDirty=true;return true;}
  if(s.id==='pot_fresh'){sfx('drink');pl.water=Math.min(100,pl.water+40);hot[slot]={id:'pot_empty',n:1};msg('真水を飲んだ');invDirty=true;return true;}
  if(s.id==='pot_salt'){msg('海水は飲めない。焚き火で煮沸しよう','bad');return true;}return false;}
 function primaryClick(){const s=held();if(!s)return;const d=I[s.id];if(d.food||d.pot){if(d.pot&&aim.water)interact();else consume();mouseL=false;return;}if(d.place){tryPlace();mouseL=false;}}
@@ -986,9 +993,9 @@ function doHit(){const t=aim.t;
  if(!t){if(aim.rockFace){if(!heldTool('rock')){msg('岩肌を掘るにはつるはしが必要');return;}useDur();sfx('mine');mineYield(veinAt(aim.ground.x,aim.ground.z),false);}return;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
   if(d.k==='tree'){const dmg=heldTool('tree');
-   if(dmg>=10){e.hp-=dmg;useDur();sfx('chop');if(Math.random()<.25)addItem('stick',1);shake(e);
-    if(e.hp<=0){addItem(d.wood||'log',d.logs[0]+Math.floor(Math.random()*(d.logs[1]-d.logs[0]+1)));addItem('stick',1+Math.floor(Math.random()*3));if(d.fib)addItem('fiber',d.fib);killEnt(e);e.hp=d.hp;sfx('fall');msg(d.n+'を切り倒した');}}
-   else{if(dmg)useDur();sfx('chop');shake(e);if(Math.random()<.3)addItem('stick',1);}return;}
+   if(dmg>=10){e.hp-=dmg;useDur();sfx('chop');if(Math.random()<.25)addItem(d.leaf||'stick',1);shake(e);
+    if(e.hp<=0){addItem(d.wood||'log',d.logs[0]+Math.floor(Math.random()*(d.logs[1]-d.logs[0]+1)));addItem(d.leaf||'stick',d.leaf?2+Math.floor(Math.random()*3):1+Math.floor(Math.random()*3));if(d.fib)addItem('fiber',d.fib);killEnt(e);e.hp=d.hp;sfx('fall');msg(d.n+'を切り倒した');}}
+   else{if(dmg)useDur();sfx('chop');shake(e);if(Math.random()<.3)addItem(d.leaf||'stick',1);}return;}
   if(d.k==='rock'){if(!heldTool('rock')){msg('岩を掘るにはつるはしが必要');return;}e.hp-=heldTool('rock');useDur();sfx('mine');shake(e);mineYield(e.vein,true);
    if(e.hp<=0){addItem('stone',2);killEnt(e);e.hp=d.hp;msg(d.n+'を砕いた');}return;}
   if(d.k==='bush'||d.k==='fiber'){shake(e);return;}}
@@ -1034,7 +1041,7 @@ function collide(nx,nz,feet){const Rr=.35;
   for(const b of s.boxes){if(feet>=b.y1-.05||feet+(pl.crouch?1.2:1.75)<=b.y0)continue;const cx=clamp(nx,b.x0,b.x1),cz=clamp(nz,b.z0,b.z1);const dx=nx-cx,dz=nz-cz;const d2=dx*dx+dz*dz;
    if(d2<Rr*Rr){if(d2>1e-8){const d=Math.sqrt(d2);nx=cx+dx/d*Rr;nz=cz+dz/d*Rr;}else{const o=[nx-b.x0,b.x1-nx,nz-b.z0,b.z1-nz];const m=Math.min(...o);if(m===o[0])nx=b.x0-Rr;else if(m===o[1])nx=b.x1+Rr;else if(m===o[2])nz=b.z0-Rr;else nz=b.z1+Rr;}}}}
  for(const c of caves){if(feet>c.y+2.6||!inTunnel(c,pl.x,pl.z,0))continue;const[u,v]=caveLoc(c,nx,nz);if(v<.5)continue;
-  const lim=c.hw-.45,cu=clamp(u,-lim,lim),cv=Math.min(v,c.L-.2);if(cu!==u||cv!==v){nx=c.ox+c.lx*(c.sc+cu)+c.ix*cv;nz=c.oz+c.lz*(c.sc+cu)+c.iz*cv;}}
+  const lim=c.hw*Math.min(...c.ws.slice(1))-.7,cu=clamp(u,-lim,lim),cv=Math.min(v,c.L-.2);if(cu!==u||cv!==v){nx=c.ox+c.lx*(c.sc+cu)+c.ix*cv;nz=c.oz+c.lz*(c.sc+cu)+c.iz*cv;}}
  const r=Math.hypot(nx,nz);if(r>235){nx*=235/r;nz*=235/r;}return[nx,nz];}
 const ROCKT={rock:.95,shore:.6,outcrop:1.5},STTOP={campfire:.25,workbench:.99,box:.72,anvil:.86,bloomery:2.25,kiln:1.1};
 function rockSurf(e,x,z){const Rs=e.r+.3,d=Math.hypot(x-e.x,z-e.z);if(d>=Rs)return null;return e.y+ROCKT[e.t]*e.s*Math.sqrt(1-(d/Rs)**2);}
@@ -1162,7 +1169,8 @@ function buildMap(){try{const c=document.createElement('canvas');c.width=c.heigh
   if(h>0)col.multiplyScalar(clamp(1+(h-terrainH(wx-1.7,wz-1.7))*.12,.7,1.3));
   const i=(y*MAPN+x)*4;im.data[i]=clamp(col.r*255,0,255);im.data[i+1]=clamp(col.g*255,0,255);im.data[i+2]=clamp(col.b*255,0,255);im.data[i+3]=255;}
  g.putImageData(im,0,0);mapBase=c;}catch(e){}}
-function mapMarks(g,toX,toY,sc){for(const c of caves){g.fillStyle='#2a2420';g.strokeStyle='#e8d8b0';g.lineWidth=1;g.beginPath();g.arc(toX(c.x),toY(c.z),4.5*sc,0,Math.PI*2);g.closePath();g.fill();g.stroke();}
+function mapMarks(g,toX,toY,sc){for(const c of caves){const P_=(u,w)=>[toX(c.ox+c.lx*(c.sc+u)+c.ix*w),toY(c.oz+c.lz*(c.sc+u)+c.iz*w)],pts=[];for(let n=0;n<=6;n++){const w=n/6*(c.L+1),f=c.ws[n]||1;pts.push(P_(-c.hw*f-1,w));}for(let n=6;n>=0;n--){const w=n/6*(c.L+1),f=c.ws[(n+3)%7]||1;pts.push(P_(c.hw*f+1,w));}
+  g.fillStyle='rgba(30,24,20,.85)';g.strokeStyle='#e8d8b0';g.lineWidth=1;g.beginPath();pts.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]));g.closePath();g.fill();g.stroke();}
  g.fillStyle='#f0d8a0';for(const s of structs){if(s.t==='drop'||SD[s.t].build)continue;g.fillRect(toX(s.x)-2*sc,toY(s.z)-2*sc,4*sc,4*sc);}
  const fx={};structs.forEach(s=>{if(s.t==='foundation'){g.fillStyle='rgba(201,164,106,.8)';g.fillRect(toX(s.x-1.5),toY(s.z-1.5),Math.max(1,toX(s.x+1.5)-toX(s.x-1.5)),Math.max(1,toY(s.z+1.5)-toY(s.z-1.5)));}});
  if(spawnBed){g.fillStyle='#ffe070';g.font=`${12*sc}px sans-serif`;g.textAlign='center';g.textBaseline='middle';g.fillText('★',toX(spawnBed.x),toY(spawnBed.z));}
@@ -1174,7 +1182,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:4,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:5,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1257,9 +1265,9 @@ function startGame(data){auInit();$('#loading').style.display='block';
  for(let a=-10;a<10;a++)for(let b=-10;b<10;b++)DEC.set(a+','+b,buildDecor(a,b));updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===4)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===5)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===4&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===5&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
