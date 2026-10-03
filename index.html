@@ -661,7 +661,7 @@ function buildSky(){skyGeo=new THREE.SphereGeometry(500,32,16);skyGeo.setAttribu
  sunDisc=new THREE.Mesh(new THREE.CircleGeometry(14,20),new THREE.MeshBasicMaterial({color:0xfff4d8,fog:false,transparent:true,depthWrite:false}));sunDisc.renderOrder=-1;scene.add(sunDisc);
  const sp=new Float32Array(900*3);const r=mulberry32(5);for(let i=0;i<900;i++){const a=r()*6.283,y=r()*.9+.08,rr=Math.sqrt(1-y*y);sp[i*3]=Math.cos(a)*rr*480;sp[i*3+1]=y*480;sp[i*3+2]=Math.sin(a)*rr*480;}
  const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(sp,3));stars=new THREE.Points(sg,new THREE.PointsMaterial({color:0xffffff,size:1.4,sizeAttenuation:false,fog:false,transparent:true,depthWrite:false}));stars.renderOrder=-1;scene.add(stars);}
-const SKYK=[[0,'#03060d','#0e1626'],[4.5,'#070c18','#1a2236'],[6,'#3a5a8a','#f0a070'],[7.5,'#3b82cf','#bfe2f2'],[17,'#3b82cf','#bfe2f2'],[18.5,'#34508a','#f08a50'],[20,'#0a1020','#1a2034'],[24,'#03060d','#0e1626']].map(a=>[a[0],new THREE.Color(a[1]),new THREE.Color(a[2])]);
+const SKYK=[[0,'#010205','#04070c'],[4.5,'#03050b','#0a0e18'],[6,'#3a5a8a','#f0a070'],[7.5,'#3b82cf','#bfe2f2'],[17,'#3b82cf','#bfe2f2'],[18.5,'#34508a','#f08a50'],[20,'#05080f','#0c1018'],[24,'#010205','#04070c']].map(a=>[a[0],new THREE.Color(a[1]),new THREE.Color(a[2])]);
 const skyTop=new THREE.Color(),skyHor=new THREE.Color(),RAINT=new THREE.Color('#5c6670'),RAINH=new THREE.Color('#8a949c');
 function skyCols(h,rain){for(let k=0;k<SKYK.length-1;k++){if(h>=SKYK[k][0]&&h<=SKYK[k+1][0]){const t=(h-SKYK[k][0])/(SKYK[k+1][0]-SKYK[k][0]);skyTop.copy(SKYK[k][1]).lerp(SKYK[k+1][1],t);skyHor.copy(SKYK[k][2]).lerp(SKYK[k+1][2],t);break;}}
  const dl=daylight(h);if(rain>0){skyTop.lerp(tmpCol.copy(RAINT).multiplyScalar(.25+.75*dl),rain*.75);skyHor.lerp(tmpCol.copy(RAINH).multiplyScalar(.25+.75*dl),rain*.75);}}
@@ -1432,8 +1432,8 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  scene.fog.color.copy(skyHor);scene.fog.far=(90+80*dl)*(1-weather.dark*.45-weather.storm*.15);scene.fog.near=15+25*dl*(1-weather.dark*.5);
  const lightDir=sunDir.y>0?sunDir:tmpV.set(-sunDir.x,-sunDir.y*.8+.2,sunDir.z).normalize();
  sun.position.set(pl.x+lightDir.x*150,lightDir.y*150,pl.z+lightDir.z*150);sun.target.position.set(pl.x,pl.y,pl.z);
- sun.intensity=(sunDir.y>0?1.05*dl+.05:.12)*(1-weather.dark*.7);sun.color.setHex(sunDir.y>0?0xfff0d8:0x8aa0d0);
- hemi.intensity=(.12+.5*dl)*(1-weather.dark*.3)+weather.flash*1.6;amb.intensity=.16;
+ sun.intensity=(sunDir.y>0?1.05*dl+.05:.035)*(1-weather.dark*.7);sun.color.setHex(sunDir.y>0?0xfff0d8:0x8aa0d0);
+ hemi.intensity=(.025+.6*dl)*(1-weather.dark*.3)+weather.flash*1.6;amb.intensity=.025+.14*dl;
  const pa=seaGeo.attributes.position.array;for(let i=0;i<pa.length;i+=3)pa[i+1]=seaBase[i+1]+Math.sin(seaBase[i]*.08+elapsed*1.2)*(.1+weather.rain*.1+weather.storm*.35)+Math.cos(seaBase[i+2]*.1+elapsed*.9)*.08;seaGeo.attributes.position.needsUpdate=true;
  for(const c of clouds){c.position.x+=dt*1.2;if(c.position.x>660)c.position.x=-660;c.material.emissive.setScalar(.15+.25*dl*(1-weather.dark));c.material.color.setScalar(1-weather.dark*.55);c.position.x+=dt*weather.storm*6;}
  for(let k=shakes.length-1;k>=0;k--){const s=shakes[k];s.t-=dt;const e=s.e;if(s.t<=0||!e.alive){if(e.alive)setEntVisible(e,true);shakes.splice(k,1);continue;}
