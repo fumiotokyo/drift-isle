@@ -271,7 +271,7 @@ const ED={
 for(const k in ED)if(ED[k].k==='tree'||ED[k].k==='rock')ED[k].hp*=5;
 const VN={tsubaki:3,sakura:3,sharinbai:2,driftwood:2,pebble:1,takenoko:1,take:2,shii:3,tabu:3,gajumaru:2,matsu:3,biro:3,hego:2,adan:2,sotetsu:2,ichigo:2,karamushi:2,rock:3,shore:2,outcrop:3,stick:1,stone:1,chert:1,clay:1};
 const VEIN={copper:{n:'孔雀石',ore:'copper_ore',need:1,hint:'岩肌に緑青色の染みが見える'},tin:{n:'錫石',ore:'tin_ore',need:2,hint:'黒褐色の重い粒が混じっている'},iron:{n:'赤鉄鉱',ore:'iron_ore',need:3,hint:'赤錆色の岩肌だ'}};
-const AD={goat:{n:'ノヤギ',hp:40,spd:6.8,meat:2,hide:1,scare:13},boar:{n:'リュウキュウイノシシ',hp:70,spd:7.2,meat:4,hide:2,scare:11}};
+const AD={goat:{n:'ノヤギ',hp:40,spd:8.2,tired:6.2,meat:2,hide:1,scare:42},boar:{n:'リュウキュウイノシシ',hp:70,spd:7.8,tired:6,meat:4,hide:2,scare:36}};
 const TIERN=['','石','銅','青銅','鉄'];
 
 // ================= Pixel icons =================
@@ -919,7 +919,7 @@ function renderStation(){const s=openCont,st=s.st;if(!st)return;
  h+=`<div class="lbl">加工できる物</div><div style="font-size:12px;line-height:1.7;max-width:260px">${Object.entries(PROC[s.t]).map(([a,q])=>`${I[a].n} → ${I[q[0]].n}（${q[1]}秒${q[2]?'・るつぼが必要':''}）`).join('<br>')}</div>`;
  $('#stBody').innerHTML=h;}
 $('#contP').addEventListener('click',e=>{if(e.target.id!=='litBtn')return;const st=openCont&&openCont.st;if(!st)return;
- if(st.lit)st.lit=false;else{const f=st.fuel[0];if(st.burn>0||(f&&fuelOK(openCont.t,f.id))){st.lit=true;sfx('ignite');}else msg('燃料を入れてから点火しよう','bad');}renderStation();renderCraft();});
+ if(st.lit)st.lit=false;else{const f=st.fuel[0];if(rainyAt(openCont.x,openCont.z))msg('雨で火がつかない（シェルターの中なら点けられる）','bad');else if(st.burn>0||(f&&fuelOK(openCont.t,f.id))){st.lit=true;sfx('ignite');}else msg('燃料を入れてから点火しよう','bad');}renderStation();renderCraft();});
 $('#spawnP').addEventListener('click',e=>{const d=e.target.closest('[data-sp]');if(!d)return;const id=d.dataset.sp;addItem(id,STK(id));renderInv();});
 let selRec=null;
 function calcStations(){}
@@ -1036,7 +1036,7 @@ addEventListener('mouseup',e=>{if(!drag)return;const el=document.elementFromPoin
  else returnDrag();
  for(const h of hot)if(h&&h.d===undefined)delete h.d;
  drag=null;ghostEl.style.display='none';invDirty=true;renderInv();});
-function openInv(cont){if(state!=='play')return;if(action)cancelAction('インベントリを開いた');for(const k in keys)keys[k]=false;mouseL=false;state='inv';openCont=cont||null;selRec=null;sfx('ui');$('#inv').classList.add('on');document.exitPointerLock&&document.exitPointerLock();renderInv();}
+function openInv(cont){if(state!=='play')return;if(action&&action.ctx==='play'&&!action.anim)cancelAction('インベントリを開いた');for(const k in keys)keys[k]=false;mouseL=false;state='inv';openCont=cont||null;selRec=null;sfx('ui');$('#inv').classList.add('on');document.exitPointerLock&&document.exitPointerLock();renderInv();}
 function closeInv(byEsc){if(state!=='inv')return;hideCtx();if(action&&action.ctx==='inv')cancelAction('インベントリを閉じた');if(drag){returnDrag();drag=null;ghostEl.style.display='none';}
  if(openCont&&openCont.t==='drop'&&!openCont.cont.items.length)removeStruct(openCont);
  sfx('ui');$('#inv').classList.remove('on');tipEl.style.display='none';openCont=null;state='play';invDirty=true;if(!byEsc)lock(false);}
@@ -1117,7 +1117,7 @@ function targetInfo(){const t=aim.t;if(t&&t.kind==='gitem')return[I[t.o.id].n+(t
  if(t.kind==='animal')return[AD[t.o.t].n,'左クリック: 攻撃'];
  if(t.kind==='carcass'){const h=held();return[AD[t.o.t].n+'の死体',h&&KQ[h.id]?'F / 左クリック: 解体（ナイフが上質なほど多く取れる。斧は取れる量が少ない）':'ナイフか斧を手に持つと解体できる'];}
  if(t.kind==='struct'){const s=t.o,d=SD[s.t];if(s.t==='drop')return[d.n,'F: 中身を見る ／ Z: すべて拾う'];if(s.t==='box')return[d.n,'F: 開く ／ Z: 解体'];
-  if(s.t==='bed'||shelterDone(s))return[d.n,'F: 眠る・復活地点にする ／ Z: 解体'];if(s.t==='shelter')return s.cont.sticks<SHELTER_N?[d.n+'（骨組み）',`F: 枝を立てかける（${s.cont.sticks}/${SHELTER_N}・枝 ${countItem('stick')}本所持）／ Z: 解体`]:[d.n+'（屋根なし）',`F: 葉を葺く（${s.cont.leaves}/${SHELTER_L}・葉 ${countItem('leaf')}枚所持）／ Z: 解体`];if(d.station)return[d.n,'F: クラフトを開く ／ Z: 解体'];return[d.n,'Z: 解体'];}
+  if(s.t==='bed')return[d.n,'F: 眠る・復活地点にする ／ Z: 解体'];if(shelterDone(s))return[d.n,'中に寝床を置ける ／ Z: 解体'];if(s.t==='shelter')return s.cont.sticks<SHELTER_N?[d.n+'（骨組み）',`F: 枝を立てかける（${s.cont.sticks}/${SHELTER_N}・枝 ${countItem('stick')}本所持）／ Z: 解体`]:[d.n+'（屋根なし）',`F: 葉を葺く（${s.cont.leaves}/${SHELTER_L}・葉 ${countItem('leaf')}枚所持）／ Z: 解体`];if(d.station)return[d.n,'F: クラフトを開く ／ Z: 解体'];return[d.n,'Z: 解体'];}
  return null;}
 
 // ================= Actions =================
@@ -1134,8 +1134,8 @@ function interact(){const t=aim.t;
   if(t.kind==='struct'){const s=t.o;
    if(s.t==='drop'||s.t==='box')return openInv(s);
    if(s.t==='shelter'&&!shelterDone(s)){const st=s.cont.sticks<SHELTER_N,id=st?'stick':'leaf';if(countItem(id)<1){msg(st?`枝が必要だ（あと${SHELTER_N-s.cont.sticks}本）`:`葉が必要だ（あと${SHELTER_L-s.cont.leaves}枚）`,'bad');return;}removeItem(id,1);if(st)s.cont.sticks++;else s.cont.leaves++;updShelter(s);sfx(st?'place':'cut');
-    msg(shelterDone(s)?'簡易シェルターが完成した。中で休むと体力が回復し、F で眠れる。中に寝床も置ける':st?`枝を立てかけた（${s.cont.sticks}/${SHELTER_N}）${s.cont.sticks>=SHELTER_N?' 次は葉で屋根を葺こう':''}`:`葉を葺いた（${s.cont.leaves}/${SHELTER_L}）`,shelterDone(s)?'good':'');return;}
-   if(s.t==='bed'||s.t==='shelter'){spawnBed={x:s.x,z:s.z};if(hours>=19||hours<5){if(hours>=19)day++;hours=6;pl.food=Math.max(0,pl.food-15);pl.water=Math.max(0,pl.water-20);newDay();msg('朝まで眠った。復活地点を更新','good');}else msg('復活地点に設定した（夜19時以降なら眠れる）');return;}
+    msg(shelterDone(s)?'簡易シェルターが完成した。中に寝床を置けるようになった':st?`枝を立てかけた（${s.cont.sticks}/${SHELTER_N}）${s.cont.sticks>=SHELTER_N?' 次は葉で屋根を葺こう':''}`:`葉を葺いた（${s.cont.leaves}/${SHELTER_L}）`,shelterDone(s)?'good':'');return;}
+   if(s.t==='bed'){spawnBed={x:s.x,z:s.z};if(hours>=19||hours<5){if(hours>=19)day++;hours=6;pl.food=Math.max(0,pl.food-15);pl.water=Math.max(0,pl.water-20);newDay();msg('朝まで眠った。復活地点を更新','good');}else msg('復活地点に設定した（夜19時以降なら眠れる）');return;}
    if(SD[s.t].station)return openInv(s);}return;}
  if(aim.water){const s=held();
   if(s&&s.id==='pot_empty'){hot[sel]={id:aim.water.fresh?'pot_fresh':'pot_salt',n:1};sfx('water');msg(aim.water.fresh?'真水を汲んだ':'海水を汲んだ');invDirty=true;}
@@ -1253,25 +1253,25 @@ function updatePlayer(dt){
  const hot_=pl.warm>75;pl.food-=.07*dt*(sprint?1.6:1);pl.water-=.1*dt*(sprint?1.5:1)*(hot_?1.7:1);
  let dmg=0;if(pl.food<=0)dmg+=.8;if(pl.water<=0)dmg+=1.2;if(pl.warm<18)dmg+=.6;if(pl.warm>92)dmg+=.6;if(pl.sick>0){dmg+=.3;pl.sick-=dt;}
  if(dmg){pl.hp-=dmg*dt;pl.cause=pl.water<=0?'渇き':pl.food<=0?'飢え':pl.warm<18?'低体温':pl.warm>92?'熱中症':'食あたり';}
- else if(pl.food>45&&pl.water>45&&pl.warm>25&&pl.warm<85)pl.hp+=(inShelter()?1.1:.35)*dt;
+ else if(pl.food>45&&pl.water>45&&pl.warm>25&&pl.warm<85)pl.hp+=.35*dt;
  pl.food=clamp(pl.food,0,100);pl.water=clamp(pl.water,0,100);pl.hp=Math.min(100,pl.hp);if(pl.hp<=0)die(pl.cause||'怪我');
- const h=held();if(h&&I[h.id].light){h.d-=dt*(rainHit>.5?2:1);if(h.d<=0){hot[sel]=null;msg('松明が燃え尽きた');invDirty=true;}}
+ const h=held();if(h&&I[h.id].light){if(rainHit>.35){hot[sel]={id:'stick',n:1};msg('松明の火が雨で消えた','bad');invDirty=true;}else{h.d-=dt;if(h.d<=0){hot[sel]=null;msg('松明が燃え尽きた');invDirty=true;}}}
  if(h&&h.id==='pot_empty'&&rainHit>.5){rainPot+=dt;if(rainPot>20){rainPot=0;hot[sel]={id:'pot_fresh',n:1};msg('壺に雨水が溜まった','good');invDirty=true;}}else rainPot=0;}
 function daylight(h){if(h<5||h>20)return 0;if(h<7.5)return(h-5)/2.5;if(h>17.5)return(20-h)/2.5;return 1;}
 let animTimer=0;
 function landOK(x,z){return terrainH(x,z)>=1.2&&!inPond(x,z,1.5)&&!caveAt(x,z,1)&&Math.hypot(x,z)<400;}
 function fleeDir(a,base){const O=[0,.45,-.45,.9,-.9,1.35,-1.35,1.8,-1.8,2.3,-2.3,2.8,-2.8,Math.PI];
  for(const o of O){const d=base+o;let ok=true;for(const r of[2,5,9]){if(!landOK(a.x+Math.sin(d)*r,a.z+Math.cos(d)*r)){ok=false;break;}}if(ok)return d;}return base+Math.PI;}
-function updateAnimals(dt){for(const a of animals){if(!a.alive)continue;const dx=a.x-pl.x,dz=a.z-pl.z,d=Math.hypot(dx,dz);if(d>140)continue;const ad=AD[a.t];const scare=pl.sprint?ad.scare:ad.scare*(pl.crouch?.28:.55);
- if(d<scare&&a.flee<=0)a.flee=4;let spd=0;
- if(a.flee>0){a.flee-=dt;if(a.fo==null)a.fo=(Math.random()-.5)*.7;a.rt=(a.rt||0)-dt;if(a.rt<=0||a.fdir==null){a.rt=.35;a.fdir=fleeDir(a,Math.atan2(dx,dz)+a.fo);}a.dir=a.fdir;if(a.fs>0){spd=ad.spd;a.fs-=dt;}else spd=2.2;}
+function updateAnimals(dt){for(const a of animals){if(!a.alive)continue;const dx=a.x-pl.x,dz=a.z-pl.z,d=Math.hypot(dx,dz);if(d>140)continue;const ad=AD[a.t];const scare=pl.sprint?ad.scare:ad.scare*(pl.crouch?.45:.75);
+ if(d<scare)a.flee=Math.max(a.flee,8);let spd=0;
+ if(a.flee>0){a.flee-=dt;if(a.fo==null)a.fo=(Math.random()-.5)*.7;a.rt=(a.rt||0)-dt;if(a.rt<=0||a.fdir==null){a.rt=.35;a.fdir=fleeDir(a,Math.atan2(dx,dz)+a.fo);}a.dir=a.fdir;if(a.fs>0){spd=ad.spd;a.fs-=dt;}else spd=ad.tired;}
  else{a.fo=null;a.fs=Math.min(3.5,a.fs+dt*.5);a.wt-=dt;if(a.wt<=0){a.wt=2+Math.random()*4;a.walk=Math.random()<.5;a.dir+=Math.random()*2-1;}if(a.walk)spd=1.1;}
  a.ph+=dt*(1+spd*1.4);
  if(spd){const nx=a.x+Math.sin(a.dir)*spd*dt,nz=a.z+Math.cos(a.dir)*spd*dt;const h=terrainH(nx,nz);if(h<.8||inPond(nx,nz,1)||caveAt(nx,nz,1)||Math.hypot(nx,nz)>410)a.dir+=Math.PI*.6;else{a.x=nx;a.z=nz;}}
  a.mesh.position.set(a.x,terrainH(a.x,a.z),a.z);if(a.rot==null)a.rot=a.dir;{const df=Math.atan2(Math.sin(a.dir-a.rot),Math.cos(a.dir-a.rot));a.rot+=df*Math.min(1,dt*5);}a.mesh.rotation.y=a.rot;const amp=spd?Math.min(.7,.25+spd*.07):0;
  a.legs.forEach((l,k)=>{l.rotation.x=Math.sin(a.ph*5+((k===0||k===3)?0:Math.PI))*amp;});
  if(a.hurt>0){a.hurt-=dt;a.mesh.scale.setScalar(1+a.hurt*.4);}else a.mesh.scale.setScalar(1);}
- animTimer-=dt;if(animTimer<=0){animTimer=15;for(let k=animals.length-1;k>=0;k--)if(!animals[k].alive)animals.splice(k,1);if(animals.length<60)spawnAnimal(true);}}
+ animTimer-=dt;if(animTimer<=0){animTimer=15;for(let k=animals.length-1;k>=0;k--)if(!animals[k].alive)animals.splice(k,1);if(animals.length<6)spawnAnimal(true);}}
 function newDay(){for(const c of carcasses.slice())if(c.exp<=day)removeCarcass(c);
 for(const id in removed){if(removed[id]<=day){const e=ENT[id];if(Math.hypot(e.x-pl.x,e.z-pl.z)>12){e.alive=true;e.hp=ED[e.t].hp||1;if(e.t==='clay')e.uses=4;setEntVisible(e,true);delete removed[id];}}}
  for(const id in fruitEmpty){if(fruitEmpty[id]<=day){setFruit(ENT[id],true);delete fruitEmpty[id];}}}
@@ -1283,7 +1283,9 @@ function winGame(){won=true;state='win';document.exitPointerLock&&document.exitP
 
 // stations
 let stUiT=0;
+function rainyAt(x,z){return weather.rain>.35&&!shelterAt(x,z);}
 function updateStations(dt){for(const s of structs){const st=s.st;if(!st)continue;
+ if(st.lit&&rainyAt(s.x,s.z)){st.lit=false;st.burn=0;if(Math.hypot(s.x-pl.x,s.z-pl.z)<25)msg(SD[s.t].n+'の火が雨で消えた','bad');if(openCont===s&&state==='inv')renderCraft();}
  if(st.lit){if(st.burn<=0){const f=st.fuel[0];if(f&&fuelOK(s.t,f.id)){st.burn=FUEL[f.id];f.n--;if(!f.n)st.fuel[0]=null;}else{st.lit=false;if(openCont===s&&state==='inv')renderCraft();}}
   if(st.lit){st.burn-=dt;const PR=PROC[s.t];
    st.in.forEach((it,i)=>{const q=it&&PR[it.id];if(!q||(q[2]&&!(st.tool&&st.tool[0]&&st.tool[0].id===q[2]))){st.prog[i]=0;return;}st.prog[i]+=dt;
@@ -1464,7 +1466,7 @@ function startGame(data){auInit();$('#loading').style.display='block';
   data.structs.forEach(s=>addStruct(s.t,s.x,s.y,s.z,s.rot,s.cont,s.st));(data.gitems||[]).forEach(o=>addGItem(o.id,o.n,o.d,o.x,o.z,o.c));(data.carries||[]).forEach(o=>addCarry(o.t,o.x,o.z,o.ry));if(pl.carry)setCarry(pl.carry);cheat=!!data.cheat;
   (data.carcasses||[]).forEach(c=>{const m=makeAnimal(c.t);const o={t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp,mesh:m.g,legs:m.legs,alive:true};scene.add(m.g);layCarcass(o);carcasses.push(o);});}
  else{pl.x=SPAWN.x;pl.z=SPAWN.z;pl.y=terrainH(pl.x,pl.z)+.2;pl.yaw=Math.atan2(pl.x,pl.z);msg('南の島の浜辺で目を覚ました…');msg('枝・小石・チャートを拾おう（F）');}
- for(let k=0;k<60;k++)spawnAnimal(false);
+ for(let k=0;k<6;k++)spawnAnimal(false);
  updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
