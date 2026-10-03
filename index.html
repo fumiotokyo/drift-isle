@@ -164,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v5';
+const SAVE_KEY='driftisle_save_v6';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -185,7 +185,7 @@ const GOALS=[
  '鉄の道具がそろった。作業台で外洋カヌーを作り、島を脱出しよう。'
 ];
 const I={
- stick:{n:'枝',st:20},log:{n:'丸太',st:8,sz:[2,1]},stone:{n:'石',st:20},chert:{n:'チャート（燧石）',st:20},
+ stick:{n:'枝',st:20},log:{n:'丸太',st:8,sz:[2,1],carry:1},boulder:{n:'岩',st:1,sz:[2,2],carry:1},pebble:{n:'小石',st:30},stone:{n:'石',st:20},chert:{n:'チャート（燧石）',st:20},
  fiber:{n:'苧麻の繊維',st:30},bamboo:{n:'竹',st:10,sz:[1,2]},sasa:{n:'笹',st:30},takenoko:{n:'たけのこ',st:6,food:{h:6,w:2,sick:.3}},yaki_takenoko:{n:'焼きたけのこ',st:6,food:{h:18,w:3}},cord:{n:'紐',st:20},
  berries:{n:'リュウキュウイチゴ',st:10,food:{h:6,w:4}},adan_fruit:{n:'アダンの実',st:4,food:{h:9,w:6}},
  raw_meat:{n:'生肉',st:5,food:{h:10,w:0,sick:.5}},cooked_meat:{n:'焼いた肉',st:5,food:{h:35,w:-2}},
@@ -225,13 +225,13 @@ const SD={
 const STN={'':'手作業',campfire:'焚き火',workbench:'作業台',kiln:'土窯',bloomery:'製錬炉',anvil:'金床'};
 const R=[
  {o:'cord',i:{fiber:3},e:0},{o:'stone_knife',i:{chert:2,stick:1,fiber:2},e:0},{o:'stone_axe',i:{chert:2,stick:2,cord:1},e:0},
- {o:'stone_pick',i:{stone:3,stick:2,cord:2},e:0},{o:'wood_spear',i:{stick:3,chert:1,cord:1},e:0},{o:'wood_spear',i:{bamboo:1,chert:1,cord:1},e:0},{o:'campfire',i:{stick:6,stone:5},e:0},
+ {o:'stone_pick',i:{stone:3,stick:2,cord:2},e:0},{o:'wood_spear',i:{stick:3,chert:1,cord:1},e:0},{o:'wood_spear',i:{bamboo:1,chert:1,cord:1},e:0},{o:'campfire',i:{stick:6,stone:5},e:0},{o:'campfire',i:{stick:6,pebble:12},e:0},
  {o:'bed',i:{fiber:10,stick:8},e:0},{o:'bed',i:{sasa:14,stick:8},e:0},{o:'bone_needle',i:{bone:1,chert:1},e:1},{o:'basket',i:{fiber:16,cord:4,stick:4},e:0},
  {o:'workbench',i:{log:6,stick:4,cord:2},e:1},{o:'kiln',i:{clay:10,stone:8,stick:4},e:1},
  {o:'unfired_pot',i:{clay:4},e:1},{o:'unfired_crucible',i:{clay:6},e:1},{o:'unfired_mold',i:{clay:3},e:1},{o:'bloomery',i:{brick:16,clay:6,stone:6},e:4},
  {o:'torch',i:{stick:1,fiber:2},s:'campfire',e:1},{o:'torch',i:{stick:1,fat:1},s:'campfire',e:1},
  {o:'box',i:{log:8,cord:2},s:'workbench',e:1},{o:'mino',i:{fiber:14,cord:4},t:['bone_needle'],s:'workbench',e:1},{o:'leather_pack',i:{hide:4,cord:6},t:['bone_needle'],s:'workbench',e:1},
- {o:'foundation',i:{log:6},s:'workbench',e:1},{o:'wall',i:{log:4},s:'workbench',e:1},{o:'doorway',i:{log:3},s:'workbench',e:1},{o:'ceiling',i:{log:5},s:'workbench',e:1},
+ {o:'foundation',i:{log:6},s:'workbench',e:1},{o:'foundation',i:{boulder:3},s:'workbench',e:1},{o:'wall',i:{log:4},s:'workbench',e:1},{o:'doorway',i:{log:3},s:'workbench',e:1},{o:'ceiling',i:{log:5},s:'workbench',e:1},
  {o:'canoe',i:{log:20,iron_ingot:4,cord:10,hide:4},s:'workbench',e:5},
  {o:'copper_knife',i:{copper_ingot:1,stick:1},t:['mold'],s:'kiln',e:3},{o:'copper_axe',i:{copper_ingot:2,stick:2},t:['mold'],s:'kiln',e:3},{o:'copper_pick',i:{copper_ingot:2,stick:2},t:['mold'],s:'kiln',e:3},
  {o:'bronze_ingot',q:2,i:{copper_ingot:3,tin_ore:2,charcoal:2},t:['crucible'],s:'kiln',e:3},
@@ -258,10 +258,10 @@ const ED={
  sotetsu:{n:'ソテツ',k:'tree',r:.35,hp:50,logs:[1,2],re:4},adan:{n:'アダン',k:'tree',r:.6,hp:50,logs:[1,2],re:3,fib:3,fruit:'adan_fruit',pr:1.0,ph:2.8},
  ichigo:{n:'リュウキュウイチゴ',k:'bush',fruit:'berries'},karamushi:{n:'カラムシ（苧麻）',k:'fiber',give:['fiber',3],re:1},
  rock:{n:'岩',k:'rock',r:.95,hp:100,re:4,sc:[.35,1.05]},shore:{n:'海岸の岩',k:'rock',r:1.0,hp:120,re:5,sc:[.25,1.1]},outcrop:{n:'岩盤の露頭',k:'rock',r:1.8,hp:200,re:5,bed:1,sc:[.5,2.0]},
- stick:{n:'枝',k:'pick',give:['stick',1],re:1},stone:{n:'小石',k:'pick',give:['stone',1],re:1},chert:{n:'チャートの欠片',k:'pick',give:['chert',1],re:1},
+ stick:{n:'枝',k:'pick',give:['stick',1],re:1},stone:{n:'石',k:'pick',give:['stone',1],re:1},pebble:{n:'小石',k:'pick',give:['pebble',2],re:1},chert:{n:'チャートの欠片',k:'pick',give:['chert',1],re:1},
  clay:{n:'粘土の堆積',k:'clay',give:['clay',2],re:2}
 };
-const VN={takenoko:1,take:2,shii:3,tabu:3,gajumaru:2,matsu:3,biro:3,hego:2,adan:2,sotetsu:2,ichigo:2,karamushi:2,rock:3,shore:2,outcrop:3,stick:1,stone:1,chert:1,clay:1};
+const VN={pebble:1,takenoko:1,take:2,shii:3,tabu:3,gajumaru:2,matsu:3,biro:3,hego:2,adan:2,sotetsu:2,ichigo:2,karamushi:2,rock:3,shore:2,outcrop:3,stick:1,stone:1,chert:1,clay:1};
 const VEIN={copper:{n:'孔雀石',ore:'copper_ore',need:1,hint:'岩肌に緑青色の染みが見える'},tin:{n:'錫石',ore:'tin_ore',need:2,hint:'黒褐色の重い粒が混じっている'},iron:{n:'赤鉄鉱',ore:'iron_ore',need:3,hint:'赤錆色の岩肌だ'}};
 const AD={goat:{n:'ノヤギ',hp:40,spd:6.8,meat:2,hide:1,scare:13},boar:{n:'リュウキュウイノシシ',hp:70,spd:7.2,meat:4,hide:2,scare:11}};
 const TIERN=['','石','銅','青銅','鉄'];
@@ -286,6 +286,8 @@ const DR={
  takenoko:p=>{p.poly([[8,1],[13,14],[3,14]],'#8a6a3a');p.poly([[8,1],[11,9],[6,10]],'#a88450');p.l(4,11,12,9,'#6a4e2a');p.l(5,7,10,6,'#6a4e2a');p.r(3,14,10,1,'#5a4a2a');p.l(8,1,9,0,'#7aa84a');},
  yaki_takenoko:p=>{p.poly([[8,2],[12,14],[4,14]],'#d8b878');p.l(8,4,8,13,'#b08a50');p.l(5,10,11,10,'#8a5a2a');p.l(6,7,10,6,'#8a5a2a');p.sp(4,6,8,8,'#5a3a1a',.15,21);},
  log:p=>{p.r(2,4,25,9,'#6e4a2c');for(let k=0;k<5;k++)p.l(5+k*5,5,6+k*5,11,'#583a22');p.e(27,8.5,3.2,4.6,'#d8b07a');p.e(27,8.5,1.8,2.8,'#c0925a');p.s(27,8,'#9a6a3a');},
+ pebble:p=>{p.e(5,10,3,2.4,'#9a968e');p.e(11,9,2.6,2,'#86827a');p.e(8,5,2.2,1.8,'#a8a49c');p.s(4,9,'#c0bcb4');},
+ boulder:p=>{p.poly([[4,26],[2,14],[8,5],[20,3],[29,10],[30,22],[24,29],[10,30]],'#77746c');p.poly([[8,5],[20,3],[24,12],[12,14]],'#8e8a82');p.sp(3,4,26,25,'#5e5b54',.12,30);},
  stone:p=>{p.e(8,9,5.5,4.5,'#8d8a84');p.e(6.5,7.5,2,1.3,'#a6a39c');p.sp(3,5,11,9,'#77746e',.15,3);},
  chert:p=>{p.poly([[3,10],[6,4],[11,3],[13,8],[10,13],[5,13]],'#4e5560');p.l(6,5,9,11,'#6e7884');p.sp(3,3,11,11,'#3a4048',.12,4);},
  fiber:p=>{for(let x=4;x<12;x++)p.l(x,2+(x%3),x+(x%2?1:-1),14,x%2?'#e0dcc0':'#c8c4a0');p.r(3,8,10,2,'#8a6a3a');},
@@ -459,7 +461,8 @@ function buildGeos(){const C=THREE;
   GEO['F_adan'+v]=ADANF[v];GEO['F_ichigo'+v]=ICHF[v];}
  GEO.stick0=M([P(new C.CylinderGeometry(.04,.05,1,4),'#7a5534',{y:.05,rz:Math.PI/2}),P(new C.CylinderGeometry(.025,.03,.35,4),'#6d4a2c',{x:.2,y:.05,z:.1,rz:Math.PI/2,ry:.8})],.1,6);
  GEO.takenoko0=M([P(jit(new C.ConeGeometry(.15,.55,6),.03,1101),'#7a5a32',{y:.22,top:'#c0a060'}),P(new C.ConeGeometry(.05,.18,4),'#7aa04a',{y:.55,rz:.2})],.12,1101);
- GEO.stone0=M([P(jit(new C.IcosahedronGeometry(.2,0),.07,7),'#8d8a84',{y:.08,sy:.65})],.15,7);
+ GEO.stone0=M([P(jit(new C.IcosahedronGeometry(.24,0),.08,7),'#8d8a84',{y:.1,sy:.7})],.15,7);
+ GEO.pebble0=M([P(jit(new C.IcosahedronGeometry(.09,0),.03,8),'#9a968e',{x:-.1,y:.04,sy:.6}),P(jit(new C.IcosahedronGeometry(.07,0),.03,9),'#86827a',{x:.12,y:.03,z:.06,sy:.6}),P(jit(new C.IcosahedronGeometry(.06,0),.02,10),'#a8a49c',{z:-.12,y:.03,sy:.6})],.15,8);
  GEO.chert0=M([P(new C.OctahedronGeometry(.16,0),'#4e5560',{y:.08,sy:.55}),P(new C.OctahedronGeometry(.1,0),'#444a54',{x:.18,y:.05,sy:.55})],.15,8);
  GEO.clay0=M([P(new C.CylinderGeometry(.9,1.05,.18,8),'#8a5e3e',{y:.02}),P(jit(new C.DodecahedronGeometry(.3,0),.1,9),'#a0704a',{x:.3,y:.12,sy:.5}),P(jit(new C.DodecahedronGeometry(.25,0),.1,10),'#7e5638',{x:-.35,y:.1,z:.2,sy:.5})],.1,9);
  const gp=[],r=mulberry32(55);for(let k=0;k<7;k++){const a=k*.9,h=.45+r()*.45;gp.push(leafCone(V3(Math.cos(a)*.12,0,Math.sin(a)*.12),V3(Math.cos(a)*.35,1,Math.sin(a)*.35),h,.7,'#3e6a24','#8ab858'));}
@@ -547,6 +550,27 @@ function genCaves(){caves=[];const cr=mulberry32(SEED+777),D=[[1,0],[-1,0],[0,1]
   if(ponds.some(p=>Math.hypot(p.x-c.cx,p.z-c.cz)<p.r+22)||caves.some(o=>Math.hypot(o.cx-c.cx,o.cz-c.cz)<70))continue;caves.push(c);}}
 function veinAt(x,z){for(const v of veins)if(Math.hypot(x-v.x,z-v.z)<v.r)return v.t;return null;}
 function genVeins(){veins=[];[['copper',6,5,26],['tin',4,11,60],['iron',4,16,60]].forEach(([t,n,lo,hi])=>{let k=0,tr=0;while(k<n&&tr<3000){tr++;const x=(rng()*2-1)*170,z=(rng()*2-1)*170;const h=terrainH(x,z);if(h<lo||h>hi||inPond(x,z,10))continue;if(veins.some(v=>Math.hypot(v.x-x,v.z-z)<35))continue;veins.push({t,x,z,r:15+rng()*8});k++;}});}
+function terrComps(MS){const N=SEG+1,H=heights,cm=new Int32Array(N*N).fill(-1),sz=[],q=new Int32Array(N*N);let qh=0,qt=0;
+ const tryN=(a,b)=>{if(cm[b]>=0)return;const ha=H[a],hb=H[b];if((ha<-.5&&hb<-.5)||Math.abs(ha-hb)<=MS){cm[b]=cm[a];q[qt++]=b;}};
+ const run=()=>{let n=0;while(qh<qt){const k=q[qh++];n++;const i=k%N;if(i>0)tryN(k,k-1);if(i<N-1)tryN(k,k+1);if(k>=N)tryN(k,k-N);if(k<N*N-N)tryN(k,k+N);}return n;};
+ for(let k=0;k<N*N;k++)if(H[k]<-.5){cm[k]=0;q[qt++]=k;}sz.push(run());
+ for(let k=0;k<N*N;k++)if(cm[k]<0){cm[k]=sz.length;q[qt++]=k;sz.push(run());}return{cm,sz};}
+const WALK_MS=CELL*.8;
+function buildRamp(b,lock,M){const N=SEG+1,H=heights,{i,j,di,dj}=b,pi=-dj,pj=di,inb=(x,y)=>x>=0&&y>=0&&x<N&&y<N;let a=0,c=0,ok=false;
+ for(let t=0;t<18;t++){const ai=i-di*a,aj=j-dj*a,bi=i+di*(1+c),bj=j+dj*(1+c);if(!inb(ai,aj)||!inb(bi,bj))return false;if(Math.abs(H[bj*N+bi]-H[aj*N+ai])<=M*(a+c+1)){ok=true;break;}if(t%2)c++;else a++;}
+ if(!ok)return false;
+ for(let k=-a;k<=1+c;k++)for(let w=-1;w<=1;w++){const x=i+di*k+pi*w,y=j+dj*k+pj*w;if(!inb(x,y)||lock[y*N+x])return false;}
+ const hA=H[(j-dj*a)*N+i-di*a],hB=H[(j+dj*(1+c))*N+i+di*(1+c)],L=a+c+1;
+ for(let k=-a;k<=1+c;k++)for(let w=-1;w<=1;w++){const x=i+di*k+pi*w,y=j+dj*k+pj*w;H[y*N+x]=hA+(hB-hA)*(k+a)/L;}return true;}
+function fixConnectivity(){const N=SEG+1,lock=new Uint8Array(N*N);
+ for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-HALF+i*CELL,z=-HALF+j*CELL;let L=i<3||j<3||i>N-4||j>N-4||inPond(x,z,1.5);
+  for(const c of caves){const p=(i-c.i0)*c.lx+(j-c.j0)*c.lz,q=(i-c.i0)*c.ix+(j-c.j0)*c.iz;if(p>=-3&&p<=6&&q>=-3&&q<=9)L=true;}if(L)lock[j*N+i]=1;}
+ const tried=new Set();
+ for(let it=0;it<150;it++){const{cm,sz}=terrComps(WALK_MS);let best=null;
+  for(let k=0;k<N*N;k++){const c=cm[k];if(c===0||sz[c]<6)continue;const i=k%N,j=(k/N)|0;
+   for(const[di,dj]of[[1,0],[-1,0],[0,1],[0,-1]]){const i2=i+di,j2=j+dj;if(i2<0||j2<0||i2>=N||j2>=N)continue;const k2=j2*N+i2;if(cm[k2]===c||tried.has(k*4+di+1+(dj+1)*2))continue;
+    const d=Math.abs(heights[k]-heights[k2])+(cm[k2]===0?0:4);if(!best||d<best.d)best={i,j,di,dj,d,key:k*4+di+1+(dj+1)*2};}}
+  if(!best)break;tried.add(best.key);buildRamp(best,lock,CELL*.6);}}
 function buildTerrain(){
  heights=new Float32Array((SEG+1)*(SEG+1));ponds=[];let tries=0;
  while(ponds.length<4&&tries<5000){tries++;const x=(rng()*2-1)*150,z=(rng()*2-1)*150;const h=rawHeight(x,z);if(h<4||h>13)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<70))continue;{const kr=mulberry32(SEED+31*ponds.length+5);var pk=[.12+kr()*.14,kr()*6.28,.08+kr()*.1,kr()*6.28,.04+kr()*.05,kr()*6.28];}ponds.push({x,z,k:pk,r:6.5+rng()*3.5,level:h-.5});}
@@ -555,6 +579,7 @@ function buildTerrain(){
   for(const p of ponds){const d=Math.hypot(x-p.x,z-p.z),pr=pondR(p,x,z);if(d<pr)h=p.level-.15-2.4*(1-(d/pr)**2);else if(d<pr*1.7){const t=(d-pr)/(pr*.7),s=t*t*(3-2*t);h=(p.level+.25)*(1-s)+h*s;}}
   for(const c of caves)h=caveHeight(c,i,j,h);
   heights[j*(SEG+1)+i]=h;}
+ fixConnectivity();
  genVeins();
  const pos=new Float32Array(SEG*SEG*18),col=new Float32Array(SEG*SEG*18);let o=0;const cr=mulberry32(SEED+99),tc=new THREE.Color(),t2=new THREE.Color();
  const VT={copper:'#5e7466',tin:'#4a4642',iron:'#7a5244'};
@@ -621,9 +646,9 @@ function genEntities(){
  const sc=(t,n,cond,area)=>{let k=0,tr=0;area=area||[0,0,205];while(k<n&&tr<n*80){tr++;const a=rng()*6.283,rr=Math.sqrt(rng())*area[2];const x=area[0]+Math.cos(a)*rr,z=area[1]+Math.sin(a)*rr;const h=terrainH(x,z);if(inPond(x,z,1.5))continue;if(!cond(h,normalY(x,z),x,z))continue;push(t,x,z);k++;}};
  sc('rock',150,(h,ny)=>h>2.5&&ny>.75);sc('shore',90,(h)=>h>.1&&h<1.6);sc('outcrop',70,(h,ny)=>h>5&&ny<.86&&ny>.55);
  veins.forEach(v=>{for(let k=0;k<5;k++){const a=rng()*6.283,d=rng()*v.r*.7;const x=v.x+Math.cos(a)*d,z=v.z+Math.sin(a)*d;if(terrainH(x,z)>1)push('outcrop',x,z,.8+rng()*.4);}});
- sc('stick',260,(h)=>h>1&&h<22);sc('stone',170,(h)=>h>.5&&h<30);sc('chert',70,(h)=>h>.4&&h<3);sc('chert',50,(h,ny)=>h>3&&ny<.9);
- const sa=[SPAWN.x,SPAWN.z,24];sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
- ponds.forEach(p=>{for(let k=0;k<8;k++){const a=k/8*6.283+rng()*.4,r=pondRa(p,a)+1.6+rng()*2.2;push('clay',p.x+Math.cos(a)*r,p.z+Math.sin(a)*r,1);}});
+ sc('stick',260,(h)=>h>1&&h<22);sc('stone',110,(h,ny)=>h>.5&&h<30&&ny>.75);sc('pebble',200,(h,ny)=>h>.3&&h<30&&ny>.75);sc('chert',70,(h)=>h>.4&&h<3);sc('chert',50,(h,ny)=>h>3&&ny<.9);
+ const sa=[SPAWN.x,SPAWN.z,24];sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('pebble',8,(h)=>h>.3,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
+ ponds.forEach(p=>{for(let k=0;k<14;k++){const a=k/14*6.283+rng()*.3,r=pondRa(p,a)+1.6+rng()*2.2,x=p.x+Math.cos(a)*r,z=p.z+Math.sin(a)*r;if(normalY(x,z)<.86||terrainH(x,z)<p.level+.15)continue;push('clay',x,z,1);}});
  // build instanced meshes
  const groups={};L.forEach(e=>{const ck=Math.floor(e.x/ECS)+','+Math.floor(e.z/ECS);e.ck=ck;(groups[e.t+e.v+'|'+ck]=groups[e.t+e.v+'|'+ck]||[]).push(e);});
  for(const gkey in groups){const G=groups[gkey];const key=gkey.split('|')[0];const t=G[0].t;const d=ED[t];const veg=d.k==='tree'||d.k==='bush'||d.k==='fiber';
@@ -645,7 +670,8 @@ const frus=new THREE.Frustum(),projM=new THREE.Matrix4(),sph=new THREE.Sphere();
 function cullChunks(){camera.updateMatrixWorld();projM.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);frus.setFromProjectionMatrix(projM);
  for(const c of CHUNKS.values()){const d=Math.hypot(c.x-pl.x,c.z-pl.z);let v=d<175;if(v&&d>62){sph.center.set(c.x,terrainH(c.x,c.z)+6,c.z);sph.radius=ECS*.75+8;v=frus.intersectsSphere(sph);}for(const im of c.ims)im.visible=v;}
  for(const[k,g]of DEC){g.visible=!!g.userData.near;if(!g.visible)continue;const[a,b]=k.split(',').map(Number);sph.center.set((a+.5)*DCS,terrainH((a+.5)*DCS,(b+.5)*DCS),(b+.5)*DCS);sph.radius=DCS*.75+2;if(!frus.intersectsSphere(sph))g.visible=false;}}
-function entMat(e){tmpQ.setFromAxisAngle(YAX,e.ry);tmpV.set(e.x,e.yo,e.z);tmpS.set(e.s,e.s,e.s);tmpM.compose(tmpV,tmpQ,tmpS);return tmpM;}
+const tmpN=new THREE.Vector3(),tmpQ2=new THREE.Quaternion();
+function entMat(e){tmpQ.setFromAxisAngle(YAX,e.ry);if(e.t==='clay'){tmpN.set(terrainH(e.x-.5,e.z)-terrainH(e.x+.5,e.z),1,terrainH(e.x,e.z-.5)-terrainH(e.x,e.z+.5)).normalize();tmpQ2.setFromUnitVectors(YAX,tmpN);tmpQ.premultiply(tmpQ2);}tmpV.set(e.x,e.yo,e.z);tmpS.set(e.s,e.s,e.s);tmpM.compose(tmpV,tmpQ,tmpS);return tmpM;}
 function setEntVisible(e,vis){e.im.setMatrixAt(e.idx,vis?entMat(e):ZERO);e.im.instanceMatrix.needsUpdate=true;if(e.fim){e.fim.setMatrixAt(e.idx,vis&&e.fruit?entMat(e):ZERO);e.fim.instanceMatrix.needsUpdate=true;}}
 function setFruit(e,on){e.fruit=on;e.fim.setMatrixAt(e.idx,on&&e.alive?entMat(e):ZERO);e.fim.instanceMatrix.needsUpdate=true;}
 
@@ -711,6 +737,20 @@ function removeStruct(s){scene.remove(s.mesh);const i=structs.indexOf(s);if(i>=0
 function dropItems(list,x,z){list=list.filter(Boolean);if(!list.length)return null;const c={w:8,h:6,items:[]};
  for(const it of list){let rem=gridAdd(c,it.id,it.n,it.d);while(rem>0){c.h+=2;rem=gridAdd(c,it.id,rem,it.d);}}
  return addStruct('drop',x,groundAt(x,z),z,0,c);}
+// ---- carried objects (log / boulder) and drops at the feet ----
+const carries=[];let carryMesh=null;
+function makeCarryMesh(t){const C=THREE;return new THREE.Mesh(t==='log'?M([P(new C.CylinderGeometry(.2,.23,1.8,8),'#6e4a2c',{rz:Math.PI/2}),P(new C.CircleGeometry(.2,8),'#d8b07a',{x:.91,ry:Math.PI/2}),P(new C.CircleGeometry(.23,8),'#d0a46c',{x:-.91,ry:-Math.PI/2})],.1,1201)
+ :M([P(jit(new C.IcosahedronGeometry(.42,0),.16,1202),'#77746c',{sy:.75,top:'#8e8a82'})],.12,1202),MAT);}
+function addCarry(t,x,z,ry){const m=makeCarryMesh(t);const o={t,x,z,ry,mesh:m};m.position.set(x,groundAt(x,z)+(t==='log'?.22:.3),z);m.rotation.y=ry;m.castShadow=true;m.userData.ref={kind:'carry',o};scene.add(m);carries.push(o);return o;}
+function removeCarry(o){scene.remove(o.mesh);const i=carries.indexOf(o);if(i>=0)carries.splice(i,1);}
+function nearCarries(t){return carries.filter(o=>o.t===t&&Math.hypot(o.x-pl.x,o.z-pl.z)<6).sort((a,b)=>Math.hypot(a.x-pl.x,a.z-pl.z)-Math.hypot(b.x-pl.x,b.z-pl.z));}
+function setCarry(t){pl.carry=t;if(carryMesh){camera.remove(carryMesh);carryMesh=null;}if(t){carryMesh=makeCarryMesh(t);if(t==='log'){carryMesh.position.set(.25,-.32,-.55);carryMesh.rotation.set(0,1.25,.15);}else carryMesh.position.set(0,-.62,-.75);camera.add(carryMesh);}invDirty=true;}
+function pickCarry(o){if(action){msg('ほかの作業中だ','bad');return;}removeCarry(o);setCarry(o.t);msg(I[o.t].n+'を担いだ（左クリックで下ろす）');sfx('pick');}
+function dropCarry(){if(!pl.carry)return;const d=1.1;addCarry(pl.carry,pl.x-Math.sin(pl.yaw)*d,pl.z-Math.cos(pl.yaw)*d,pl.yaw+Math.PI/2);sfx('thud');setCarry(null);}
+function feedLog(s){if(!s.st||!s.st.fuel||!fuelOK(s.t,'log'))return false;const f=s.st.fuel;if(!f[0])f[0]={id:'log',n:1};else if(f[0].id==='log'&&f[0].n<STK('log'))f[0].n++;else{msg('燃料の枠がいっぱい','bad');return true;}setCarry(null);msg('丸太をくべた');sfx('place');return true;}
+function dropAt(id,n){if(!n)return;const x=pl.x-Math.sin(pl.yaw)*.8,z=pl.z-Math.cos(pl.yaw)*.8;
+ for(const s of structs)if(s.t==='drop'&&Math.hypot(s.x-x,s.z-z)<2.2){let rem=gridAdd(s.cont,id,n);while(rem>0){s.cont.h+=2;rem=gridAdd(s.cont,id,rem);}pickToast(id,n);return;}
+ dropItems([{id,n}],x,z);pickToast(id,n);}
 function groundAt(x,z){const cv=caveFloor(x,z);let h=cv?cv.y:terrainH(x,z);const f=foundMap.get(fKey(x,z));if(f&&Math.abs(x-f.x)<=1.5&&Math.abs(z-f.z)<=1.5)h=Math.max(h,f.y);return h;}
 
 // ================= Inventory (Tarkov grid) =================
@@ -722,17 +762,17 @@ function fits(c,id,x,y,r,ign){const s=SZ(id),w=r?s[1]:s[0],h=r?s[0]:s[1];if(x<0|
 function findSpot(c,id){for(const r of[0,1])for(let y=0;y<c.h;y++)for(let x=0;x<c.w;x++)if(fits(c,id,x,y,r))return{x,y,r};return null;}
 function gridAdd(c,id,n,d){const st=STK(id);if(st>1)for(const o of c.items)if(o.id===id&&o.n<st){const k=Math.min(st-o.n,n);o.n+=k;n-=k;if(!n)return 0;}
  while(n>0){const sp=findSpot(c,id);if(!sp)break;const k=Math.min(st,n);const it={id,n:k,x:sp.x,y:sp.y,r:sp.r};if(I[id].dur)it.d=d!=null?d:I[id].dur;c.items.push(it);n-=k;}return n;}
-function addItem(id,n,d,silent){const def=I[id],st=STK(id);let rem=n;
+function addItem(id,n,d,silent){const def=I[id],st=STK(id);let rem=n;if(def.carry){for(let k=0;k<n;k++)addCarry(id,pl.x-Math.sin(pl.yaw)*1.5+(Math.random()-.5),pl.z-Math.cos(pl.yaw)*1.5+(Math.random()-.5),Math.random()*6.28);return;}
  if(st>1)for(let i=0;i<8&&rem>0;i++){const h=hot[i];if(h&&h.id===id&&h.n<st){const k=Math.min(st-h.n,rem);h.n+=k;rem-=k;}}
  if(rem>0&&(def.tool||def.place||def.light))for(let i=0;i<8&&rem>0;i++)if(!hot[i]){const k=Math.min(st,rem);hot[i]={id,n:k};if(def.dur)hot[i].d=d!=null?d:def.dur;rem-=k;}
  if(rem>0)rem=gridAdd(bag,id,rem,d);
  if(rem>0){dropItems([{id,n:rem,d}],pl.x-Math.sin(pl.yaw)*1.2,pl.z-Math.cos(pl.yaw)*1.2);msg('持ちきれない分を足元に置いた','bad');}
  invDirty=true;if(!silent&&n-rem>0)pickToast(id,n-rem);}
-function countItem(id){let c=0;for(const o of bag.items)if(o.id===id)c+=o.n;for(const h of hot)if(h&&h.id===id)c+=h.n;return c;}
-function removeItem(id,n){for(let i=bag.items.length-1;i>=0&&n>0;i--){const o=bag.items[i];if(o.id===id){const k=Math.min(o.n,n);o.n-=k;n-=k;if(!o.n)bag.items.splice(i,1);}}
+function countItem(id){if(I[id].carry)return nearCarries(id).length+(pl.carry===id?1:0);let c=0;for(const o of bag.items)if(o.id===id)c+=o.n;for(const h of hot)if(h&&h.id===id)c+=h.n;return c;}
+function removeItem(id,n){if(I[id].carry){for(const o of nearCarries(id)){if(n<=0)break;removeCarry(o);n--;}if(n>0&&pl.carry===id){setCarry(null);n--;}invDirty=true;return;}for(let i=bag.items.length-1;i>=0&&n>0;i--){const o=bag.items[i];if(o.id===id){const k=Math.min(o.n,n);o.n-=k;n-=k;if(!o.n)bag.items.splice(i,1);}}
  for(let i=7;i>=0&&n>0;i--){const h=hot[i];if(h&&h.id===id){const k=Math.min(h.n,n);h.n-=k;n-=k;if(!h.n)hot[i]=null;}}invDirty=true;}
 const hasKnife=()=>bag.items.some(o=>I[o.id].knife)||hot.some(h=>h&&I[h.id].knife);
-const held=()=>hot[sel];
+const held=()=>pl.carry?null:hot[sel];
 function heldTool(k){const s=held();if(!s)return 0;const t=I[s.id].tool;return t&&t[k]?t[k]:0;}
 function useDur(a){const s=held();if(s&&s.d!=null){s.d-=a||1;if(s.d<=0){msg(I[s.id].n+'が壊れた','bad');hot[sel]=null;}invDirty=true;}}
 
@@ -790,13 +830,14 @@ function renderDetail(){const el=$('#rdetail');if(selRec==null||(!cheat&&!recVis
  if(r.s){const ok=stationReady(r.s);h+=`<div class="need ${ok?'ok':'no'}"><span>設備：${STN[r.s]}</span><span>${ok?'使用できる':'開いていない／火が無い'}</span></div>`;}
  if(cheat)h+=`<div style="color:#f0a040;font-size:12px">チートモード：素材なしで作成できる</div>`;
  h+=`<div style="margin-top:10px"><button id="craftBtn" ${canCraft(r)?'':'disabled'}>作成する（${(cheat?.3:craftDur(r)).toFixed(1)}秒）</button></div>`;el.innerHTML=h;}
-function craftDur(r){const d=I[r.o];return d.place?4:d.tool?3:(d.armor||UPG[r.o])?4:1.5;}
+function craftDur(r){const d=I[r.o];return d.place||d.tool?10:(d.armor||UPG[r.o])?12:6;}
 function descItem(id){const d=I[id];const L=[];
  if(d.food)L.push(`満腹 +${d.food.h}`+(d.food.w?` / 水分 ${d.food.w>0?'+':''}${d.food.w}`:'')+(d.food.sick?'（食あたりの危険）':''));
  if(d.tool){const t=d.tool;if(t.tree)L.push('伐採 '+t.tree);if(t.rock)L.push(`採掘 ${t.rock}（${TIERN[t.tier]}等級）`);if(t.anim)L.push('攻撃 '+t.anim);}
  if(d.knife)L.push('手に持って獲物の死体を解体できる');if(d.dur&&!d.light)L.push('耐久 '+d.dur);if(d.light)L.push('手に持つと明るい（約4分で燃え尽きる）');
  if(d.armor)L.push('防具欄に入れると雨や水濡れで体が冷えにくい');if(d.place)L.push('手持ちに入れて左クリックで設置');
  if(UPG[id])L.push(`持ち物の枠が ${UPG[id].w}×${UPG[id].h} に広がる`);
+ if(I[id].carry)L.push('大きいので持ち物には入らない。左クリックで担いで運び、もう一度左クリックで下ろす。近く（6m以内）に置けばクラフトの材料になる');if(id==='pebble')L.push('焚き火の石組みに使える');
  if(id==='bamboo')L.push('燃料や竹槍の材料になる');if(id==='sasa')L.push('燃料や寝床の材料になる');if(id==='takenoko')L.push('生はえぐい。焚き火で焼こう');if(id==='pot_empty')L.push('水辺で F を押すと水を汲める／雨の中で手に持つと雨水が溜まる');if(id==='pot_fresh')L.push('右クリックで飲む（水分 +40）');if(id==='pot_salt')L.push('焚き火で煮沸すると真水になる');
  if(FUEL[id])L.push(`燃料 ${FUEL[id]}秒`);if(id==='bone_needle')L.push('蓑や背負い袋を縫うのに使う（消費しない）');if(KQ[id])L.push(`解体の収量 ${Math.round(KQ[id]*100)}%`);
  if(id==='canoe')L.push('これを作れば島を脱出できる');const s=SZ(id);L.push(`大きさ ${s[0]}×${s[1]}`);return L.join(' ／ ');}
@@ -900,6 +941,7 @@ addEventListener('keydown',e=>{
  if(e.code==='KeyR')pl.placeRot=(pl.placeRot+1)%8;
  if(e.code==='KeyZ')dismantle();
  if(e.code==='KeyX')pl.crouchOn=!pl.crouchOn;
+ if(e.code==='KeyQ'&&pl.carry){dropCarry();return;}
  if(e.code==='KeyQ'){const s=held();if(s){hot[sel]=null;dropItems([s],pl.x-Math.sin(pl.yaw)*1.3,pl.z-Math.cos(pl.yaw)*1.3);msg(I[s.id].n+'を捨てた');invDirty=true;}}
  if(e.code==='Escape'&&dragMode)pauseGame();});
 $('#bSound').onclick=()=>{AU.on=!AU.on;$('#bSound').textContent='音：'+(AU.on?'ON':'OFF');};
@@ -935,13 +977,13 @@ function rayEnt(o,d,e){const D=ED[e.t],s=e.s;
 function updateAim(){camera.getWorldDirection(vDir);vEye.copy(camera.position);
  let t=null,td=REACH;
  for(const e of near(pl.x,pl.z,6)){if(!e.alive)continue;const h=rayEnt(vEye,vDir,e);if(h!=null&&h<td){td=h;t={kind:'ent',o:e};}}
- const c=[];for(const s of structs)if(Math.abs(s.x-pl.x)<8&&Math.abs(s.z-pl.z)<8)c.push(s.mesh);for(const a of animals)if(a.alive&&Math.abs(a.x-pl.x)<8&&Math.abs(a.z-pl.z)<8)c.push(a.mesh);for(const k of carcasses)if(Math.abs(k.x-pl.x)<8&&Math.abs(k.z-pl.z)<8)c.push(k.mesh);
+ const c=[];for(const s of structs)if(Math.abs(s.x-pl.x)<8&&Math.abs(s.z-pl.z)<8)c.push(s.mesh);for(const a of animals)if(a.alive&&Math.abs(a.x-pl.x)<8&&Math.abs(a.z-pl.z)<8)c.push(a.mesh);for(const k of carcasses)if(Math.abs(k.x-pl.x)<8&&Math.abs(k.z-pl.z)<8)c.push(k.mesh);for(const k of carries)if(Math.abs(k.x-pl.x)<8&&Math.abs(k.z-pl.z)<8)c.push(k.mesh);
  if(c.length){ray.set(vEye,vDir);ray.far=td;const hits=ray.intersectObjects(c,true);if(hits.length){let o=hits[0].object;while(o&&!o.userData.ref)o=o.parent;if(o){t=o.userData.ref;td=hits[0].distance;}}}
  let water=null,ground=null;
  for(let s=.2;s<=7;s+=.1){const x=vEye.x+vDir.x*s,y=vEye.y+vDir.y*s,z=vEye.z+vDir.z*s;const g=groundAt(x,z),wl=waterLevel(x,z);
   if(!water&&!ground&&y<wl&&wl>g&&s<=Math.min(td,REACH))water={fresh:!!inPond(x,z,.3)};if(y<g){ground={x,y:g,z,s};break;}}
  aim={t,water:t?null:water,ground,rockFace:!t&&!water&&ground&&ground.s<=REACH&&normalY(ground.x,ground.z)<.72&&!foundMap.get(fKey(ground.x,ground.z))};}
-function targetInfo(){const t=aim.t;
+function targetInfo(){const t=aim.t;if(t&&t.kind==='carry')return[I[t.o.t].n,pl.carry?'':'左クリック: 担ぐ'];if(pl.carry&&!(t&&t.kind==='struct'&&pl.carry==='log'&&t.o.st&&fuelOK(t.o.t,'log')))return[I[pl.carry].n+'を担いでいる','左クリック: 下ろす'];if(pl.carry)return[SD[t.o.t].n,'左クリック: 丸太をくべる'];
  if(!t){if(aim.water){const s=held();return[aim.water.fresh?'湧き水の池（真水）':'海（海水）',s&&s.id==='pot_empty'?'F: 壺に水を汲む':(aim.water.fresh?'F: 水を飲む':'F: 飲む（危険）')];}
   if(aim.rockFace){const v=veinAt(aim.ground.x,aim.ground.z);return['岩肌',heldTool('rock')?'左クリック: 採掘':'つるはしで掘れる',v?VEIN[v].hint:''];}return null;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
@@ -978,26 +1020,28 @@ function dismantle(){const t=aim.t;if(!t||t.kind!=='struct')return;const s=t.o;
 function consume(){const s=held();if(!s)return false;const d=I[s.id];if(!(d.food||d.pot))return false;
  if(s.id==='pot_salt'){msg('海水は飲めない。焚き火で煮沸しよう','bad');return true;}if(s.id==='pot_empty')return false;
  if(d.food&&pl.food>=99&&d.food.h>d.food.w){msg('もうお腹いっぱいだ');return true;}
- const slot=sel;startAction(d.food?`${d.n}を食べている`:'水を飲んでいる',cheat?.3:(d.food?1.6:2),()=>{if(hot[slot]!==s)return;consumeNow(slot);},'play');return true;}
+ const slot=sel;startAction(d.food?`${d.n}を食べている`:'水を飲んでいる',cheat?.3:(d.food?4.5:4),()=>{if(hot[slot]!==s)return;consumeNow(slot);},'play');return true;}
 function consumeNow(slot){const s=hot[slot];if(!s)return;const d=I[s.id];
  if(d.food){sfx('eat');pl.food=Math.min(100,pl.food+d.food.h);pl.water=clamp(pl.water+d.food.w,0,100);
   if(d.food.sick&&Math.random()<d.food.sick){pl.sick=25;msg(s.id==='raw_meat'?'お腹の調子が悪い…（生肉は焼こう）':'えぐみでお腹を壊した…（焼いて食べよう）','bad');}s.n--;if(!s.n)hot[slot]=null;invDirty=true;return true;}
  if(s.id==='pot_fresh'){sfx('drink');pl.water=Math.min(100,pl.water+40);hot[slot]={id:'pot_empty',n:1};msg('真水を飲んだ');invDirty=true;return true;}
  if(s.id==='pot_salt'){msg('海水は飲めない。焚き火で煮沸しよう','bad');return true;}return false;}
-function primaryClick(){const s=held();if(!s)return;const d=I[s.id];if(d.food||d.pot){if(d.pot&&aim.water)interact();else consume();mouseL=false;return;}if(d.place){tryPlace();mouseL=false;}}
+function primaryClick(){if(pl.carry){const t=aim.t;if(!(pl.carry==='log'&&t&&t.kind==='struct'&&feedLog(t.o)))dropCarry();mouseL=false;return;}
+ if(aim.t&&aim.t.kind==='carry'){pickCarry(aim.t.o);mouseL=false;return;}const s=held();if(!s)return;const d=I[s.id];if(d.food||d.pot){if(d.pot&&aim.water)interact();else consume();mouseL=false;return;}if(d.place){tryPlace();mouseL=false;}}
 let swingT=-1,hitDone=false,swingCd=0;
 function mineYield(vein,big){const tier=heldTool('tier');
- if(Math.random()<(big?.5:.4))addItem('stone',1);if(Math.random()<.08)addItem('chert',1);
- if(vein){const V=VEIN[vein];if(tier<V.need){if(Math.random()<.3)msg(`${V.n}らしき鉱石が見えるが、${TIERN[V.need]}等級以上のつるはしでないと砕けない`,'bad');}else if(Math.random()<(big?.45:.25))addItem(V.ore,1);}}
+ if(Math.random()<.6)dropAt('pebble',1+Math.floor(Math.random()*2));if(Math.random()<(big?.35:.25))dropAt('stone',1);if(Math.random()<.08)dropAt('chert',1);
+ if(vein){const V=VEIN[vein];if(tier<V.need){if(Math.random()<.3)msg(`${V.n}らしき鉱石が見えるが、${TIERN[V.need]}等級以上のつるはしでないと砕けない`,'bad');}else if(Math.random()<(big?.45:.25))dropAt(V.ore,1);}}
 function doHit(){const t=aim.t;
  if(!t){if(aim.rockFace){if(!heldTool('rock')){msg('岩肌を掘るにはつるはしが必要');return;}useDur();sfx('mine');mineYield(veinAt(aim.ground.x,aim.ground.z),false);}return;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
   if(d.k==='tree'){const dmg=heldTool('tree');
-   if(dmg>=10){e.hp-=dmg;useDur();sfx('chop');if(Math.random()<.25)addItem(d.leaf||'stick',1);shake(e);
-    if(e.hp<=0){addItem(d.wood||'log',d.logs[0]+Math.floor(Math.random()*(d.logs[1]-d.logs[0]+1)));addItem(d.leaf||'stick',d.leaf?2+Math.floor(Math.random()*3):1+Math.floor(Math.random()*3));if(d.fib)addItem('fiber',d.fib);killEnt(e);e.hp=d.hp;sfx('fall');msg(d.n+'を切り倒した');}}
-   else{if(dmg)useDur();sfx('chop');shake(e);if(Math.random()<.3)addItem(d.leaf||'stick',1);}return;}
+   if(dmg>=10){e.hp-=dmg;useDur();sfx('chop');if(Math.random()<.25)dropAt(d.leaf||'stick',1);shake(e);
+    if(e.hp<=0){const nl=d.logs[0]+Math.floor(Math.random()*(d.logs[1]-d.logs[0]+1));if(d.wood)dropAt(d.wood,nl);else{const a=Math.atan2(e.x-pl.x,e.z-pl.z);for(let k=0;k<nl;k++){const r=1.2+k*1.9;addCarry('log',e.x+Math.sin(a)*r+(Math.random()-.5)*.6,e.z+Math.cos(a)*r+(Math.random()-.5)*.6,a+Math.PI/2+(Math.random()-.5)*.4);}}
+     dropAt(d.leaf||'stick',d.leaf?2+Math.floor(Math.random()*3):1+Math.floor(Math.random()*3));if(d.fib)dropAt('fiber',d.fib);killEnt(e);e.hp=d.hp;sfx('fall');msg(d.n+'を切り倒した');}}
+   else{if(dmg)useDur();sfx('chop');shake(e);if(Math.random()<.3)dropAt(d.leaf||'stick',1);}return;}
   if(d.k==='rock'){if(!heldTool('rock')){msg('岩を掘るにはつるはしが必要');return;}e.hp-=heldTool('rock');useDur();sfx('mine');shake(e);mineYield(e.vein,true);
-   if(e.hp<=0){addItem('stone',2);killEnt(e);e.hp=d.hp;msg(d.n+'を砕いた');}return;}
+   if(e.hp<=0){dropAt('stone',2);for(let k=0;k<(e.t==='outcrop'?2:1);k++)addCarry('boulder',e.x+(Math.random()-.5)*1.2,e.z+(Math.random()-.5)*1.2,Math.random()*6.28);killEnt(e);e.hp=d.hp;msg(d.n+'を砕いた。岩が残った');}return;}
   if(d.k==='bush'||d.k==='fiber'){shake(e);return;}}
  if(t.kind==='animal'){const a=t.o;const dmg=heldTool('anim')||5;a.hp-=dmg;a.flee=6;a.fs=Math.max(a.fs,2);useDur();a.hurt=.25;sfx('thud');
   if(a.hp<=0){a.alive=false;const c={t:a.t,x:a.x,z:a.z,ry:a.dir,mesh:a.mesh,legs:a.legs,exp:day+2,alive:true};layCarcass(c);carcasses.push(c);msg(AD[a.t].n+'を仕留めた。ナイフを持って解体しよう');}}
@@ -1005,7 +1049,7 @@ function doHit(){const t=aim.t;
 function layCarcass(c){c.mesh.rotation.set(0,c.ry,Math.PI/2);c.mesh.position.set(c.x,terrainH(c.x,c.z)+(c.t==='goat'?.24:.28),c.z);c.mesh.scale.setScalar(1);c.legs.forEach(l=>l.rotation.x=0);c.mesh.userData.ref={kind:'carcass',o:c};}
 function removeCarcass(c){c.alive=false;scene.remove(c.mesh);const i=carcasses.indexOf(c);if(i>=0)carcasses.splice(i,1);}
 function butcher(c){if(action)return;const h=held();const q=h&&KQ[h.id];if(!q){msg('解体するにはナイフを手に持とう','bad');return;}
- startAction(`${AD[c.t].n}を解体中`,cheat?.3:3.5,()=>{if(!c.alive||held()!==h)return;if(Math.hypot(c.x-pl.x,c.z-pl.z)>5){msg('死体から離れすぎた','bad');return;}
+ startAction(`${AD[c.t].n}を解体中`,cheat?.3:8,()=>{if(!c.alive||held()!==h)return;if(Math.hypot(c.x-pl.x,c.z-pl.z)>5){msg('死体から離れすぎた','bad');return;}
   const B=BUTCH[c.t];for(const k in B)addItem(k,Math.max(1,Math.round(B[k]*q)));useDur(3);sfx('cut');removeCarcass(c);msg(`${AD[c.t].n}を解体した（${I[h.id].n}・収量${Math.round(q*100)}%）`,'good');},'play');}
 const shakes=[];function shake(e){if(shakes.some(s=>s.e===e))return;shakes.push({e,t:.2});}
 
@@ -1050,16 +1094,20 @@ function standAt(x,z){let h=groundAt(x,z);for(const e of near(x,z,3))if(e.alive&
  for(const s of structs){if(Math.abs(s.x-x)>3||Math.abs(s.z-z)>3)continue;const v=stTop(s,x,z);if(v!=null&&v>h)h=v;}return h;}
 function sheltered(){if(inCave())return true;const c=ceilMap.get(fKey(pl.x,pl.z));return c&&Math.abs(pl.x-c.x)<=1.5&&Math.abs(pl.z-c.z)<=1.5&&c.y>pl.y+1;}
 let rainPot=0;
+const MAXSLOPE=1.0;
+function canStep(nx,nz){if(pl.swim)return true;const ng=standAt(nx,nz),d=Math.hypot(nx-pl.x,nz-pl.z);if(d<1e-6)return true;
+ if(!pl.onG)return ng<=pl.y+.35;if(ng-pl.y>1.1)return false;
+ const g0=groundAt(pl.x,pl.z);if(Math.abs(pl.y-g0)<.25&&(groundAt(nx,nz)-g0)/d>MAXSLOPE)return false;return true;}
 function updatePlayer(dt){
  const inp=state==='play';const f=inp?(keys.KeyW?1:0)-(keys.KeyS?1:0):0,s=inp?(keys.KeyD?1:0)-(keys.KeyA?1:0):0;const sy=Math.sin(pl.yaw),cy=Math.cos(pl.yaw);let fx=-sy*f+cy*s,fz=-cy*f-sy*s;const ml=Math.hypot(fx,fz);if(ml>0){fx/=ml;fz/=ml;}
  if(inp&&keys.ShiftLeft&&ml>0)pl.crouchOn=false;pl.crouch=!!pl.crouchOn&&!pl.swim;pl.eye+=((pl.crouch?1.0:1.62)-(pl.eye||1.62))*Math.min(1,dt*12);
- const sprint=keys.ShiftLeft&&ml>0&&pl.stam>1&&!pl.swim&&!pl.crouch;const spd=(sprint?7.2:4.3)*(pl.swim?.55:1)*(pl.crouch?.45:1)*(pl.hp<20?.8:1);
- const[nx,nz]=collide(pl.x+fx*spd*dt,pl.z+fz*spd*dt,pl.y);const ng=standAt(nx,nz);if(!(pl.onG&&ng-pl.y>1.1)){pl.x=nx;pl.z=nz;}
+ const sprint=keys.ShiftLeft&&ml>0&&pl.stam>1&&!pl.swim&&!pl.crouch&&!pl.carry;const spd=(sprint?7.2:4.3)*(pl.swim?.55:1)*(pl.crouch?.45:1)*(pl.carry?.7:1)*(pl.hp<20?.8:1);
+ {const mx=fx*spd*dt,mz=fz*spd*dt;for(const[ax,az]of[[mx,mz],[mx,0],[0,mz]]){if(!ax&&!az)continue;const[nx,nz]=collide(pl.x+ax,pl.z+az,pl.y);if(canStep(nx,nz)){pl.x=nx;pl.z=nz;break;}}}
  const g=standAt(pl.x,pl.z),wl=waterLevel(pl.x,pl.z);pl.swim=wl-g>1.45&&pl.y<wl-.9;
  if(pl.swim){pl.y+=(wl-1.42-pl.y)*Math.min(1,dt*3);if(keys.Space)pl.y+=dt*1.5;pl.vy=0;pl.onG=false;}
  else{const wasG=pl.onG;pl.vy-=22*dt;pl.y+=pl.vy*dt;if(pl.y<=g){if(pl.vy<-13){pl.hp-=(-pl.vy-13)*6;msg('落下して怪我をした','bad');sfx('hurt');pl.cause='落下';}pl.y=g;pl.vy=0;pl.onG=true;}
   else if(wasG&&pl.vy<=0&&pl.y-g<.65){pl.y=g;pl.vy=0;pl.onG=true;}else pl.onG=false;
-  if(keys.Space&&pl.onG&&pl.stam>8){pl.vy=7.2;pl.stam-=8;pl.onG=false;}}
+  if(keys.Space&&pl.onG&&pl.stam>8&&!pl.carry){pl.vy=7.2;pl.stam-=8;pl.onG=false;}}
  if(sprint)pl.stam-=16*dt;else if(!pl.swim)pl.stam=Math.min(100,pl.stam+(ml>0?9:14)*dt);pl.stam=Math.max(0,pl.stam);pl.moving=ml>0;pl.sprint=sprint;
  if((pl.onG||pl.swim)&&ml>0){pl.stepAcc=(pl.stepAcc||0)+spd*dt;if(pl.stepAcc>(pl.swim?2.6:sprint?2.3:1.9)){pl.stepAcc=0;const gy=terrainH(pl.x,pl.z);if(!pl.crouch)sfx('step',(pl.swim||pl.y<wl-.05)?'water':pl.y>gy+.15?(foundMap.get(fKey(pl.x,pl.z))?'wood':'rock'):gy<1.6?'sand':normalY(pl.x,pl.z)<.72?'rock':'grass');}}pl.wet=pl.y<wl-.3;
  // climate: subtropical
@@ -1094,7 +1142,7 @@ function updateAnimals(dt){for(const a of animals){if(!a.alive)continue;const dx
 function newDay(){for(const c of carcasses.slice())if(c.exp<=day)removeCarcass(c);
 for(const id in removed){if(removed[id]<=day){const e=ENT[id];if(Math.hypot(e.x-pl.x,e.z-pl.z)>12){e.alive=true;e.hp=ED[e.t].hp||1;if(e.t==='clay')e.uses=4;setEntVisible(e,true);delete removed[id];}}}
  for(const id in fruitEmpty){if(fruitEmpty[id]<=day){setFruit(ENT[id],true);delete fruitEmpty[id];}}}
-function die(cause){if(state==='dead')return;state='dead';document.exitPointerLock&&document.exitPointerLock();
+function die(cause){if(state==='dead')return;if(pl.carry)dropCarry();state='dead';document.exitPointerLock&&document.exitPointerLock();
  const L=bag.items.map(o=>({id:o.id,n:o.n,d:o.d}));hot.forEach(h=>h&&L.push(h));if(armor)L.push(armor);dropItems(L,pl.x,pl.z);bag.items=[];hot=new Array(8).fill(null);armor=null;invDirty=true;
  $('#deadWhy').textContent=`${day}日目、${cause}のため倒れた。`;$('#dead').classList.add('on');save();}
 function respawn(){const p=spawnBed||SPAWN;pl.x=p.x+.8;pl.z=p.z+.8;pl.y=groundAt(pl.x,pl.z)+.5;pl.vy=0;pl.hp=70;pl.food=Math.max(pl.food,55);pl.water=Math.max(pl.water,55);pl.warm=50;pl.stam=100;pl.sick=0;$('#dead').classList.remove('on');state='play';lock(true);save();}
@@ -1182,9 +1230,9 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:5,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:6,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
- structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
+ structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
 
 // ================= Held model =================
@@ -1214,7 +1262,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  stUiT-=dt;if(stUiT<=0){stUiT=.3;if(state==='inv'&&openCont&&openCont.st&&!drag)renderStation();}
  mapT-=dt;if(mapT<=0){mapT=.25;drawMini();if(state==='map')drawBigMap();}
  if(playing){
-  swingCd-=dt;const h=held(),hd=h&&I[h.id];if(mouseL&&swingT<0&&swingCd<=0&&pl.stam>3&&!(hd&&(hd.place||hd.food||hd.pot))){swingT=0;hitDone=false;pl.stam-=4;swingCd=.5;sfx('swing');}
+  swingCd-=dt;const h=held(),hd=h&&I[h.id];if(mouseL&&!pl.carry&&swingT<0&&swingCd<=0&&pl.stam>3&&!(hd&&(hd.place||hd.food||hd.pot))){swingT=0;hitDone=false;pl.stam-=4;swingCd=.5;sfx('swing');}
   if(swingT>=0){swingT+=dt/.42;if(!hitDone&&swingT>.45){hitDone=true;doHit();}if(swingT>=1)swingT=-1;}}
  if(pl.moving&&pl.onG&&playing){bobPh+=dt*(pl.sprint?11:8);bobAmp=Math.min(1,bobAmp+dt*4);}else bobAmp=Math.max(0,bobAmp-dt*4);
  camY+=(pl.y-camY)*Math.min(1,dt*18);if(Math.abs(pl.y-camY)>1.5)camY=pl.y;
@@ -1258,16 +1306,16 @@ function startGame(data){auInit();$('#loading').style.display='block';
  if(data){Object.assign(pl,data.pl);day=data.day;hours=data.hours;era=data.era;won=!!data.won;spawnBed=data.spawnBed;sel=data.sel||0;bagLv=data.bagLv||0;
   bag=data.bag;hot=data.hot;armor=data.armor;removed=data.removed||{};fruitEmpty=data.fruitEmpty||{};
   for(const id in removed){const e=ENT[id];if(e){e.alive=false;setEntVisible(e,false);}}for(const id in fruitEmpty){const e=ENT[id];if(e&&e.fim)setFruit(e,false);}
-  data.structs.forEach(s=>addStruct(s.t,s.x,s.y,s.z,s.rot,s.cont,s.st));cheat=!!data.cheat;
+  data.structs.forEach(s=>addStruct(s.t,s.x,s.y,s.z,s.rot,s.cont,s.st));(data.carries||[]).forEach(o=>addCarry(o.t,o.x,o.z,o.ry));if(pl.carry)setCarry(pl.carry);cheat=!!data.cheat;
   (data.carcasses||[]).forEach(c=>{const m=makeAnimal(c.t);const o={t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp,mesh:m.g,legs:m.legs,alive:true};scene.add(m.g);layCarcass(o);carcasses.push(o);});}
  else{pl.x=SPAWN.x;pl.z=SPAWN.z;pl.y=terrainH(pl.x,pl.z)+.2;pl.yaw=Math.atan2(pl.x,pl.z);msg('南の島の浜辺で目を覚ました…');msg('枝・小石・チャートを拾おう（F）');}
  for(let k=0;k<26;k++)spawnAnimal(false);
  for(let a=-10;a<10;a++)for(let b=-10;b<10;b++)DEC.set(a+','+b,buildDecor(a,b));updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===5)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===6)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===5&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===6&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
