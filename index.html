@@ -99,8 +99,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 #mapOv{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(4,12,16,.82);z-index:15;flex-direction:column;gap:8px}
 #mapOv.on{display:flex}#mapC{width:min(82vh,92vw);height:min(82vh,92vw);box-shadow:0 0 0 2px var(--wood)}
 #mapOv p{margin:0;font-size:13px;color:var(--dim)}
-#dropZone{margin-top:10px;padding:10px;text-align:center;font-size:12.5px;color:var(--dim);border:2px dashed var(--line)}
-#dropZone.hot{border-color:var(--ember);color:var(--ember)}
+#ctxM{position:fixed;display:none;z-index:45;background:#0b1a1f;border:1px solid var(--line);min-width:120px}#ctxM div{padding:7px 14px;font-size:13px;cursor:pointer}#ctxM div:hover{background:#284650}
 .stslots{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 .slot .prog{position:absolute;left:4px;right:4px;top:3px;height:3px;background:rgba(0,0,0,.55)}.slot .prog i{display:block;height:100%;background:#f0a040}
 .spw{display:grid;grid-template-columns:repeat(8,42px);gap:3px;max-height:44vh;overflow:auto}
@@ -126,7 +125,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
         <div><div class="lbl" style="margin-top:0">手持ち（1〜8）</div><div id="hotI"></div></div>
         <div><div class="lbl" style="margin-top:0">防具</div><div id="armorS"></div></div>
       </div>
-      <div class="lbl">ドラッグで移動・ドラッグ中に R で回転・右クリックで半分に分割・Shift+クリックで一括移動</div><div id="dropZone">ここにドラッグして捨てる（枠の外でも可）</div>
+      <div class="lbl">ドラッグで移動・ドラッグ中に R で回転・右クリックでメニュー（分ける／捨てる）・持ち物の枠の外へドラッグで捨てる・Shift+クリックで一括移動</div><div id="ctxM"></div>
     </div>
     <div class="panel chamf" id="contP" style="display:none"><h3 id="contT"></h3><div class="ggrid" id="contG" data-g="cont"></div><div id="stBody"></div></div>
     <div class="panel chamf" id="spawnP" style="display:none"><h3>アイテム出現 <small>チート：クリックで1スタック</small></h3><div class="spw" id="spw"></div></div>
@@ -164,7 +163,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v8';
+const SAVE_KEY='driftisle_save_v9';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -186,7 +185,7 @@ const GOALS=[
 ];
 const I={
  stick:{n:'枝',st:20},log:{n:'丸太',st:8,sz:[2,1],carry:1},boulder:{n:'岩',st:1,sz:[2,2],carry:1},pebble:{n:'小石',st:30},stone:{n:'石',st:20},chert:{n:'チャート（燧石）',st:20},
- fiber:{n:'苧麻の繊維',st:30},bamboo:{n:'竹',st:10,sz:[1,2]},sasa:{n:'笹',st:30},driftwood:{n:'流木',st:3,sz:[4,1]},takenoko:{n:'たけのこ',st:6,food:{h:6,w:2,sick:.3}},yaki_takenoko:{n:'焼きたけのこ',st:6,food:{h:18,w:3}},cord:{n:'紐',st:20},
+ fiber:{n:'苧麻の繊維',st:30},bamboo:{n:'竹',st:10,sz:[1,2]},sasa:{n:'笹',st:30},leaf:{n:'葉',st:40},driftwood:{n:'流木',st:3,sz:[4,1]},takenoko:{n:'たけのこ',st:6,food:{h:6,w:2,sick:.3}},yaki_takenoko:{n:'焼きたけのこ',st:6,food:{h:18,w:3}},cord:{n:'紐',st:20},
  berries:{n:'リュウキュウイチゴ',st:10,food:{h:6,w:4}},adan_fruit:{n:'アダンの実',st:4,food:{h:9,w:6}},
  raw_meat:{n:'生肉',st:5,food:{h:10,w:0,sick:.5}},cooked_meat:{n:'焼いた肉',st:5,food:{h:35,w:-2}},
  hide:{n:'生皮',st:4,sz:[2,2]},bone:{n:'骨',st:10},fat:{n:'脂肪',st:10},bone_needle:{n:'骨の針'},clay:{n:'粘土',st:20},
@@ -240,7 +239,7 @@ const R=[
  {o:'iron_knife',i:{iron_ingot:1,stick:1},s:'anvil',e:5},{o:'iron_axe',i:{iron_ingot:2,stick:2},s:'anvil',e:5},{o:'iron_pick',i:{iron_ingot:2,stick:2},s:'anvil',e:5},{o:'iron_spear',i:{iron_ingot:2,stick:3},s:'anvil',e:5}
 ];
 R.forEach((r,k)=>{r.id=k;r.q=r.q||1;r.s=r.s||'';});
-const FUEL={driftwood:40,sasa:6,bamboo:25,stick:15,log:60,fat:40,charcoal:120,fiber:5};
+const FUEL={leaf:3,driftwood:40,sasa:6,bamboo:25,stick:15,log:60,fat:40,charcoal:120,fiber:5};
 const PROC={campfire:{raw_meat:['cooked_meat',20],takenoko:['yaki_takenoko',15],pot_salt:['pot_fresh',30]},
  kiln:{unfired_pot:['pot_empty',40],unfired_crucible:['crucible',40],unfired_mold:['mold',35],clay:['brick',25],log:['charcoal',40],copper_ore:['copper_ingot',45,'crucible']},
  bloomery:{iron_ore:['iron_bloom',60]}};
@@ -250,19 +249,19 @@ const KQ={stone_knife:.5,copper_knife:.75,iron_knife:1};
 const BUTCH={goat:{raw_meat:4,fat:2,bone:3,hide:1},boar:{raw_meat:6,fat:4,bone:5,hide:2}};
 const ERA_TRIG={campfire:1,pot_empty:2,crucible:2,mold:2,copper_ingot:3,bronze_ingot:4,iron_ingot:5};
 const ED={
- shii:{n:'スダジイ',k:'tree',r:.42,hp:110,logs:[3,5],re:4},tabu:{n:'タブノキ',k:'tree',r:.4,hp:100,logs:[3,5],re:4},
- gajumaru:{n:'ガジュマル',k:'tree',r:.8,hp:150,logs:[4,6],re:5},matsu:{n:'リュウキュウマツ',k:'tree',r:.3,hp:90,logs:[3,4],re:4},
- biro:{n:'ビロウ',k:'tree',r:.25,hp:60,logs:[2,3],re:4,fib:2},hego:{n:'ヘゴ',k:'tree',r:.2,hp:40,logs:[1,1],re:3,fib:3},
+ shii:{n:'スダジイ',k:'tree',lv:[6,10],r:.42,hp:110,logs:[3,5],re:4},tabu:{n:'タブノキ',k:'tree',lv:[6,10],r:.4,hp:100,logs:[3,5],re:4},
+ gajumaru:{n:'ガジュマル',k:'tree',lv:[8,12],r:.8,hp:150,logs:[4,6],re:5},matsu:{n:'リュウキュウマツ',k:'tree',r:.3,hp:90,logs:[3,4],re:4},
+ biro:{n:'ビロウ',k:'tree',lv:[3,5],r:.25,hp:60,logs:[2,3],re:4,fib:2},hego:{n:'ヘゴ',k:'tree',r:.2,hp:40,logs:[1,1],re:3,fib:3},
  take:{n:'竹（ホウライチク）',k:'tree',r:.55,hp:35,logs:[3,5],wood:'bamboo',leaf:'sasa',re:3,ph:7},
  driftwood:{n:'流木',k:'pick',give:['driftwood',1],re:1},takenoko:{n:'たけのこ',k:'pick',give:['takenoko',1],re:4},
  sotetsu:{n:'ソテツ',k:'tree',r:.35,hp:50,logs:[1,2],re:4},adan:{n:'アダン',k:'tree',r:.6,hp:50,logs:[1,2],re:3,fib:3,fruit:'adan_fruit',pr:1.0,ph:2.8},
- ichigo:{n:'リュウキュウイチゴ',k:'bush',fruit:'berries'},karamushi:{n:'カラムシ（苧麻）',k:'fiber',give:['fiber',3],re:1},
+ ichigo:{n:'リュウキュウイチゴ',k:'bush',fruit:'berries'},sharinbai:{n:'シャリンバイ（低木）',k:'shrub',hp:6,re:2},karamushi:{n:'カラムシ（苧麻）',k:'fiber',give:['fiber',3],re:1},
  rock:{n:'岩',k:'rock',r:.95,hp:100,re:4,sc:[.35,1.05]},shore:{n:'海岸の岩',k:'rock',r:1.0,hp:120,re:5,sc:[.25,1.1]},outcrop:{n:'岩盤の露頭',k:'rock',r:1.8,hp:200,re:5,bed:1,sc:[.5,2.0]},
  stick:{n:'枝',k:'pick',give:['stick',1],re:1},stone:{n:'石',k:'pick',give:['stone',1],re:1},pebble:{n:'小石',k:'pick',give:['pebble',2],re:1},chert:{n:'チャートの欠片',k:'pick',give:['chert',1],re:1},
  clay:{n:'粘土の堆積',k:'clay',give:['clay',2],re:2}
 };
 for(const k in ED)if(ED[k].k==='tree'||ED[k].k==='rock')ED[k].hp*=5;
-const VN={driftwood:2,pebble:1,takenoko:1,take:2,shii:3,tabu:3,gajumaru:2,matsu:3,biro:3,hego:2,adan:2,sotetsu:2,ichigo:2,karamushi:2,rock:3,shore:2,outcrop:3,stick:1,stone:1,chert:1,clay:1};
+const VN={sharinbai:2,driftwood:2,pebble:1,takenoko:1,take:2,shii:3,tabu:3,gajumaru:2,matsu:3,biro:3,hego:2,adan:2,sotetsu:2,ichigo:2,karamushi:2,rock:3,shore:2,outcrop:3,stick:1,stone:1,chert:1,clay:1};
 const VEIN={copper:{n:'孔雀石',ore:'copper_ore',need:1,hint:'岩肌に緑青色の染みが見える'},tin:{n:'錫石',ore:'tin_ore',need:2,hint:'黒褐色の重い粒が混じっている'},iron:{n:'赤鉄鉱',ore:'iron_ore',need:3,hint:'赤錆色の岩肌だ'}};
 const AD={goat:{n:'ノヤギ',hp:40,spd:6.8,meat:2,hide:1,scare:13},boar:{n:'リュウキュウイノシシ',hp:70,spd:7.2,meat:4,hide:2,scare:11}};
 const TIERN=['','石','銅','青銅','鉄'];
@@ -288,6 +287,8 @@ const DR={
  yaki_takenoko:p=>{p.poly([[8,2],[12,14],[4,14]],'#d8b878');p.l(8,4,8,13,'#b08a50');p.l(5,10,11,10,'#8a5a2a');p.l(6,7,10,6,'#8a5a2a');p.sp(4,6,8,8,'#5a3a1a',.15,21);},
  log:p=>{p.r(2,4,25,9,'#6e4a2c');for(let k=0;k<5;k++)p.l(5+k*5,5,6+k*5,11,'#583a22');p.e(27,8.5,3.2,4.6,'#d8b07a');p.e(27,8.5,1.8,2.8,'#c0925a');p.s(27,8,'#9a6a3a');},
  driftwood:p=>{p.poly([[2,10],[6,5],[56,4],[62,7],[58,11],[8,12]],'#c8bca4');p.l(8,8,56,7,'#a89c84',1);p.l(20,5,24,1,'#b8ac94',2);p.l(40,5,45,2,'#b8ac94',2);p.e(61,7.5,1.6,2.4,'#e0d6c0');},
+ leaf:p=>{p.poly([[3,13],[4,6],[9,2],[13,4],[12,10],[7,13]],'#4a8a34');p.l(3,13,11,4,'#2f6a24',1);p.poly([[8,15],[9,10],[14,8],[15,12]],'#5e9a3e');},
+ sharinbai:p=>{p.e(8,8,6,5,'#3a6a2e');p.l(8,15,8,9,'#6b4a2f',1);},
  pebble:p=>{p.e(5,10,3,2.4,'#9a968e');p.e(11,9,2.6,2,'#86827a');p.e(8,5,2.2,1.8,'#a8a49c');p.s(4,9,'#c0bcb4');},
  boulder:p=>{p.poly([[4,26],[2,14],[8,5],[20,3],[29,10],[30,22],[24,29],[10,30]],'#77746c');p.poly([[8,5],[20,3],[24,12],[12,14]],'#8e8a82');p.sp(3,4,26,25,'#5e5b54',.12,30);},
  stone:p=>{p.e(8,9,5.5,4.5,'#8d8a84');p.e(6.5,7.5,2,1.3,'#a6a39c');p.sp(3,5,11,9,'#77746e',.15,3);},
@@ -443,6 +444,10 @@ function ichigo(v){const r=mulberry32(800+v);const parts=[];
  for(let k=0;k<6;k++){const a=r()*6.28,d=r()*.45;parts.push(clump(Math.cos(a)*d,.35+r()*.35,Math.sin(a)*d,.32+r()*.15,'#35602a','#5a8a3c',810+k+v*7,.75));}
  const fp=[];for(let k=0;k<11;k++){const a=k*.57+r(),d=.3+r()*.25;fp.push(P(new THREE.IcosahedronGeometry(.065,0),k%3?'#f2a218':'#e88a10',{x:Math.cos(a)*d,y:.35+r()*.45,z:Math.sin(a)*d}));}
  ICHF[v]=M(fp,0);return M(parts,.08,800+v);}
+function sharinbai(v){const r=mulberry32(1400+v);const parts=[];
+ for(let k=0;k<5;k++){const a=k*1.26+r(),bx=Math.cos(a)*.25,bz=Math.sin(a)*.25;const top=V3(bx*2.2,.6+r()*.35,bz*2.2);parts.push(cyl(V3(bx*.3,0,bz*.3),top,.03,.02,'#6b4a2f',3));
+  parts.push(clump(top.x,top.y+.12,top.z,.32+r()*.1,'#2e5a26','#4c7a3a',1410+k+v*7,.7));}
+ parts.push(clump(0,.55,0,.4,'#2a5222','#466e34',1430+v,.75));return M(parts,.08,1400+v);}
 function karamushi(v){const r=mulberry32(900+v);const parts=[];
  for(let k=0;k<7;k++){const bx=(r()-.5)*.5,bz=(r()-.5)*.5,h=1.0+r()*.4;parts.push(cyl(V3(bx,0,bz),V3(bx+(r()-.5)*.15,h,bz+(r()-.5)*.15),.022,.015,'#5a7a3a',3));
   for(let q=0;q<4;q++){const y=.35+q*.22*h,a=q*2.3+k;parts.push(P(new THREE.CircleGeometry(.15,6),q%2?'#5f8f3c':'#6c9a46',{x:bx+Math.cos(a)*.12,y,z:bz+Math.sin(a)*.12,rx:-Math.PI/2+.5,ry:-a,ord:'YZX'}));}}
@@ -459,7 +464,7 @@ function buildGeos(){const C=THREE;
   const op=[P(jit(new C.DodecahedronGeometry(2.1,0),.9,v+71),'#625f58',{y:.6,sy:.85,top:'#7f7c72'}),P(jit(new C.DodecahedronGeometry(1.5,0),.6,v+81),'#5a5750',{x:1.6,y:.3,z:.6,top:'#77746a'})];
   for(let k=0;k<3;k++)op.push(P(new C.BoxGeometry(1.4,.5,1.0),'#6a675f',{x:-.8+k*.7,y:1.6+k*.25,z:-.4+k*.3,rx:.3*k,ry:k,rz:.4,top:'#86837a'}));
   GEO['outcrop'+v]=M(op,.1,v+90);}
- for(let v=0;v<2;v++){GEO['take'+v]=bamboo(v);GEO['gajumaru'+v]=gaju(v);GEO['hego'+v]=hego(v);GEO['adan'+v]=adan(v);GEO['sotetsu'+v]=sotetsu(v);GEO['ichigo'+v]=ichigo(v);GEO['karamushi'+v]=karamushi(v);
+ for(let v=0;v<2;v++){GEO['sharinbai'+v]=sharinbai(v);GEO['take'+v]=bamboo(v);GEO['gajumaru'+v]=gaju(v);GEO['hego'+v]=hego(v);GEO['adan'+v]=adan(v);GEO['sotetsu'+v]=sotetsu(v);GEO['ichigo'+v]=ichigo(v);GEO['karamushi'+v]=karamushi(v);
   GEO['shore'+v]=M([P(jit(new C.IcosahedronGeometry(1.1,1),.5,v+61),'#4a4844',{y:.25,sx:1.4,sy:.55,top:'#6a665e'})],.12,v+6);
   GEO['F_adan'+v]=ADANF[v];GEO['F_ichigo'+v]=ICHF[v];}
  GEO.stick0=M([P(new C.CylinderGeometry(.04,.05,1,4),'#7a5534',{y:.05,rz:Math.PI/2}),P(new C.CylinderGeometry(.025,.03,.35,4),'#6d4a2c',{x:.2,y:.05,z:.1,rz:Math.PI/2,ry:.8})],.1,6);
@@ -479,6 +484,7 @@ function buildGeos(){const C=THREE;
  GEO.s_campfire=M(sp,.1,13);
  {const DW='#c8bca4',DW2='#b8ac94',sp2=[];for(const x of[-1.5,1.5]){sp2.push(cyl(V3(x,-.05,-1.25),V3(x,2.05,.12),.07,.06,DW,6),cyl(V3(x+.05,-.05,1.25),V3(x+.05,2.05,-.12),.07,.06,DW2,6),P(new C.TorusGeometry(.09,.025,4,8),'#a8824a',{x,y:1.82,ry:Math.PI/2}));}
   sp2.push(cyl(V3(-1.95,1.84,0),V3(1.95,1.84,0),.065,.06,DW,6));GEO.s_shelter=M(sp2,.08,14);
+  GEO.shelterLeaf=M([P(new C.PlaneGeometry(.42,.78),'#3e7a2e',{top:'#5e9a3e'}),P(new C.PlaneGeometry(.3,.6),'#4a8636',{x:.12,y:-.05,z:.02,rz:.3})],.12,16);
   GEO.shelterStick=M([cyl(V3(0,1.8,.08),V3(0,-.05,1.5),.035,.03,'#7a5534',4),cyl(V3(0,1.1,.68),V3(.14,1.3,.75),.012,.01,'#6d4a2c',3)],.1,15);}
  const wb=[P(new C.BoxGeometry(1.8,.14,.9),'#a8784a',{y:.92})];[[-.8,-.35],[.8,-.35],[-.8,.35],[.8,.35]].forEach(([x,z])=>wb.push(P(new C.BoxGeometry(.12,.86,.12),'#7a5530',{x,y:.43,z})));
  wb.push(P(new C.BoxGeometry(.4,.06,.18),'#8d8a84',{x:-.4,y:1.02,z:.1}));wb.push(P(new C.BoxGeometry(1.6,.08,.7),'#8a6238',{y:.3}));GEO.s_workbench=M(wb,.1,14);
@@ -595,7 +601,7 @@ function buildTerrain(){
   const ax=pos[s],ay=pos[s+1],az=pos[s+2],bx=pos[s+3]-ax,by=pos[s+4]-ay,bz=pos[s+5]-az,cx=pos[s+6]-ax,cy=pos[s+7]-ay,cz=pos[s+8]-az;
   const nx=by*cz-bz*cy,ny0=bz*cx-bx*cz,nz=bx*cy-by*cx;const ny=ny0/(Math.hypot(nx,ny0,nz)||1);
   const h=(pos[s+1]+pos[s+4]+pos[s+7])/3,mx=(pos[s]+pos[s+3]+pos[s+6])/3,mz=(pos[s+2]+pos[s+5]+pos[s+8])/3;const pd=inPond(mx,mz,2.5);
-  if(h<-.3)tc.set('#d8ceb0');else if(h<1.5)tc.set('#ece2c6');else if(pd&&h<pd.level+.6)tc.set('#6e5a3e');
+  if(h<-.3)tc.set('#9c8964');else if(h<1.5)tc.set('#c2aa76');else if(pd&&h<pd.level+.6)tc.set('#6e5a3e');
   else if(ny<.7){tc.set('#5f5c56');const v=veinAt(mx,mz);if(v)tc.lerp(t2.set(VT[v]),.55);}
   else if(h<2.3)tc.set('#a9a46c');
   else{const f=forestAt(mx,mz);tc.set(h>24?'#6b8a40':'#5e8c34').lerp(t2.set('#3a6224'),f*.85);if(ny<.8)tc.lerp(t2.set('#6a6a50'),.35);}
@@ -608,7 +614,7 @@ function buildWater(){
  seaGeo=new THREE.PlaneGeometry(700,700,140,140);seaGeo.rotateX(-Math.PI/2);seaBase=seaGeo.attributes.position.array.slice();
  const n=seaBase.length/3,col=new Float32Array(n*3),c=new THREE.Color(),c2=new THREE.Color();
  for(let i=0;i<n;i++){const d=-terrainH(seaBase[i*3],seaBase[i*3+2]);
-  if(d<.35)c.set('#d8f2ee');else if(d<3)c.set('#46d0c8').lerp(c2.set('#1fa0b8'),(d-.35)/2.65);else if(d<10)c.set('#1fa0b8').lerp(c2.set('#14689e'),(d-3)/7);else c.set('#14689e').lerp(c2.set('#0b3f6e'),Math.min(1,(d-10)/4));
+  if(d<.35)c.set('#5ccac0');else if(d<3)c.set('#46c4bc').lerp(c2.set('#1fa0b8'),(d-.35)/2.65);else if(d<10)c.set('#1fa0b8').lerp(c2.set('#14689e'),(d-3)/7);else c.set('#14689e').lerp(c2.set('#0b3f6e'),Math.min(1,(d-10)/4));
   col[i*3]=c.r;col[i*3+1]=c.g;col[i*3+2]=c.b;}
  seaGeo.setAttribute('color',new THREE.BufferAttribute(col,3));
  const sea=new THREE.Mesh(seaGeo,new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,transparent:true,opacity:.82,shininess:90,specular:0x6688aa}));sea.position.y=-.05;sea.receiveShadow=true;scene.add(sea);
@@ -642,23 +648,23 @@ function genEntities(){
  const L=[];const push=(t,x,z,s)=>{if(caveAt(x,z,1.4))return;if(Math.hypot(x-SPAWN.x,z-SPAWN.z)<2.5&&ED[t].r)return;L.push({t,x,z,s:s||(.85+rng()*.3),ry:rng()*6.283,v:Math.floor(rng()*VN[t])});};
  SPAWN=findSpawn();const CS=3.5;
  for(let gx=-62;gx<62;gx++)for(let gz=-62;gz<62;gz++){const x=gx*CS+(rng()-.5)*CS*.9,z=gz*CS+(rng()-.5)*CS*.9;const h=terrainH(x,z);if(h<.6||inPond(x,z,1.6))continue;const ny=normalY(x,z);
-  if(h<2.2){const p=rng();if(p<.08)push('adan',x,z,.8+rng()*.4);else if(p<.12)push('biro',x,z,.85+rng()*.3);else if(p<.135)push('sotetsu',x,z);continue;}
+  if(h<2.2){const p=rng();if(p<.08)push('adan',x,z,.8+rng()*.4);else if(p<.12)push('biro',x,z,.85+rng()*.3);else if(p<.135)push('sotetsu',x,z);else if(p<.17)push('sharinbai',x,z,.8+rng()*.3);continue;}
   if(ny<.7){if(rng()<.09)push('sotetsu',x,z);continue;}
   if(h>3&&h<20&&ny>.78&&fbm(x*.02+500,z*.02-300,3)>.6){if(rng()<.8)push('take',x,z,.85+rng()*.3);else if(rng()<.22)push('takenoko',x,z,.9+rng()*.3);continue;}
   const f=forestAt(x,z)*(h>26?.55:1);
   if(rng()<f*.85+.07){const q=rng();let t;
    if(h<5)t=q<.3?'biro':q<.5?'adan':q<.75?'gajumaru':'matsu';else if(h>20)t=q<.45?'matsu':q<.82?'shii':'tabu';else t=q<.42?'shii':q<.66?'tabu':q<.76?'gajumaru':q<.9?'hego':'matsu';
    push(t,x,z,.8+rng()*.45);}
-  else{const q=rng();if(q<.05)push('ichigo',x,z);else if(q<.11)push('karamushi',x,z);}}
+  else{const q=rng();if(q<.05)push('ichigo',x,z);else if(q<.11)push('karamushi',x,z);else if(q<.17)push('sharinbai',x,z,.8+rng()*.4);}}
  const sc=(t,n,cond,area)=>{let k=0,tr=0;area=area||[0,0,205];while(k<n&&tr<n*80){tr++;const a=rng()*6.283,rr=Math.sqrt(rng())*area[2];const x=area[0]+Math.cos(a)*rr,z=area[1]+Math.sin(a)*rr;const h=terrainH(x,z);if(inPond(x,z,1.5))continue;if(!cond(h,normalY(x,z),x,z))continue;push(t,x,z);k++;}};
  sc('rock',150,(h,ny)=>h>2.5&&ny>.75);sc('shore',90,(h)=>h>.1&&h<1.6);sc('outcrop',70,(h,ny)=>h>5&&ny<.86&&ny>.55);
  veins.forEach(v=>{for(let k=0;k<5;k++){const a=rng()*6.283,d=rng()*v.r*.7;const x=v.x+Math.cos(a)*d,z=v.z+Math.sin(a)*d;if(terrainH(x,z)>1)push('outcrop',x,z,.8+rng()*.4);}});
  sc('stick',260,(h)=>h>1&&h<22);sc('stone',110,(h,ny)=>h>.5&&h<30&&ny>.75);sc('driftwood',70,(h,ny)=>h>.15&&h<1.3&&ny>.85);sc('pebble',200,(h,ny)=>h>.3&&h<30&&ny>.75);sc('chert',70,(h)=>h>.4&&h<3);sc('chert',50,(h,ny)=>h>3&&ny<.9);
- const sa=[SPAWN.x,SPAWN.z,24];sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('pebble',8,(h)=>h>.3,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
+ const sa=[SPAWN.x,SPAWN.z,24];sc('sharinbai',6,(h,ny)=>h>.8&&ny>.8,[SPAWN.x,SPAWN.z,35]);sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('pebble',8,(h)=>h>.3,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
  ponds.forEach(p=>{for(let k=0;k<28;k++){const a=k/28*6.283+rng()*.3,r=pondRa(p,a)+1.6+rng()*2.2,x=p.x+Math.cos(a)*r,z=p.z+Math.sin(a)*r;if(normalY(x,z)<.86||terrainH(x,z)<p.level+.15)continue;push('clay',x,z,1);}});
  // build instanced meshes
  const groups={};L.forEach(e=>{const ck=Math.floor(e.x/ECS)+','+Math.floor(e.z/ECS);e.ck=ck;(groups[e.t+e.v+'|'+ck]=groups[e.t+e.v+'|'+ck]||[]).push(e);});
- for(const gkey in groups){const G=groups[gkey];const key=gkey.split('|')[0];const t=G[0].t;const d=ED[t];const veg=d.k==='tree'||d.k==='bush'||d.k==='fiber';
+ for(const gkey in groups){const G=groups[gkey];const key=gkey.split('|')[0];const t=G[0].t;const d=ED[t];const veg=d.k==='tree'||d.k==='bush'||d.k==='fiber'||d.k==='shrub';
   const im=new THREE.InstancedMesh(GEO[key],veg?MATV:MAT,G.length);im.frustumCulled=false;im.castShadow=d.k!=='pick'&&d.k!=='clay';im.receiveShadow=true;IMS[gkey]=im;regChunk(G[0].ck,im);
   let fim=null;if(d.fruit){fim=new THREE.InstancedMesh(GEO['F_'+key],MAT,G.length);fim.frustumCulled=false;fim.castShadow=true;IMS['F_'+gkey]=fim;regChunk(G[0].ck,fim);}
   G.forEach((r,i)=>{const y=terrainH(r.x,r.z);const off=d.k==='tree'?-.15:t==='outcrop'?-.9*r.s:t==='rock'?-.3*r.s:t==='shore'?-.2*r.s:0;
@@ -725,7 +731,7 @@ const DAYLEN=720,REACH=3.6;
 
 // ================= Structures =================
 function makeStructMesh(t){const g=new THREE.Group();const m=new THREE.Mesh(GEO['s_'+t],MAT);m.castShadow=true;m.receiveShadow=true;g.add(m);
- if(t==='shelter'){const L=[];for(let k=0;k<10;k++){const sm=new THREE.Mesh(GEO.shelterStick,MAT);sm.position.x=-1.45+k*.322;sm.rotation.y=(k%3-1)*.06;sm.castShadow=true;sm.visible=false;g.add(sm);L.push(sm);}g.userData.sticks=L;}
+ if(t==='shelter'){const L=[];for(let k=0;k<10;k++){const sm=new THREE.Mesh(GEO.shelterStick,MAT);sm.position.x=-1.4+(k+.5)*.28;sm.rotation.y=(k%3-1)*.06;sm.castShadow=true;sm.visible=false;g.add(sm);L.push(sm);}g.userData.sticks=L;const LV=[];for(let k=0;k<30;k++){const row=Math.floor(k/10),col=k%10,t=.18+row*.3;const lm=new THREE.Mesh(GEO.shelterLeaf,MATV);lm.position.set(-1.35+(col+.5)*.27+(row%2)*.06,1.8-1.85*t,.14+1.4*t);lm.rotation.set(-.65,(col%3-1)*.12,(row-1)*.05);lm.castShadow=true;lm.visible=false;g.add(lm);LV.push(lm);}g.userData.leaves=LV;}
  if(SD[t].light){const f=new THREE.Group();f.add(new THREE.Mesh(new THREE.ConeGeometry(.3,.8,5),FLAME1));const f2=new THREE.Mesh(new THREE.ConeGeometry(.16,.5,5),FLAME2);f2.position.y=-.05;f.add(f2);
   if(t==='campfire')f.position.y=.45;if(t==='kiln'){f.position.set(0,.35,1.02);f.scale.setScalar(.5);}if(t==='bloomery'){f.position.set(0,.5,.85);f.scale.setScalar(.45);}g.add(f);g.userData.flame=f;}
  return g;}
@@ -737,21 +743,24 @@ function addStruct(t,x,y,z,rot,cont,st){const s={t,x,y,z,rot:rot||0,r:SD[t].r||0
  if(PROC[t]){const sl=SLOTS[t];s.st=st||{fuel:[null],in:new Array(sl.in).fill(null),out:new Array(sl.out).fill(null),prog:new Array(sl.in).fill(0),lit:false,burn:0};if(sl.tool&&!s.st.tool)s.st.tool=[null];}
  s.mesh=makeStructMesh(t);s.mesh.position.set(x,y,z);s.mesh.rotation.y=SD[t].build?s.rot*Math.PI/2:s.rot*Math.PI/4;s.mesh.userData.ref={kind:'struct',o:s};scene.add(s.mesh);s.boxes=structBoxes(s);structs.push(s);
  if(t==='foundation')foundMap.set(fKey(x,z),s);if(t==='wall'||t==='doorway')wallMap.set(wKey(x,z),s);if(t==='ceiling')ceilMap.set(fKey(x,z),s);
- if(t==='box'&&!s.cont)s.cont={w:8,h:6,items:[]};if(t==='shelter'){if(!s.cont)s.cont={sticks:0};updShelter(s);}return s;}
-const SHELTER_N=10,shelterDone=s=>s.t==='shelter'&&s.cont&&s.cont.sticks>=SHELTER_N;
-function updShelter(s){(s.mesh.userData.sticks||[]).forEach((m,k)=>m.visible=k<s.cont.sticks);}
-function inShelter(){for(const s of structs){if(!shelterDone(s)||Math.abs(s.x-pl.x)>3||Math.abs(s.z-pl.z)>3)continue;const a=s.rot*Math.PI/4,dx=pl.x-s.x,dz=pl.z-s.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<1.6&&lz>-.9&&lz<1.3&&pl.y<s.y+1.2)return s;}return null;}
+ if(t==='box'&&!s.cont)s.cont={w:8,h:6,items:[]};if(t==='shelter'){if(!s.cont)s.cont={sticks:0,leaves:0};s.cont.leaves=s.cont.leaves||0;updShelter(s);}return s;}
+const SHELTER_N=10,SHELTER_L=30,shelterDone=s=>s.t==='shelter'&&s.cont&&s.cont.sticks>=SHELTER_N&&s.cont.leaves>=SHELTER_L;
+function updShelter(s){(s.mesh.userData.sticks||[]).forEach((m,k)=>m.visible=k<s.cont.sticks);(s.mesh.userData.leaves||[]).forEach((m,k)=>m.visible=k<s.cont.leaves);}
+function bedSpot(x,z){return !!shelterAt(x,z)||caves.some(c=>{const[u,v]=caveLoc(c,x,z);return Math.abs(u)<c.hw&&v>1&&v<c.L;});}
+function inShelter(){const s=shelterAt(pl.x,pl.z);return s&&pl.y<s.y+1.2?s:null;}
+function shelterAt(x,z){for(const s of structs){if(!shelterDone(s)||Math.abs(s.x-x)>3||Math.abs(s.z-z)>3)continue;const a=s.rot*Math.PI/4,dx=x-s.x,dz=z-s.z,lx=dx*Math.cos(a)-dz*Math.sin(a),lz=dx*Math.sin(a)+dz*Math.cos(a);if(Math.abs(lx)<1.6&&lz>-.9&&lz<1.3)return s;}return null;}
 const isLit=s=>!s.st||s.st.lit;
 function removeStruct(s){scene.remove(s.mesh);const i=structs.indexOf(s);if(i>=0)structs.splice(i,1);
  if(s.t==='foundation')foundMap.delete(fKey(s.x,s.z));if(SD[s.t].build==='w')wallMap.delete(wKey(s.x,s.z));if(s.t==='ceiling')ceilMap.delete(fKey(s.x,s.z));
  if((s.t==='bed'||s.t==='shelter')&&spawnBed&&Math.hypot(spawnBed.x-s.x,spawnBed.z-s.z)<.5)spawnBed=null;}
 const gitems=[],GTEX={},GHIT=new THREE.SphereGeometry(.32,6,4),GHITM=new THREE.MeshBasicMaterial({visible:false});
-const GCOL={fiber:'#d8d0a8',cord:'#c9a46a',sasa:'#5e9a3e',bamboo:'#8ab048',clay:'#9a6a46',raw_meat:'#c04848',cooked_meat:'#8a4a28',hide:'#b08a64',bone:'#ece6d6',fat:'#f0e6c8',berries:'#f2a218',adan_fruit:'#e08a28',charcoal:'#2a2624',copper_ore:'#3fae6a',tin_ore:'#3a322c',iron_ore:'#a04a32',brick:'#b5502e',yaki_takenoko:'#d8b878'};
+const GCOL={leaf:'#4f8a34',fiber:'#d8d0a8',cord:'#c9a46a',sasa:'#5e9a3e',bamboo:'#8ab048',clay:'#9a6a46',raw_meat:'#c04848',cooked_meat:'#8a4a28',hide:'#b08a64',bone:'#ece6d6',fat:'#f0e6c8',berries:'#f2a218',adan_fruit:'#e08a28',charcoal:'#2a2624',copper_ore:'#3fae6a',tin_ore:'#3a322c',iron_ore:'#a04a32',brick:'#b5502e',yaki_takenoko:'#d8b878'};
 function gMesh(id){const C=THREE,d=I[id];if(GEO[id+'0']&&id!=='clay')return new THREE.Mesh(GEO[id+'0'],MAT);
  if(d.shape||d.light||d.pot){const g=buildHeld(id);g.rotation.set(0,Math.random()*6.28,Math.PI/2);g.position.y=.06;g.scale.setScalar(1.3);return g;}
  const c=GCOL[id]||'#9a8a70',sz=SZ(id);let parts;
  if(id==='fiber')parts=[0,1,2,3,4].map(k=>P(new C.CylinderGeometry(.012,.012,.55,3),k%2?c:'#c8c0a0',{x:(k-2)*.025,y:.03,rz:Math.PI/2,ry:k*.08}));
  else if(id==='cord')parts=[P(new C.TorusGeometry(.12,.03,4,10),c,{y:.03,rx:Math.PI/2}),P(new C.TorusGeometry(.08,.03,4,10),'#a8824a',{y:.06,rx:Math.PI/2})];
+ else if(id==='leaf')parts=[0,1,2].map(k=>P(new C.CircleGeometry(.13,6),k%2?c:'#5e9a3e',{x:(k-1)*.12,y:.02+k*.004,rx:-Math.PI/2,sx:.6}));
  else if(id==='sasa')parts=[0,1,2].map(k=>P(new C.PlaneGeometry(.1,.35),k%2?c:'#4f8a34',{y:.02+k*.005,rx:-Math.PI/2,rz:k*.7}));
  else if(id==='bamboo')parts=[P(new C.CylinderGeometry(.06,.06,1.8,6),c,{y:.06,rz:Math.PI/2})];
  else if(id==='hide')parts=[P(new C.BoxGeometry(.6,.03,.45),c,{y:.02})];
@@ -840,6 +849,7 @@ let selRec=null;
 function calcStations(){}
 const curStation=()=>openCont&&SD[openCont.t].station?openCont.t:'';
 const stationReady=t=>!!openCont&&openCont.t===t&&isLit(openCont);
+function hasMats(r){if(cheat)return true;if(r.t&&r.t.some(t=>!countItem(t)))return false;for(const k in r.i)if(countItem(k)<r.i[k])return false;return true;}
 function canCraft(r){if(cheat)return true;if(r.s&&!stationReady(r.s))return false;if(r.t&&r.t.some(t=>!countItem(t)))return false;for(const k in r.i)if(countItem(k)<r.i[k])return false;return true;}
 const recVisible=r=>r.e<=era+1&&!(UPG[r.o]&&bagLv>=UPG[r.o].lv);
 function renderCraft(){const cs=curStation();const base=cheat?R:R.filter(r=>r.s===''||r.s===cs);const vis=base.filter(r=>cheat||recVisible(r));const hidden=cheat?0:base.filter(r=>r.e>era+1).length;let h='';
@@ -857,22 +867,22 @@ function renderDetail(){const el=$('#rdetail');if(selRec==null||(!cheat&&!recVis
  if(r.t)r.t.forEach(t=>{const ok=countItem(t)>0;h+=`<div class="need ${ok?'ok':'no'}"><span><img class="px" src="${icon(t)}" alt="">${I[t].n}（消費しない）</span><span>${ok?'あり':'なし'}</span></div>`;});
  if(r.s){const ok=stationReady(r.s);h+=`<div class="need ${ok?'ok':'no'}"><span>設備：${STN[r.s]}</span><span>${ok?'使用できる':'開いていない／火が無い'}</span></div>`;}
  if(cheat)h+=`<div style="color:#f0a040;font-size:12px">チートモード：素材なしで作成できる</div>`;
- h+=`<div style="margin-top:10px"><button id="craftBtn" ${canCraft(r)?'':'disabled'}>作成する（${craftDur(r).toFixed(1)}秒）</button></div>`;el.innerHTML=h;}
-function craftDur(r){const d=I[r.o];if(r.o==='cord')return 10;return d.place||d.tool?10:(d.armor||UPG[r.o])?12:6;}
+ h+=`<div style="margin-top:10px"><button id="craftBtn" ${canCraft(r)?'':'disabled'}>作成する${craftDur(r)?`（${craftDur(r).toFixed(1)}秒）`:''}</button></div>`;el.innerHTML=h;}
+function craftDur(r){const d=I[r.o];if(r.o==='shelter')return 0;if(r.o==='cord')return 10;return d.place||d.tool?10:(d.armor||UPG[r.o])?12:6;}
 function descItem(id){const d=I[id];const L=[];
  if(d.food)L.push(`満腹 +${d.food.h}`+(d.food.w?` / 水分 ${d.food.w>0?'+':''}${d.food.w}`:'')+(d.food.sick?'（食あたりの危険）':''));
  if(d.tool){const t=d.tool;if(t.tree)L.push('伐採 '+t.tree);if(t.rock)L.push(`採掘 ${t.rock}（${TIERN[t.tier]}等級）`);if(t.anim)L.push('攻撃 '+t.anim);}
  if(d.knife)L.push('手に持って獲物の死体を解体できる');if(d.dur&&!d.light)L.push('耐久 '+d.dur);if(d.light)L.push('手に持つと明るい（約4分で燃え尽きる）');
  if(d.armor)L.push('防具欄に入れると雨や水濡れで体が冷えにくい');if(d.place)L.push('手持ちに入れて左クリックで設置');
  if(UPG[id])L.push(`持ち物の枠が ${UPG[id].w}×${UPG[id].h} に広がる`);
- if(I[id].carry)L.push('大きいので持ち物には入らない。左クリックで担いで運び、もう一度左クリックで下ろす。近く（6m以内）に置けばクラフトの材料になる');if(id==='driftwood')L.push('砂浜に流れ着く。燃料になり、割ると枝が3本取れる');if(id==='pebble')L.push('焚き火の石組みに使える');
+ if(I[id].carry)L.push('大きいので持ち物には入らない。左クリックで担いで運び、もう一度左クリックで下ろす。近く（6m以内）に置けばクラフトの材料になる');if(id==='driftwood')L.push('砂浜に流れ着く。燃料になり、割ると枝が3本取れる');if(id==='leaf')L.push('シェルターの屋根葺きや燃料に使う。低木（シャリンバイ）を手でむしる・広葉樹を伐り倒す・カラムシや野イチゴから取れる');if(id==='pebble')L.push('焚き火の石組みに使える');
  if(id==='bamboo')L.push('燃料や竹槍の材料になる');if(id==='sasa')L.push('燃料や寝床の材料になる');if(id==='takenoko')L.push('生はえぐい。焚き火で焼こう');if(id==='pot_empty')L.push('水辺で F を押すと水を汲める／雨の中で手に持つと雨水が溜まる');if(id==='pot_fresh')L.push('右クリックで飲む（水分 +40）');if(id==='pot_salt')L.push('焚き火で煮沸すると真水になる');
  if(FUEL[id])L.push(`燃料 ${FUEL[id]}秒`);if(id==='bone_needle')L.push('蓑や背負い袋を縫うのに使う（消費しない）');if(KQ[id])L.push(`解体の収量 ${Math.round(KQ[id]*100)}%`);
  if(id==='canoe')L.push('これを作れば島を脱出できる');const s=SZ(id);L.push(`大きさ ${s[0]}×${s[1]}`);return L.join(' ／ ');}
 $('#recipes').addEventListener('click',e=>{const r=e.target.closest('.rec');if(!r)return;selRec=+r.dataset.r;renderCraft();});
 $('#rdetail').addEventListener('click',e=>{if(e.target.id!=='craftBtn')return;craftQueue(R[selRec],e.shiftKey?5:1);});
-function craftQueue(r,n){if(!canCraft(r))return;const tw=r.o==='cord';if(tw&&state==='inv')closeInv(false);
- if(startAction(tw?'繊維をより合わせて紐を綯っている':`${I[r.o].n}を作成中`,craftDur(r),()=>{if(!canCraft(r)){msg('素材が足りない','bad');return;}craft(r);if(state==='inv')renderInv();if(n>1&&canCraft(r))setTimeout(()=>craftQueue(r,n-1),0);},tw?'play':'inv')&&tw)action.anim='twist';}
+function craftQueue(r,n){if(!canCraft(r))return;if(!craftDur(r)){craft(r);if(state==='inv')renderInv();return;}const tw=r.o==='cord';if(tw&&state==='inv')closeInv(false);
+ if(startAction(tw?'繊維をより合わせて紐を綯っている':`${I[r.o].n}を作成中`,craftDur(r),()=>{if(!hasMats(r)){msg('素材が足りない','bad');return;}craft(r);if(state==='inv')renderInv();if(n>1&&canCraft(r))setTimeout(()=>craftQueue(r,n-1),0);},tw?'play':'craft')&&tw)action.anim='twist';}
 function checkEra(id){const t=ERA_TRIG[id];if(t!=null&&t>era)setEra(t);}
 function craft(r){if(!cheat)for(const k in r.i)removeItem(k,r.i[k]);
  if(r.o==='canoe'){winGame();return;}
@@ -913,18 +923,25 @@ function quickMove(src){const it=src.it;srcRemove(src);let rem=it.n;
  cleanupDrop();renderInv();}
 function cleanupDrop(){}
 $('#inv').addEventListener('contextmenu',e=>e.preventDefault());
-$('#inv').addEventListener('mousedown',e=>{const src=srcGet(e.target);if(!src)return;e.preventDefault();
+function hideCtx(){$('#ctxM').style.display='none';}
+function showCtx(src,x,y){const it=src.it,m=$('#ctxM');let h='';if(it.n>1)h+='<div data-c="half">半分に分ける</div><div data-c="one">1つ捨てる</div>';h+=`<div data-c="all">捨てる${it.n>1?'（すべて）':''}</div>`;
+ m.innerHTML=h;m.style.display='block';tipEl.style.display='none';m.style.left=Math.min(x,innerWidth-140)+'px';m.style.top=Math.min(y,innerHeight-110)+'px';
+ m.onmousedown=ev=>{ev.stopPropagation();ev.preventDefault();const c=ev.target.dataset.c;hideCtx();if(!c)return;const fx=pl.x-Math.sin(pl.yaw)*1.2,fz=pl.z-Math.cos(pl.yaw)*1.2;
+  if(c==='half'){const hn=Math.floor(it.n/2);it.n-=hn;drag={it:{id:it.id,n:hn,r:it.r||0},src,split:true,orig:it,gx:0,gy:0};ghostEl.style.display='block';ghostUpdate(ev.clientX,ev.clientY);renderInv();hoverGrid(ev.clientX,ev.clientY);return;}
+  if(c==='one'){it.n--;dropItems([{id:it.id,n:1,d:it.d}],fx,fz);}else{srcRemove(src);dropItems([{id:it.id,n:it.n,d:it.d}],fx,fz);}
+  msg(I[it.id].n+'を捨てた');invDirty=true;renderInv();};}
+$('#inv').addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('#ctxM'))return;hideCtx();const src=srcGet(e.target);if(!src)return;e.preventDefault();
+ if(e.button===2){showCtx(src,e.clientX,e.clientY);return;}
  if(e.shiftKey){quickMove(src);return;}
  let gx=0,gy=0;const itEl=e.target.closest('.it');if(itEl){const rc=itEl.getBoundingClientRect();gx=Math.floor((e.clientX-rc.left)/CELLPX);gy=Math.floor((e.clientY-rc.top)/CELLPX);}
  else{const[w,h]=isz(src.it);gx=Math.floor(w/2);gy=Math.floor(h/2);}
  const it=src.it;
- if(e.button===2&&it.n>1){const hn=Math.floor(it.n/2);it.n-=hn;drag={it:{id:it.id,n:hn,r:it.r||0},src,split:true,orig:it,gx:0,gy:0};}
- else{srcRemove(src);if(src.type==='grid'){src.ox=it.x;src.oy=it.y;src.or=it.r||0;}else it.r=it.r||0;drag={it,src,gx,gy};}
+ {srcRemove(src);if(src.type==='grid'){src.ox=it.x;src.oy=it.y;src.or=it.r||0;}else it.r=it.r||0;drag={it,src,gx,gy};}
  ghostEl.style.display='block';ghostUpdate(e.clientX,e.clientY);tipEl.style.display='none';renderInv();hoverGrid(e.clientX,e.clientY);});
 addEventListener('mousemove',e=>{
- if(drag){ghostUpdate(e.clientX,e.clientY);hoverGrid(e.clientX,e.clientY);const el=document.elementFromPoint(e.clientX,e.clientY);$('#dropZone').classList.toggle('hot',!!(el&&el.closest&&el.closest('#dropZone')));return;}
+ if(drag){ghostUpdate(e.clientX,e.clientY);hoverGrid(e.clientX,e.clientY);const el=document.elementFromPoint(e.clientX,e.clientY);return;}
  if(state==='inv'){const src=e.target&&e.target.closest?srcGet(e.target):null;
-  if(src){tipEl.innerHTML=`<b>${I[src.it.id].n}</b><br>${descItem(src.it.id)}`;tipEl.style.display='block';tipEl.style.left=Math.min(e.clientX+14,innerWidth-260)+'px';tipEl.style.top=(e.clientY+14)+'px';}else tipEl.style.display='none';}});
+  if(src&&$('#ctxM').style.display!=='block'){tipEl.innerHTML=`<b>${I[src.it.id].n}</b><br>${descItem(src.it.id)}`;tipEl.style.display='block';tipEl.style.left=Math.min(e.clientX+14,innerWidth-260)+'px';tipEl.style.top=(e.clientY+14)+'px';}else tipEl.style.display='none';}});
 addEventListener('mouseup',e=>{if(!drag)return;const el=document.elementFromPoint(e.clientX,e.clientY);const it=drag.it;
  const hg=hoverGrid(e.clientX,e.clientY);const slot=el&&el.closest&&el.closest('.slot');
  if(hg){if(hg.merge){const st=STK(it.id);const k=Math.min(st-hg.under.n,it.n);hg.under.n+=k;it.n-=k;if(it.n>0)returnDrag();}
@@ -938,12 +955,12 @@ addEventListener('mouseup',e=>{if(!drag)return;const el=document.elementFromPoin
   if(!canAccept(key,it.id))returnDrag();else if(!cur)arr[i]={id:it.id,n:it.n,d:it.d};
   else if(cur.id===it.id&&STK(it.id)>1){const k=Math.min(STK(it.id)-cur.n,it.n);cur.n+=k;it.n-=k;if(it.n>0)returnDrag();}
   else if(drag.split)returnDrag();else{arr[i]={id:it.id,n:it.n,d:it.d};giveBack({...cur,r:0});}}
- else if(el&&(el.id==='inv'||el.closest('#dropZone'))){const s={...it};if(drag.split){}dropItems([s],pl.x-Math.sin(pl.yaw)*1.2,pl.z-Math.cos(pl.yaw)*1.2);msg(I[it.id].n+'を地面に置いた');}
+ else if(el&&el.id==='inv'){const s={...it};if(drag.split){}dropItems([s],pl.x-Math.sin(pl.yaw)*1.2,pl.z-Math.cos(pl.yaw)*1.2);msg(I[it.id].n+'を地面に置いた');}
  else returnDrag();
  for(const h of hot)if(h&&h.d===undefined)delete h.d;
- drag=null;ghostEl.style.display='none';$('#dropZone').classList.remove('hot');invDirty=true;renderInv();});
+ drag=null;ghostEl.style.display='none';invDirty=true;renderInv();});
 function openInv(cont){if(state!=='play')return;if(action)cancelAction('インベントリを開いた');for(const k in keys)keys[k]=false;mouseL=false;state='inv';openCont=cont||null;selRec=null;sfx('ui');$('#inv').classList.add('on');document.exitPointerLock&&document.exitPointerLock();renderInv();}
-function closeInv(byEsc){if(state!=='inv')return;if(action&&action.ctx==='inv')cancelAction('インベントリを閉じた');if(drag){returnDrag();drag=null;ghostEl.style.display='none';}
+function closeInv(byEsc){if(state!=='inv')return;hideCtx();if(action&&action.ctx==='inv')cancelAction('インベントリを閉じた');if(drag){returnDrag();drag=null;ghostEl.style.display='none';}
  if(openCont&&openCont.t==='drop'&&!openCont.cont.items.length)removeStruct(openCont);
  sfx('ui');$('#inv').classList.remove('on');tipEl.style.display='none';openCont=null;state='play';invDirty=true;if(!byEsc)lock(false);}
 function openMap(){if(state!=='play')return;if(action)cancelAction('地図を開いた');for(const k in keys)keys[k]=false;mouseL=false;state='map';$('#mapOv').classList.add('on');drawBigMap();}
@@ -990,7 +1007,7 @@ addEventListener('wheel',e=>{if(state!=='play')return;sel=(sel+(e.deltaY>0?1:7))
 // ================= Timed actions =================
 function startAction(label,dur,done,ctx){if(action){msg('ほかの作業中だ','bad');return false;}action={label,dur,t:0,done,ctx};$('#tlabel').textContent=label;$('#timer').style.display='flex';$('#tarc').style.strokeDashoffset=113.1;return true;}
 function cancelAction(why){if(!action)return;action=null;$('#timer').style.display='none';if(why)msg('中断：'+why,'bad');}
-function updateAction(dt){if(!action)return;if(action.ctx==='play'&&pl.sprint){cancelAction('走った');return;}action.t+=dt;$('#tarc').style.strokeDashoffset=113.1*(1-Math.min(1,action.t/action.dur));
+function updateAction(dt){if(!action)return;if((action.ctx==='play'||action.ctx==='craft')&&pl.sprint){cancelAction('走った');return;}action.t+=dt;$('#tarc').style.strokeDashoffset=113.1*(1-Math.min(1,action.t/action.dur));
  if(action.t>=action.dur){const a=action;action=null;$('#timer').style.display='none';a.done();}}
 
 // ================= Aim (custom picking) =================
@@ -1000,7 +1017,7 @@ function rayCyl(o,d,cx,cz,r,y0,y1){const ox=o.x-cx,oz=o.z-cz;const a=d.x*d.x+d.z
 function rayEnt(o,d,e){const D=ED[e.t],s=e.s;
  if(D.k==='tree')return rayCyl(o,d,e.x,e.z,(D.pr||Math.max(.32,e.r+.08)),e.y-.3,e.y+(D.ph||4.5)*s);
  if(D.k==='rock')return raySphere(o,d,e.x,e.y+D.sc[0]*s,e.z,D.sc[1]*s);
- if(D.k==='bush'||D.k==='fiber')return raySphere(o,d,e.x,e.y+.6*s,e.z,.7*s);
+ if(D.k==='bush'||D.k==='fiber'||D.k==='shrub')return raySphere(o,d,e.x,e.y+.6*s,e.z,.7*s);
  if(D.k==='clay')return raySphere(o,d,e.x,e.y,e.z,.85);
  return raySphere(o,d,e.x,e.y+.12,e.z,.36);}
 function updateAim(){camera.getWorldDirection(vDir);vEye.copy(camera.position);
@@ -1019,11 +1036,11 @@ function targetInfo(){const t=aim.t;if(t&&t.kind==='gitem')return[I[t.o.id].n+(t
   if(d.k==='tree'){let s=heldTool('tree')>=10?'左クリック: 伐採':(d.leaf?'左クリック: 笹を採る（斧で根元から伐ると竹が取れる）':'左クリック: 枝を採る（斧で伐採できる）');if(d.fruit&&e.fruit)s='F: 実を採る ／ '+s;return[d.n,s];}
   if(d.k==='rock'){const tier=heldTool('tier');return[d.n,!heldTool('rock')?'つるはしで掘れる':'左クリック: 採掘',e.vein?VEIN[e.vein].hint:''];}
   if(d.k==='bush')return[d.n,e.fruit?'F: 実を摘む':'実は再生待ち'];
-  if(d.k==='fiber')return[d.n,'F: 繊維を採る'];if(d.k==='pick')return[d.n,'F: 拾う'];if(d.k==='clay')return[d.n,'F: 粘土を掘る'];}
+  if(d.k==='shrub')return[d.n,'左クリック: 葉と枝をむしる（素手でも可）'];if(d.k==='fiber')return[d.n,'F: 繊維を採る ／ 左クリック: 葉を取る'];if(d.k==='pick')return[d.n,'F: 拾う'];if(d.k==='clay')return[d.n,'F: 粘土を掘る'];}
  if(t.kind==='animal')return[AD[t.o.t].n,'左クリック: 攻撃'];
  if(t.kind==='carcass'){const h=held();return[AD[t.o.t].n+'の死体',h&&KQ[h.id]?'F / 左クリック: 解体（ナイフが上質なほど多く取れる）':'ナイフを手に持つと解体できる'];}
  if(t.kind==='struct'){const s=t.o,d=SD[s.t];if(s.t==='drop')return[d.n,'F: 中身を見る ／ Z: すべて拾う'];if(s.t==='box')return[d.n,'F: 開く ／ Z: 解体'];
-  if(s.t==='bed'||shelterDone(s))return[d.n,'F: 眠る・復活地点にする ／ Z: 解体'];if(s.t==='shelter')return[d.n+'（骨組み）',`F: 枝を立てかける（${s.cont.sticks}/${SHELTER_N}・枝 ${countItem('stick')}本所持）／ Z: 解体`];if(d.station)return[d.n,'F: クラフトを開く ／ Z: 解体'];return[d.n,'Z: 解体'];}
+  if(s.t==='bed'||shelterDone(s))return[d.n,'F: 眠る・復活地点にする ／ Z: 解体'];if(s.t==='shelter')return s.cont.sticks<SHELTER_N?[d.n+'（骨組み）',`F: 枝を立てかける（${s.cont.sticks}/${SHELTER_N}・枝 ${countItem('stick')}本所持）／ Z: 解体`]:[d.n+'（屋根なし）',`F: 葉を葺く（${s.cont.leaves}/${SHELTER_L}・葉 ${countItem('leaf')}枚所持）／ Z: 解体`];if(d.station)return[d.n,'F: クラフトを開く ／ Z: 解体'];return[d.n,'Z: 解体'];}
  return null;}
 
 // ================= Actions =================
@@ -1033,13 +1050,14 @@ function interact(){const t=aim.t;
  if(t){if(t.kind==='ent'){const e=t.o,d=ED[e.t];
    if(d.k==='pick'){addItem(d.give[0],d.give[1]);killEnt(e);}
    else if(d.k==='clay'){addItem('clay',2);e.uses--;if(e.uses<=0)killEnt(e);}
-   else if(d.k==='fiber'){addItem('fiber',3);killEnt(e);}
+   else if(d.k==='fiber'){addItem('fiber',3);if(Math.random()<.5)addItem('leaf',1);killEnt(e);}
    else if(d.fruit){if(e.fruit){addItem(d.fruit,d.k==='bush'?2+Math.floor(Math.random()*2):1+Math.floor(Math.random()*2));setFruit(e,false);fruitEmpty[e.id]=day+2;}else msg('実はまだ熟していない');}
    return;}
   if(t.kind==='carcass')return butcher(t.o);
   if(t.kind==='struct'){const s=t.o;
    if(s.t==='drop'||s.t==='box')return openInv(s);
-   if(s.t==='shelter'&&!shelterDone(s)){if(countItem('stick')<1){msg('枝が必要だ（あと'+(SHELTER_N-s.cont.sticks)+'本）','bad');return;}removeItem('stick',1);s.cont.sticks++;updShelter(s);sfx('place');msg(shelterDone(s)?'簡易シェルターが完成した。中で休むと体力が回復し、F で眠れる':`枝を立てかけた（${s.cont.sticks}/${SHELTER_N}）`,shelterDone(s)?'good':'');return;}
+   if(s.t==='shelter'&&!shelterDone(s)){const st=s.cont.sticks<SHELTER_N,id=st?'stick':'leaf';if(countItem(id)<1){msg(st?`枝が必要だ（あと${SHELTER_N-s.cont.sticks}本）`:`葉が必要だ（あと${SHELTER_L-s.cont.leaves}枚）`,'bad');return;}removeItem(id,1);if(st)s.cont.sticks++;else s.cont.leaves++;updShelter(s);sfx(st?'place':'cut');
+    msg(shelterDone(s)?'簡易シェルターが完成した。中で休むと体力が回復し、F で眠れる。中に寝床も置ける':st?`枝を立てかけた（${s.cont.sticks}/${SHELTER_N}）${s.cont.sticks>=SHELTER_N?' 次は葉で屋根を葺こう':''}`:`葉を葺いた（${s.cont.leaves}/${SHELTER_L}）`,shelterDone(s)?'good':'');return;}
    if(s.t==='bed'||s.t==='shelter'){spawnBed={x:s.x,z:s.z};if(hours>=19||hours<5){if(hours>=19)day++;hours=6;pl.food=Math.max(0,pl.food-15);pl.water=Math.max(0,pl.water-20);newDay();msg('朝まで眠った。復活地点を更新','good');}else msg('復活地点に設定した（夜19時以降なら眠れる）');return;}
    if(SD[s.t].station)return openInv(s);}return;}
  if(aim.water){const s=held();
@@ -1047,7 +1065,7 @@ function interact(){const t=aim.t;
   else if(aim.water.fresh){pl.water=Math.min(100,pl.water+12);sfx('drink');msg('湧き水を飲んだ');}else{pl.water=Math.max(0,pl.water-4);pl.hp-=2;msg('しょっぱい！海水は飲めない','bad');}}}
 function dismantle(){const t=aim.t;if(!t||t.kind!=='struct')return;const s=t.o;
  if(s.t==='drop'){const L=s.cont.items.slice();s.cont.items=[];L.forEach(it=>addItem(it.id,it.n,it.d));removeStruct(s);return;}
- if(s.t==='box'&&s.cont.items.length)dropItems(s.cont.items,s.x,s.z);if(s.t==='shelter'&&s.cont.sticks)dropItems([{id:'stick',n:s.cont.sticks}],s.x,s.z);if(s.st){const L=[];['fuel','tool','in','out'].forEach(k=>(s.st[k]||[]).forEach(it=>it&&L.push(it)));dropItems(L,s.x,s.z);}removeStruct(s);addItem(s.t,1);msg(SD[s.t].n+'を解体して回収した');}
+ if(s.t==='box'&&s.cont.items.length)dropItems(s.cont.items,s.x,s.z);if(s.t==='shelter'&&s.cont.sticks)dropItems([{id:'stick',n:s.cont.sticks},s.cont.leaves?{id:'leaf',n:s.cont.leaves}:null],s.x,s.z);if(s.st){const L=[];['fuel','tool','in','out'].forEach(k=>(s.st[k]||[]).forEach(it=>it&&L.push(it)));dropItems(L,s.x,s.z);}removeStruct(s);addItem(s.t,1);msg(SD[s.t].n+'を解体して回収した');}
 function consume(){const s=held();if(!s)return false;const d=I[s.id];if(!(d.food||d.pot))return false;
  if(s.id==='pot_salt'){msg('海水は飲めない。焚き火で煮沸しよう','bad');return true;}if(s.id==='pot_empty')return false;
  if(d.food&&pl.food>=99&&d.food.h>d.food.w){msg('もうお腹いっぱいだ');return true;}
@@ -1070,11 +1088,12 @@ function doHit(){const t=aim.t;
   if(d.k==='tree'){const dmg=heldTool('tree');
    if(dmg>=10){e.hp-=dmg;useDur();sfx('chop');if(Math.random()<.06)dropAt(d.leaf||'stick',1);shake(e);
     if(e.hp<=0){const nl=d.logs[0]+Math.floor(Math.random()*(d.logs[1]-d.logs[0]+1));if(d.wood)dropAt(d.wood,nl);else{const a=Math.atan2(e.x-pl.x,e.z-pl.z);for(let k=0;k<nl;k++){const r=1.2+k*1.9;addCarry('log',e.x+Math.sin(a)*r+(Math.random()-.5)*.6,e.z+Math.cos(a)*r+(Math.random()-.5)*.6,a+Math.PI/2+(Math.random()-.5)*.4);}}
-     dropAt(d.leaf||'stick',d.leaf?2+Math.floor(Math.random()*3):1+Math.floor(Math.random()*3));if(d.fib)dropAt('fiber',d.fib);killEnt(e);e.hp=d.hp;sfx('fall');msg(d.n+'を切り倒した');}}
+     dropAt(d.leaf||'stick',d.leaf?2+Math.floor(Math.random()*3):1+Math.floor(Math.random()*3));if(d.fib)dropAt('fiber',d.fib);if(d.lv)dropAt('leaf',d.lv[0]+Math.floor(Math.random()*(d.lv[1]-d.lv[0]+1)));killEnt(e);e.hp=d.hp;sfx('fall');msg(d.n+'を切り倒した');}}
    else{if(dmg)useDur();sfx('chop');shake(e);if(Math.random()<.3)dropAt(d.leaf||'stick',1);}return;}
   if(d.k==='rock'){if(!heldTool('rock')){msg('岩を掘るにはつるはしが必要');return;}e.hp-=heldTool('rock');useDur();sfx('mine');shake(e);mineYield(e.vein,true);
    if(e.hp<=0){dropAt('stone',2);for(let k=0;k<(e.t==='outcrop'?2:1);k++)addCarry('boulder',e.x+(Math.random()-.5)*1.2,e.z+(Math.random()-.5)*1.2,Math.random()*6.28);killEnt(e);e.hp=d.hp;msg(d.n+'を砕いた。岩が残った');}return;}
-  if(d.k==='bush'||d.k==='fiber'){shake(e);return;}}
+  if(d.k==='shrub'){e.hp-=held()?3:2;shake(e);sfx('cut');if(Math.random()<.35)dropAt('leaf',1);if(e.hp<=0){dropAt('leaf',4+Math.floor(Math.random()*3));dropAt('stick',1+Math.floor(Math.random()*2));killEnt(e);e.hp=d.hp;msg(d.n+'をむしり取った');}return;}
+  if(d.k==='bush'||d.k==='fiber'){shake(e);sfx('cut');if(Math.random()<.4)dropAt('leaf',1);return;}}
  if(t.kind==='animal'){const a=t.o;const dmg=heldTool('anim')||(held()?5:3);a.hp-=dmg;a.flee=6;a.fs=Math.max(a.fs,2);useDur();a.hurt=.25;sfx('thud');
   if(a.hp<=0){a.alive=false;const c={t:a.t,x:a.x,z:a.z,ry:a.dir,mesh:a.mesh,legs:a.legs,exp:day+2,alive:true};layCarcass(c);carcasses.push(c);msg(AD[a.t].n+'を仕留めた。ナイフを持って解体しよう');}}
  if(t.kind==='carcass')butcher(t.o);}
@@ -1104,9 +1123,9 @@ function updatePlacement(){const s=held();const t=s&&I[s.id].place;
  else{x=gp.x;z=gp.z;y=groundAt(x,z);rot=pl.placeRot;if(!aim.ground||aim.ground.s>6)ok=false;if(y<waterLevel(x,z)+.05)ok=false;const r=SD[t].r||.6;
   for(const e of near(x,z,3))if(e.alive&&e.r>0&&Math.hypot(e.x-x,e.z-z)<e.r+r)ok=false;
   for(const s2 of structs){if(SD[s2.t].r&&Math.hypot(s2.x-x,s2.z-z)<s2.r+r)ok=false;if(s2.boxes.some(bb=>circBox(x,z,r,bb)))ok=false;}
-  if(Math.hypot(pl.x-x,pl.z-z)<r+.4)ok=false;}
+  if(Math.hypot(pl.x-x,pl.z-z)<r+.4)ok=false;if(t==='bed'&&!bedSpot(x,z))ok=false;}
  ghost.visible=true;ghost.position.set(x,y,z);ghost.rotation.y=b?rot*Math.PI/2:rot*Math.PI/4;const mat=ok?GHOST_OK:GHOST_NG;ghost.traverse(o=>{if(o.isMesh)o.material=mat;});
- placeInfo={t,x,y,z,rot,ok};$('#placehint').textContent=b==='w'?'左クリック: 設置（土台の縁に吸着）':b?'左クリック: 設置':'左クリック: 設置 ／ R: 回転（地面を見下ろして置く）';}
+ placeInfo={t,x,y,z,rot,ok};$('#placehint').textContent=t==='bed'&&!bedSpot(x,z)?'寝床はシェルターの中（完成した簡易シェルター・洞窟）にしか置けない':b==='w'?'左クリック: 設置（土台の縁に吸着）':b?'左クリック: 設置':'左クリック: 設置 ／ R: 回転（地面を見下ろして置く）';}
 function tryPlace(){if(!placeInfo)return;if(!placeInfo.ok){msg('ここには置けない','bad');return;}const p=placeInfo;addStruct(p.t,p.x,p.y,p.z,p.rot);sfx('place');const s=held();s.n--;if(!s.n)hot[sel]=null;invDirty=true;if(p.t==='campfire'&&era<1)setEra(1);}
 
 // ================= Physics / survival =================
@@ -1245,8 +1264,8 @@ function updateAudio(dt){if(!AU.ctx)return;const C=AU.ctx,t=C.currentTime;const 
 const MAPN=256;let mapBase=null;
 function buildMap(){try{const c=document.createElement('canvas');c.width=c.height=MAPN;const g=c.getContext('2d');const im=g.createImageData(MAPN,MAPN);const col=new THREE.Color(),t2=new THREE.Color();
  for(let y=0;y<MAPN;y++)for(let x=0;x<MAPN;x++){const wx=-HALF+(x+.5)*WORLD/MAPN,wz=-HALF+(y+.5)*WORLD/MAPN;const h=terrainH(wx,wz);
-  if(inPond(wx,wz,0))col.set('#2c6e70');else if(h<0){const d=-h;col.set(d<.4?'#cfeee8':d<3?'#46c8c0':d<10?'#1f8ab0':'#0f4f80');}
-  else if(h<1.5)col.set('#e8dcbc');else if(normalY(wx,wz)<.7)col.set('#77736a');else col.set(h>24?'#7a9a4a':'#6a9a3c').lerp(t2.set('#2f5420'),forestAt(wx,wz)*.8);
+  if(inPond(wx,wz,0))col.set('#2c6e70');else if(h<0){const d=-h;col.set(d<.4?'#6ccfc4':d<3?'#46c8c0':d<10?'#1f8ab0':'#0f4f80');}
+  else if(h<1.5)col.set('#dccb9c');else if(normalY(wx,wz)<.7)col.set('#77736a');else col.set(h>24?'#7a9a4a':'#6a9a3c').lerp(t2.set('#2f5420'),forestAt(wx,wz)*.8);
   if(h>0)col.multiplyScalar(clamp(1+(h-terrainH(wx-1.7,wz-1.7))*.12,.7,1.3));
   const i=(y*MAPN+x)*4;im.data[i]=clamp(col.r*255,0,255);im.data[i+1]=clamp(col.g*255,0,255);im.data[i+2]=clamp(col.b*255,0,255);im.data[i+3]=255;}
  g.putImageData(im,0,0);mapBase=c;}catch(e){}}
@@ -1263,7 +1282,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:8,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:9,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1361,9 +1380,9 @@ function startGame(data){auInit();$('#loading').style.display='block';
  for(let a=-10;a<10;a++)for(let b=-10;b<10;b++)DEC.set(a+','+b,buildDecor(a,b));updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===8)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===9)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===8&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===9&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
