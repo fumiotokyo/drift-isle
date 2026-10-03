@@ -1,7 +1,7 @@
 # 漂流島 DRIFT ISLE — Claude向け開発メモ
 
 ブラウザで動くローポリ無人島サバイバルFPS。`index.html` 1ファイル完結（three.js r128 を cdnjs から UMD で読み込み）。
-セーブは localStorage キー `driftisle_save_v7`（地形生成を変えたら番号を上げる）。
+セーブは localStorage キー `driftisle_save_v8`（地形生成を変えたら番号を上げる）。
 
 ## 作業ルール（ユーザー方針）
 - 返答の説明は短く。テストは変更部分に関係するものだけ（Node での構文チェック程度）。
@@ -19,12 +19,14 @@
 - 草・シダ: 24m 区画を起動時に全生成（`DEC`）。
 - 立てる場所: `standAt`（地形＋岩の上面 `rockSurf`＋設備の上面 `stTop`）。
 - 担ぐ物: `I[id].carry`（丸太 `log`・岩 `boulder`）は持ち物に入らず `carries` の地面オブジェクト。左クリックで担ぐ（`pl.carry`、手持ち不可・低速・ジャンプ不可）／下ろす。丸太は火の設備に左クリックでくべる。クラフトは半径6mの物を `countItem`/`removeItem` で数える。
-- 地面のアイテム: `gitems`（ドット絵スプライト＋見えない当たり球）。`dropItems`/`dropAt` はすべてここに落ちる（落とし物袋は廃止）。F で拾う。
-- 採集物: 伐採・採掘の収穫は `dropAt` で足元へ。木と岩の耐久は ED.hp×5、振りは1秒＋待ち1.35秒。木は F で葉（竹は笹）を4.5秒で集める（`leafT` で1日1回）。流木 `driftwood` が砂浜に毎日湧く。石は 小石`pebble`／石`stone`／岩`boulder` の3段階。
+- 地面のアイテム: `gitems`（`gMesh` の3Dモデル＋見えない当たり球。ドット絵は使わない）。`dropItems`/`dropAt` はすべてここに落ちる（落とし物袋は廃止）。F で拾う。
+- 採集物: 伐採・採掘の収穫は `dropAt` で足元へ。木と岩の耐久は ED.hp×5、振りは1秒＋待ち1.35秒。流木 `driftwood`（4×1マス）が砂浜に毎日湧く。石は 小石`pebble`／石`stone`／岩`boulder` の3段階。
 - インベントリ: Tarkov 式グリッド（`bag{w,h,items[{id,n,d,x,y,r}]}`）＋手持ち8枠 `hot`＋防具 `armor`。
 - 設備: `PROC` / `SLOTS` / `FUEL`。`s.st={fuel,tool?,in,out,prog,lit,burn}` を `updateStations` で処理。
 - クラフト: 配列 `R`。`r.s` の設備を F で開いている（火の設備は点火中）時のみ可能。`cheat` で無条件。
-- 時間付き動作: `startAction(label,dur,done,ctx)`。食事4.5秒・飲水4秒・解体8秒・クラフト6〜12秒（`craftDur`）。走る・インベントリ開閉で中断。
+- 手: `handM` を `heldG` に常時表示。同じ数字キーをもう一度押すと素手（`pl.bare`）。素手パンチは木・岩に収穫なし、動物に3ダメージ。振りは右上へ振りかぶる（`updateHeld` の W/S キー姿勢）。
+- 簡易シェルター `shelter`: 流木5＋紐5で骨組みを作成・設置 → F で枝を1本ずつ立てかけ（`s.cont.sticks`）、10本で完成。完成後は雨よけ・体力回復1.1/秒・眠る/復活地点（`inShelter`）。
+- 時間付き動作: `startAction(label,dur,done,ctx)`。食事4.5秒・飲水4秒・解体8秒・クラフト6〜12秒（`craftDur`）。走る・インベントリ開閉で中断。チートモードでも時間は短縮しない。
 - 動物: ノヤギ／リュウキュウイノシシ。倒すと死体 → ナイフで解体（`BUTCH`, 収量 `KQ`）。
 - 音: WebAudio で合成（`SFX`, `updateAudio` が環境音）。洞窟内は `AU.revIn`→畳み込み残響、鳥・虫は鳴かない。
 - 紐の作成は10秒、インベントリを閉じて手で綯うモーション（`twistG`, `action.anim='twist'`）。
