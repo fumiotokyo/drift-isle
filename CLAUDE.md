@@ -1,7 +1,7 @@
 # 漂流島 DRIFT ISLE — Claude向け開発メモ
 
 ブラウザで動くローポリ無人島サバイバルFPS。`index.html` 1ファイル完結（three.js r128 を cdnjs から UMD で読み込み）。
-セーブは localStorage キー `driftisle_save_v3`（地形変更で v3 に更新）。
+セーブは localStorage キー `driftisle_save_v4`（地形生成を変えたら番号を上げる）。
 
 ## 作業ルール（ユーザー方針）
 - 返答の説明は短く。テストは変更部分に関係するものだけ（Node での構文チェック程度）。
@@ -12,8 +12,9 @@
 
 ## 主な構成
 - 地形: 自作の非インデックスメッシュ（SEG=150, `terrainH` は三角補間）。`rawHeight` に第2の山・尾根・段丘の崖・西側の海食崖。池 `ponds`、鉱脈 `veins`。
-- 洞窟 `caves`: 斜面にドーム状の岩（`buildCaves`）。床は平坦化。`collide` で壁、`caveRoof` で屋根に乗れる、`inCave` で雨よけ（`sheltered`）。
+- 洞窟 `caves`（`genCaves`）: 格子軸にそろえた崖（`caveHeight`）に横穴。崖面の3マスは地形から抜き（`caveSkip`）、`buildCaves` の岩面＋トンネルで置換。中の床は `caveFloor`／壁は `collide`／雨よけは `inCave`。
 - 木・岩・採取物: 40m 区画×種類ごとの InstancedMesh。`cullChunks` で手動カリング。選択判定は自前（`rayEnt`）。
+- 竹林: `take`（ホウライチク）。fbm マスクで群生。斧で伐ると `bamboo`（燃料・竹槍）。
 - 草・シダ: 24m 区画を起動時に全生成（`DEC`）。
 - 立てる場所: `standAt`（地形＋岩の上面 `rockSurf`＋設備の上面 `stTop`）。
 - インベントリ: Tarkov 式グリッド（`bag{w,h,items[{id,n,d,x,y,r}]}`）＋手持ち8枠 `hot`＋防具 `armor`。
@@ -27,4 +28,4 @@
 
 ## 操作
 WASD / Shift ダッシュ / Space / 左クリック 採集・攻撃・設置 / 右クリック 食べる / F 採取・開く /
-Tab・I 持ち物 / M 地図 / X しゃがむ（`pl.crouch`, 低速・静音・動物が逃げにくい）/ Z 解体 / Q 捨てる / R 回転 / Esc 閉じる
+Tab・I 持ち物 / M 地図 / X しゃがむ切替（`pl.crouchOn`、ダッシュで解除。低速・静音・動物が逃げにくい）/ Z 解体 / Q 捨てる / R 回転 / Esc 閉じる
