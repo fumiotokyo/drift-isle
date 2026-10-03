@@ -164,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v15';
+const SAVE_KEY='driftisle_save_v16';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -518,27 +518,29 @@ const WORLD=880,HALF=440,SEG=300,CELL=WORLD/SEG,AREA=4;
 let SEED=1,rng,heights,ponds=[],veins=[],caves=[];
 // 伊豆大島がモデル: 北北西-南南東に長い島、山頂に大きなカルデラ（外輪山）と中央火口丘（三原山）、
 // 東側の裏砂漠（黒い火山砂の不毛地）、海まで流れた溶岩流、中腹の段差崖、南～東海岸の海食崖。
-const CX=10,CZ=-20,LAVA_A=2.45;
+const CX=10,CZ=-20,RIM0=62;
 const angd=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
-function lavaAt(x,z){const rc=Math.hypot(x-CX,z-CZ);if(rc<88)return 0;const df=angd(Math.atan2(z-CZ,x-CX),LAVA_A+.06*Math.sin(rc*.03));return clamp((.087-df)/.025,0,1);}
-function desertAt(x,z){const rc=Math.hypot(x-CX,z-CZ),ac=Math.atan2(z-CZ,x-CX);let d=rc<88?1:0;
- const ura=clamp((1.0-angd(ac,.35))/.25,0,1)*clamp((205+fbm(ac*3+20,1.3,2)*40-rc)/25,0,1);return Math.max(d,ura,lavaAt(x,z));}
+// 植生の垂直分布（伊豆大島・三宅島の例）: 低地=照葉樹林 → 中腹上部=先駆低木（オオバヤシャブシ等）→ ススキ・イタドリの草地 → まばらな草 → 火口周辺のスコリア裸地。
+// 境界はノイズでゆらがせ、カルデラ内は一段厳しくする。
+function vegAt(x,z,h){if(h==null)h=terrainH(x,z);const rc=Math.hypot(x-CX,z-CZ);let e=h+(fbm(x*.02+31,z*.02-17,3)-.5)*12+(rc<RIM0?14:0)+(rc<RIM0+20?clamp((RIM0+20-rc)/20,0,1)*6:0);return clamp(1-(e-36)/30,0,1);}
+const smst=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t);};
+const treeF=v=>smst(.62,.92,v),grassF=v=>smst(.1,.4,v),shrubF=v=>smst(.35,.6,v)*(1-smst(.8,.95,v));
+function desertAt(x,z,h){return 1-vegAt(x,z,h);}
 function rawHeight(x,z){const ang=Math.atan2(z,x),cs=Math.cos(-.35),sn=Math.sin(-.35),u=x*cs+z*sn,v=-x*sn+z*cs;
  const coast=.07*Math.sin(ang*3+1.3)+.05*Math.sin(ang*5+.7)+(fbm(Math.cos(ang)*2+9,Math.sin(ang)*2+9,3)-.5)*.25;
  const d=Math.hypot(u/395,v/285)*(1+coast*.6);let h=9*(1-Math.pow(d,2.3))-1;
- const rc=Math.hypot(x-CX,z-CZ),ac=Math.atan2(z-CZ,x-CX),RIM=95*(1+.06*Math.sin(ac*3+.5)+.04*Math.sin(ac*7+1.7));
+ const rc=Math.hypot(x-CX,z-CZ),ac=Math.atan2(z-CZ,x-CX),RIM=RIM0*(1+.07*Math.sin(ac*3+.5)+.05*Math.sin(ac*7+1.7));
  if(rc>=RIM){const t=clamp(1-(rc-RIM)/270,0,1);h+=68*Math.pow(t,1.55)*(1+.05*Math.sin(ac*4));}
- else{const rimH=68*(1+.05*Math.sin(ac*4)),wall=clamp((rc-(RIM-14))/14,0,1);let fl=46+(fbm(x*.03+3,z*.03-7,2)-.5)*3;
-  if(rc<34){fl+=26*Math.pow(1-rc/34,1.2);if(rc<9)fl-=9*Math.pow(1-rc/9,2);}h+=fl+(rimH-fl)*wall*wall;}
+ else{const rimH=68*(1+.05*Math.sin(ac*4)),wall=clamp((rc-(RIM-10))/10,0,1);let fl=50+(fbm(x*.03+3,z*.03-7,2)-.5)*3;
+  if(rc<22){fl+=18*Math.pow(1-rc/22,1.2);if(rc<6)fl-=6*Math.pow(1-rc/6,2);}h+=fl+(rimH-fl)*wall*wall;}
  if(rc>RIM+15&&rc<260){const t=clamp(1-(rc-RIM)/270,0,1),g=Math.pow(Math.max(0,Math.cos(ac*9+fbm(x*.01,z*.01,2)*5)),12);h-=g*6*t;}
  // 中腹の段差崖（ところどころの弧状の崖）
- const cm=clamp((fbm(x*.007+300,z*.007-120,3)-.52)/.06,0,1)*clamp((rc-125)/20,0,1);
- if(h>5&&cm>0){const st=8,tt=(h-5)/st,fl=Math.floor(tt),fr=tt-fl,q=clamp((fr-.7)/.3,0,1);h+=(5+(fl+q*q*(3-2*q))*st-h)*cm*.9;}
+ const cm=clamp((fbm(x*.006+300,z*.006-120,3)-.58)/.05,0,1)*clamp((rc-110)/20,0,1);
+ if(h>5&&cm>0){const st=13,tt=(h-5)/st,fl=Math.floor(tt),fr=tt-fl,q=clamp((fr-.7)/.3,0,1);h+=(5+(fl+q*q*(3-2*q))*st-h)*cm*.9;}
  h+=(fbm(x*.02+10,z*.02-30,3)-.5)*3+(fbm(x*.008+50,z*.008+50,4)-.5)*4;
  // 南～東の海食崖
  const sc=clamp((Math.sin(ang-.9)-.35)/.3,0,1)*(.6+.4*fbm(ang*4+3,2,2));if(sc>0&&h>.3)h+=sc*10;
  // 溶岩流: 盛り上がった荒い帯が海まで続き、先端は溶岩の岬
- const lv=lavaAt(x,z);if(lv>0){const rough=(fbm(x*.15+5,z*.15+9,2)-.5)*2.2;if(h>-3)h=Math.max(h,2.6)+lv*(2.4+rough);}
  return Math.max(-14,h);}
 const HI=(i,j)=>heights[j*(SEG+1)+i];
 function terrainH(x,z){const fx=(x+HALF)/CELL,fz=(z+HALF)/CELL;const i=Math.floor(fx),j=Math.floor(fz);if(i<0||j<0||i>=SEG||j>=SEG)return -14;
@@ -549,7 +551,7 @@ function pondR(p,x,z){return pondRa(p,Math.atan2(z-p.z,x-p.x));}
 function inPond(x,z,m){for(const p of ponds)if(Math.hypot(x-p.x,z-p.z)<pondR(p,x,z)+m)return p;return null;}
 function waterLevel(x,z){const p=inPond(x,z,.3);return p?p.level:0;}
 function clearingAt(x,z){const h=terrainH(x,z);if(h<1.6||h>16)return 0;const c=fbm(x*.014+700,z*.014-400,3)+(fbm(x*.05-90,z*.05+60,2)-.5)*.18;return clamp((c-.6)/.05,0,1);}
-function forestAt(x,z){return clamp((fbm(x*.011+200,z*.011+200,4)-.36)/.2,0,1)*(1-clearingAt(x,z));}
+function forestAt(x,z){return clamp((fbm(x*.011+200,z*.011+200,4)-.36)/.2,0,1)*(1-clearingAt(x,z))*treeF(vegAt(x,z));}
 // caves: tunnel cut into a grid-aligned cliff. local u=lateral from tunnel centre, v=inward depth
 function caveLoc(c,x,z){const dx=x-c.ox,dz=z-c.oz;return[dx*c.lx+dz*c.lz-c.sc,dx*c.ix+dz*c.iz];}
 function inTunnel(c,x,z,m){const[u,v]=caveLoc(c,x,z);return Math.abs(u)<c.hw+m&&v>-.05&&v<c.L+.6;}
@@ -581,7 +583,7 @@ function buildCaves(){caves.forEach((c,k)=>{const r=mulberry32(SEED+900+k),pos=[
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(col),3));g.computeVertexNormals();
   const m=new THREE.Mesh(g,MATV);m.castShadow=true;m.receiveShadow=true;scene.add(m);});}
 function genCaves(){caves=[];const cr=mulberry32(SEED+777),D=[[1,0],[-1,0],[0,1],[0,-1]];let tries=0;
- while(caves.length<9&&tries<120000){tries++;const i=12+Math.floor(cr()*(SEG-24)),j=12+Math.floor(cr()*(SEG-24)),x=-HALF+i*CELL,z=-HALF+j*CELL;const h0=rawHeight(x,z);if(h0<3||h0>50||Math.hypot(x-CX,z-CZ)<115)continue;
+ while(caves.length<9&&tries<120000){tries++;const i=12+Math.floor(cr()*(SEG-24)),j=12+Math.floor(cr()*(SEG-24)),x=-HALF+i*CELL,z=-HALF+j*CELL;const h0=rawHeight(x,z);if(h0<3||h0>50||Math.hypot(x-CX,z-CZ)<85)continue;
   let best=null,bv=0;for(const[di,dj]of D){const v=rawHeight(x+di*CELL*3,z+dj*CELL*3)-h0;if(v>bv){bv=v;best=[di,dj];}}
   if(!best||bv<4.5)continue;const[di,dj]=best,li=-dj,lj=di;
   const fr=rawHeight(x-di*CELL*1.5,z-dj*CELL*1.5);if(fr<1||fr>h0+1)continue;
@@ -618,7 +620,7 @@ function fixConnectivity(){const N=SEG+1,lock=new Uint8Array(N*N);
   if(!best)break;tried.add(best.key);buildRamp(best,lock,CELL*.6);}}
 function buildTerrain(){
  heights=new Float32Array((SEG+1)*(SEG+1));ponds=[];let tries=0;
- for(let rad=135;rad<300&&!ponds.length;rad+=3)for(let k=0;k<24&&!ponds.length;k++){const a=k/24*6.283+2.2,x=CX+Math.cos(a)*rad,z=CZ+Math.sin(a)*rad;if(desertAt(x,z)>0)continue;const h=rawHeight(x,z);if(h<4||h>40)continue;let mx=-99,mn=99;for(let q=0;q<8;q++){const v=rawHeight(x+Math.cos(q*.785)*14,z+Math.sin(q*.785)*14);mx=Math.max(mx,v);mn=Math.min(mn,v);}if(mx-mn>16||mn<h-7)continue;{const kr=mulberry32(SEED+31*ponds.length+5);var pk=[.12+kr()*.14,kr()*6.28,.08+kr()*.1,kr()*6.28,.04+kr()*.05,kr()*6.28];}ponds.push({x,z,k:pk,r:11+rng()*3,level:h-.5});}
+ for(let rad=100;rad<300&&!ponds.length;rad+=3)for(let k=0;k<24&&!ponds.length;k++){const a=k/24*6.283+2.2,x=CX+Math.cos(a)*rad,z=CZ+Math.sin(a)*rad;const h=rawHeight(x,z);if(h<4||h>40||vegAt(x,z,h)<.8)continue;let mx=-99,mn=99;for(let q=0;q<8;q++){const v=rawHeight(x+Math.cos(q*.785)*14,z+Math.sin(q*.785)*14);mx=Math.max(mx,v);mn=Math.min(mn,v);}if(mx-mn>16||mn<h-7)continue;{const kr=mulberry32(SEED+31*ponds.length+5);var pk=[.12+kr()*.14,kr()*6.28,.08+kr()*.1,kr()*6.28,.04+kr()*.05,kr()*6.28];}ponds.push({x,z,k:pk,r:11+rng()*3,level:h-.5});}
  genCaves();
  for(let j=0;j<=SEG;j++)for(let i=0;i<=SEG;i++){const x=-HALF+i*CELL,z=-HALF+j*CELL;let h=rawHeight(x,z);
   for(const p of ponds){const d=Math.hypot(x-p.x,z-p.z),pr=pondR(p,x,z);if(d<pr)h=p.level-.15-2.4*(1-(d/pr)**2);else if(d<pr*1.7){const t=(d-pr)/(pr*.7),s=t*t*(3-2*t);h=(p.level+.25)*(1-s)+h*s;}}
@@ -633,11 +635,11 @@ function buildTerrain(){
   const ax=pos[s],ay=pos[s+1],az=pos[s+2],bx=pos[s+3]-ax,by=pos[s+4]-ay,bz=pos[s+5]-az,cx=pos[s+6]-ax,cy=pos[s+7]-ay,cz=pos[s+8]-az;
   const nx=by*cz-bz*cy,ny0=bz*cx-bx*cz,nz=bx*cy-by*cx;const ny=ny0/(Math.hypot(nx,ny0,nz)||1);
   const h=(pos[s+1]+pos[s+4]+pos[s+7])/3,mx=(pos[s]+pos[s+3]+pos[s+6])/3,mz=(pos[s+2]+pos[s+5]+pos[s+8])/3;const pd=inPond(mx,mz,2.5);
-  const dz_=desertAt(mx,mz),lv_=lavaAt(mx,mz);
-  if(lv_>.4&&h>-.5)tc.set(ny<.7?'#3c3632':'#2b2725');else if(dz_>.5&&h>.5)tc.set(ny<.7?'#5a524a':(h>40?'#4a443e':'#3e3935'));else if(h<-.3)tc.set('#9c8964');else if(h<1.5)tc.set('#c2aa76');else if(pd&&h<pd.level+.6)tc.set('#6e5a3e');
-  else if(ny<.7){tc.set('#5f5c56');const v=veinAt(mx,mz);if(v)tc.lerp(t2.set(VT[v]),.55);}
+  const vg=h>2.3?vegAt(mx,mz,h):1;
+  if(h<-.3)tc.set('#9c8964');else if(h<1.5)tc.set('#c2aa76');else if(pd&&h<pd.level+.6)tc.set('#6e5a3e');
+  else if(ny<.7){tc.set(vg<.3?'#4e4440':'#5f5c56');const v=veinAt(mx,mz);if(v)tc.lerp(t2.set(VT[v]),.55);}
   else if(h<2.3)tc.set('#a9a46c');
-  else{const f=forestAt(mx,mz);tc.set(h>24?'#6b8a40':'#5e8c34').lerp(t2.set('#3a6224'),f*.85);if(ny<.8)tc.lerp(t2.set('#6a6a50'),.35);}
+  else{const f=forestAt(mx,mz);tc.set(h>24?'#6b8a40':'#5e8c34').lerp(t2.set('#3a6224'),f*.85);if(vg<1){tc.lerp(t2.set('#86a04c'),1-treeF(vg));tc.lerp(t2.set('#a39a62'),(1-grassF(vg))*.75);tc.lerp(t2.set('#4b403a'),clamp((.25-vg)/.25,0,1));}if(ny<.8)tc.lerp(t2.set('#6a6a50'),.35);}
   const f=.95+cr()*.1;tc.r*=f;tc.g*=f;tc.b*=f;for(let k=0;k<3;k++){col[s+k*3]=tc.r;col[s+k*3+1]=tc.g;col[s+k*3+2]=tc.b;}};
  for(let j=0;j<SEG;j++)for(let i=0;i<SEG;i++){tri([i,j],[i,j+1],[i+1,j]);tri([i,j+1],[i+1,j+1],[i+1,j]);}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
@@ -676,22 +678,24 @@ const GRID=new Map(),GS=8;const ENT=[];const IMS={};
 const gk=(x,z)=>Math.floor(x/GS)+','+Math.floor(z/GS);
 function near(x,z,r){const out=[];for(let a=Math.floor((x-r)/GS);a<=Math.floor((x+r)/GS);a++)for(let b=Math.floor((z-r)/GS);b<=Math.floor((z+r)/GS);b++){const L=GRID.get(a+','+b);if(L)for(const e of L)out.push(e);}return out;}
 let SPAWN={x:0,z:0};
-function findSpawn(){for(let k=0;k<64;k++){const a=k*.39;const dx=Math.sin(a),dz=Math.cos(a);for(let r=430;r>20;r-=1){const x=dx*r,z=dz*r;const h=terrainH(x,z);if(h>1.1){if(h<3&&normalY(x,z)>.85&&!desertAt(x,z))return{x:dx*(r-3),z:dz*(r-3)};break;}}}return{x:0,z:0};}
+function findSpawn(){for(let k=0;k<64;k++){const a=k*.39;const dx=Math.sin(a),dz=Math.cos(a);for(let r=430;r>20;r-=1){const x=dx*r,z=dz*r;const h=terrainH(x,z);if(h>1.1){if(h<3&&normalY(x,z)>.85)return{x:dx*(r-3),z:dz*(r-3)};break;}}}return{x:0,z:0};}
 function genEntities(){
- const PLANT={tree:1,bush:1,fiber:1,shrub:1};const L=[];const push=(t,x,z,s)=>{if(caveAt(x,z,1.4))return;if(desertAt(x,z)>.4&&(PLANT[ED[t].k]||t==='stick'||t==='takenoko'||t==='clay'))return;if(Math.hypot(x-SPAWN.x,z-SPAWN.z)<2.5&&ED[t].r)return;L.push({t,x,z,s:s||(.85+rng()*.3),ry:rng()*6.283,v:Math.floor(rng()*VN[t])});};
+ const PLANT={tree:1,bush:1,fiber:1,shrub:1};const L=[];const push=(t,x,z,s)=>{if(caveAt(x,z,1.4))return;{const vg=vegAt(x,z);if(vg<.15&&(PLANT[ED[t].k]||t==='stick'||t==='takenoko'||t==='clay'))return;if(ED[t].k==='tree'&&t!=='matsu'&&treeF(vg)<.05)return;}if(Math.hypot(x-SPAWN.x,z-SPAWN.z)<2.5&&ED[t].r)return;L.push({t,x,z,s:s||(.85+rng()*.3),ry:rng()*6.283,v:Math.floor(rng()*VN[t])});};
  SPAWN=findSpawn();const CS=3.5;
  for(let gx=-124;gx<124;gx++)for(let gz=-124;gz<124;gz++){const x=gx*CS+(rng()-.5)*CS*.9,z=gz*CS+(rng()-.5)*CS*.9;const h=terrainH(x,z);if(h<.6||inPond(x,z,1.6))continue;const ny=normalY(x,z);
   if(h<2.2){const p=rng();if(p<.08)push('adan',x,z,.8+rng()*.4);else if(p<.12)push('biro',x,z,.85+rng()*.3);else if(p<.135)push('sotetsu',x,z);else if(p<.17)push('sharinbai',x,z,.8+rng()*.3);continue;}
   if(ny<.7){if(rng()<.09)push('sotetsu',x,z);continue;}
   if(clearingAt(x,z)>.5){const q=rng();if(q<.025)push('karamushi',x,z);else if(q<.035)push('ichigo',x,z);continue;}
   if(h>3&&h<20&&ny>.78&&fbm(x*.02+500,z*.02-300,3)>.6){if(rng()<.8)push('take',x,z,.85+rng()*.3);else if(rng()<.22)push('takenoko',x,z,.9+rng()*.3);continue;}
+  const vg=vegAt(x,z,h),tf=treeF(vg),sf=shrubF(vg);
+  if(tf<.6&&rng()<sf*.3){push(rng()<.35&&tf>.15?'matsu':'sharinbai',x,z,.55+rng()*.35);continue;}
   const f=forestAt(x,z)*(h>26?.55:1);
-  if(rng()<f*.85+.07){const q=rng();let t;
+  if(rng()<f*.85+.07*tf){const q=rng();let t;
    if(h<5)t=q<.3?'biro':q<.5?'adan':q<.75?'gajumaru':'matsu';else if(h>20)t=q<.45?'matsu':q<.82?'shii':'tabu';else t=q<.42?'shii':q<.66?'tabu':q<.76?'gajumaru':q<.9?'hego':'matsu';
    push(t,x,z,.8+rng()*.45);}
-  else{const q=rng();if(q<.05)push('ichigo',x,z);else if(q<.11)push('karamushi',x,z);else if(q<.17)push('sharinbai',x,z,.8+rng()*.4);}}
+  else if(grassF(vg)>.3){const q=rng();if(q<.05)push('ichigo',x,z);else if(q<.11)push('karamushi',x,z);else if(q<.17)push('sharinbai',x,z,.8+rng()*.4);}}
  const sc=(t,n,cond,area)=>{let k=0,tr=0;if(!area)n=Math.round(n*AREA);area=area||[0,0,410];while(k<n&&tr<n*80){tr++;const a=rng()*6.283,rr=Math.sqrt(rng())*area[2];const x=area[0]+Math.cos(a)*rr,z=area[1]+Math.sin(a)*rr;const h=terrainH(x,z);if(inPond(x,z,1.5))continue;if(!cond(h,normalY(x,z),x,z))continue;push(t,x,z);k++;}};
- sc('rock',150,(h,ny)=>h>2.5&&ny>.75);sc('rock',90,(h,ny,x,z)=>desertAt(x,z)>.5&&h>2);sc('outcrop',40,(h,ny,x,z)=>lavaAt(x,z)>.5);sc('shore',90,(h)=>h>.1&&h<1.6);sc('outcrop',70,(h,ny)=>h>5&&ny<.86&&ny>.55);
+ sc('rock',150,(h,ny)=>h>2.5&&ny>.75);sc('rock',70,(h,ny,x,z)=>vegAt(x,z,h)<.2&&h>2);sc('shore',90,(h)=>h>.1&&h<1.6);sc('outcrop',70,(h,ny)=>h>5&&ny<.86&&ny>.55);
  veins.forEach(v=>{for(let k=0;k<5;k++){const a=rng()*6.283,d=rng()*v.r*.7;const x=v.x+Math.cos(a)*d,z=v.z+Math.sin(a)*d;if(terrainH(x,z)>1)push('outcrop',x,z,.8+rng()*.4);}});
  sc('stick',260,(h)=>h>1&&h<22);sc('stone',110,(h,ny)=>h>.5&&h<30&&ny>.75);sc('driftwood',70,(h,ny)=>h>.15&&h<1.3&&ny>.85);sc('pebble',200,(h,ny)=>h>.3&&h<30&&ny>.75);sc('chert',70,(h)=>h>.4&&h<3);sc('chert',50,(h,ny)=>h>3&&ny<.9);
  const sa=[SPAWN.x,SPAWN.z,24];sc('sharinbai',6,(h,ny)=>h>.8&&ny>.8,[SPAWN.x,SPAWN.z,35]);sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('pebble',8,(h)=>h>.3,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
@@ -725,7 +729,7 @@ function setFruit(e,on){e.fruit=on;e.fim.setMatrixAt(e.idx,on&&e.alive?entMat(e)
 // decor chunks
 const DEC=new Map(),DCS=24;
 function buildDecor(cx,cz){const r=mulberry32(((SEED^(cx*73856093)^(cz*19349663))>>>0)+1);const G=[],F=[];
- for(let k=0;k<460;k++){const x=cx*DCS+r()*DCS,z=cz*DCS+r()*DCS;const h=terrainH(x,z);if(h<1.9||inPond(x,z,.6)||caveAt(x,z,.8)||desertAt(x,z)>.35)continue;if(normalY(x,z)<.74)continue;const f=forestAt(x,z);
+ for(let k=0;k<460;k++){const x=cx*DCS+r()*DCS,z=cz*DCS+r()*DCS;const h=terrainH(x,z);if(h<1.9||inPond(x,z,.6)||caveAt(x,z,.8))continue;if(normalY(x,z)<.74)continue;const gv=vegAt(x,z,h);if(r()>grassF(gv))continue;const f=forestAt(x,z);
   if(r()<f*.8){if(r()<.55)F.push([x,h,z,r()*6.28,.7+r()*.7]);}else G.push([x,h,z,r()*6.28,.75+r()*.75]);}
  const grp=new THREE.Group();
  const mk=(geo,Lx)=>{if(!Lx.length)return;const im=new THREE.InstancedMesh(geo,MATV,Lx.length);im.frustumCulled=false;im.receiveShadow=true;
@@ -1346,8 +1350,8 @@ function updateAudio(dt){if(!AU.ctx)return;const C=AU.ctx,t=C.currentTime;const 
 const MAPN=384;let mapBase=null;
 function buildMap(){try{const c=document.createElement('canvas');c.width=c.height=MAPN;const g=c.getContext('2d');const im=g.createImageData(MAPN,MAPN);const col=new THREE.Color(),t2=new THREE.Color();
  for(let y=0;y<MAPN;y++)for(let x=0;x<MAPN;x++){const wx=-HALF+(x+.5)*WORLD/MAPN,wz=-HALF+(y+.5)*WORLD/MAPN;const h=terrainH(wx,wz);
-  if(lavaAt(wx,wz)>.4&&h>-.5)col.set('#2b2725');else if(desertAt(wx,wz)>.5&&h>.5)col.set('#3e3935');else if(inPond(wx,wz,0))col.set('#2c6e70');else if(h<0){const d=-h;col.set(d<.4?'#6ccfc4':d<3?'#46c8c0':d<10?'#1f8ab0':'#0f4f80');}
-  else if(h<1.5)col.set('#dccb9c');else if(normalY(wx,wz)<.7)col.set('#77736a');else col.set(h>24?'#7a9a4a':'#6a9a3c').lerp(t2.set('#2f5420'),forestAt(wx,wz)*.8);
+  if(inPond(wx,wz,0))col.set('#2c6e70');else if(h<0){const d=-h;col.set(d<.4?'#6ccfc4':d<3?'#46c8c0':d<10?'#1f8ab0':'#0f4f80');}
+  else if(h<1.5)col.set('#dccb9c');else if(normalY(wx,wz)<.7)col.set('#77736a');else{const vg=vegAt(wx,wz,h);col.set(h>24?'#7a9a4a':'#6a9a3c').lerp(t2.set('#2f5420'),forestAt(wx,wz)*.8);col.lerp(t2.set('#8aa450'),1-treeF(vg));col.lerp(t2.set('#a89e66'),(1-grassF(vg))*.75);col.lerp(t2.set('#4b403a'),clamp((.25-vg)/.25,0,1));}
   if(h>0)col.multiplyScalar(clamp(1+(h-terrainH(wx-1.7,wz-1.7))*.12,.7,1.3));
   const i=(y*MAPN+x)*4;im.data[i]=clamp(col.r*255,0,255);im.data[i+1]=clamp(col.g*255,0,255);im.data[i+2]=clamp(col.b*255,0,255);im.data[i+3]=255;}
  g.putImageData(im,0,0);mapBase=c;}catch(e){}}
@@ -1364,7 +1368,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:15,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:16,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z,c:o.c})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1466,9 +1470,9 @@ function startGame(data){auInit();$('#loading').style.display='block';
  updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===15)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===16)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===15&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===16&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
