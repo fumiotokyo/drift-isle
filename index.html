@@ -134,7 +134,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
   </div>
 </div>
 <div id="timer"><svg viewBox="0 0 44 44"><circle class="bg" cx="22" cy="22" r="18"/><circle class="fg" id="tarc" cx="22" cy="22" r="18"/></svg><span id="tlabel"></span></div>
-<div id="mapOv"><canvas id="mapC" width="640" height="640"></canvas><p>M または Esc で閉じる ／ ■ 設置物　★ 寝床　■ 洞窟（暗い影・シェルター）　▲ 現在地</p></div>
+<div id="mapOv"><canvas id="mapC" width="640" height="640"></canvas><p>M または Esc で閉じる ／ ■ 設置物　★ 寝床　▲ 現在地</p></div>
 <div id="tip"></div><div id="dragG"><img class="px" alt=""></div>
 <div class="overlay on" id="title">
   <h1>漂流島</h1><div class="sub">DRIFT ISLE</div>
@@ -164,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v18';
+const SAVE_KEY='driftisle_save_v19';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -580,7 +580,7 @@ function buildCaves(){caves.forEach((c,k)=>{const r=mulberry32(SEED+900+k),pos=[
    const a=W(-fw,.02,w0),b=W(fw,.02,w0),d=W(-fw,.02,w1),e=W(fw,.02,w1);tri(a,d,b,'#5e5446',f);tri(b,d,e,'#5e5446',f);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(new Float32Array(pos),3));g.setAttribute('color',new THREE.BufferAttribute(new Float32Array(col),3));g.computeVertexNormals();
   const m=new THREE.Mesh(g,MATV);m.castShadow=true;m.receiveShadow=true;scene.add(m);});}
-function genCaves(){caves=[];const cr=mulberry32(SEED+777),D=[[1,0],[-1,0],[0,1],[0,-1]];let tries=0;
+function genCaves(){caves=[];return;const cr=mulberry32(SEED+777),D=[[1,0],[-1,0],[0,1],[0,-1]];let tries=0;
  while(caves.length<9&&tries<120000){tries++;const i=12+Math.floor(cr()*(SEG-24)),j=12+Math.floor(cr()*(SEG-24)),x=-HALF+i*CELL,z=-HALF+j*CELL;const h0=rawHeight(x,z);if(h0<1.2||h0>50||Math.hypot(x-CX,z-CZ)<85)continue;
   let best=null,bv=0;for(const[di,dj]of D){const v=rawHeight(x+di*CELL*3,z+dj*CELL*3)-h0;if(v>bv){bv=v;best=[di,dj];}}
   if(!best||bv<3.5)continue;const[di,dj]=best,li=-dj,lj=di;
@@ -1204,7 +1204,7 @@ function updatePlacement(){const s=held();const t=s&&I[s.id].place;
   for(const s2 of structs){if(SD[s2.t].r&&Math.hypot(s2.x-x,s2.z-z)<s2.r+r)ok=false;if(s2.boxes.some(bb=>circBox(x,z,r,bb)))ok=false;}
   if(Math.hypot(pl.x-x,pl.z-z)<r+.4)ok=false;if(t==='bed'&&!bedSpot(x,z))ok=false;}
  ghost.visible=true;ghost.position.set(x,y,z);ghost.rotation.y=b?rot*Math.PI/2:rot*Math.PI/4;const mat=ok?GHOST_OK:GHOST_NG;ghost.traverse(o=>{if(o.isMesh)o.material=mat;});
- placeInfo={t,x,y,z,rot,ok};$('#placehint').textContent=t==='bed'&&!bedSpot(x,z)?'寝床はシェルターの中（完成した簡易シェルター・洞窟）にしか置けない':b==='w'?'左クリック: 設置（土台の縁に吸着）':b?'左クリック: 設置':'左クリック: 設置 ／ R: 回転（地面を見下ろして置く）';}
+ placeInfo={t,x,y,z,rot,ok};$('#placehint').textContent=t==='bed'&&!bedSpot(x,z)?'寝床は完成した簡易シェルターの中にしか置けない':b==='w'?'左クリック: 設置（土台の縁に吸着）':b?'左クリック: 設置':'左クリック: 設置 ／ R: 回転（地面を見下ろして置く）';}
 function tryPlace(){if(!placeInfo)return;if(!placeInfo.ok){msg('ここには置けない','bad');return;}const p=placeInfo;addStruct(p.t,p.x,p.y,p.z,p.rot);sfx('place');const s=held();s.n--;if(!s.n)hot[sel]=null;invDirty=true;if(p.t==='campfire'&&era<1)setEra(1);}
 
 // ================= Physics / survival =================
@@ -1235,7 +1235,7 @@ function updatePlayer(dt){
  {const mx=fx*spd*dt,mz=fz*spd*dt;for(const[ax,az]of[[mx,mz],[mx,0],[0,mz]]){if(!ax&&!az)continue;const[nx,nz]=collide(pl.x+ax,pl.z+az,pl.y);if(canStep(nx,nz)){pl.x=nx;pl.z=nz;break;}}}
  const g=standAt(pl.x,pl.z),wl=waterLevel(pl.x,pl.z);pl.swim=wl-g>1.45&&pl.y<wl-.9;
  if(pl.swim){pl.y+=(wl-1.42-pl.y)*Math.min(1,dt*3);if(keys.Space)pl.y+=dt*1.5;pl.vy=0;pl.onG=false;}
- else{const wasG=pl.onG;pl.vy-=22*dt;pl.y+=pl.vy*dt;if(pl.y<=g){if(pl.vy<-13){pl.hp-=(-pl.vy-13)*6;msg('落下して怪我をした','bad');sfx('hurt');pl.cause='落下';}pl.y=g;pl.vy=0;pl.onG=true;}
+ else{const wasG=pl.onG;pl.vy-=22*dt;pl.y+=pl.vy*dt;if(pl.y<=g){if(pl.vy<-13&&!cheat){pl.hp-=(-pl.vy-13)*18;msg('落下して怪我をした','bad');sfx('hurt');pl.cause='落下';}pl.y=g;pl.vy=0;pl.onG=true;}
   else if(wasG&&pl.vy<=0&&pl.y-g<.65){pl.y=g;pl.vy=0;pl.onG=true;}else pl.onG=false;
   if(keys.Space&&pl.onG&&pl.stam>8&&!pl.carry){pl.vy=7.2;pl.stam-=8;pl.onG=false;}}
  if(sprint)pl.stam-=16*dt;else if(!pl.swim)pl.stam=Math.min(100,pl.stam+(ml>0?9:14)*dt);pl.stam=Math.max(0,pl.stam);pl.moving=ml>0;pl.sprint=sprint;
@@ -1366,7 +1366,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:18,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:19,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z,c:o.c})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1468,9 +1468,9 @@ function startGame(data){auInit();$('#loading').style.display='block';
  updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===18)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===19)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===18&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===19&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
