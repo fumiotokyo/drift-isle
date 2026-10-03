@@ -62,6 +62,7 @@ img.px{image-rendering:pixelated;image-rendering:crisp-edges}
 .it .dur{pointer-events:none}
 .hl{position:absolute;pointer-events:none;background:rgba(124,200,106,.28);outline:2px solid #8fbf6a;z-index:3}.hl.ng{background:rgba(224,96,62,.28);outline-color:#e0603e}
 .eqr{display:flex;gap:10px;align-items:flex-start;margin:6px 0}.eqn{width:56px;font-size:12.5px;color:var(--wood);padding-top:4px}.eqv{font-size:12.5px;color:var(--dim);padding-top:4px}.eqg{display:flex;gap:10px}
+.eqwrap{display:flex;gap:16px;align-items:flex-start}#bodyW{position:relative;width:200px;height:250px;flex:none}#bodyW svg{position:absolute;left:40px;top:0;width:120px;height:250px}.eqs{position:absolute}.eqs .eql{font-size:11px;color:var(--dim)}
 .equip{display:flex;gap:14px;align-items:flex-start;margin-top:10px}
 #hotI{display:flex;gap:4px}
 #craftP{width:390px;display:flex;flex-direction:column;max-height:calc(100vh - 40px)}
@@ -121,10 +122,9 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
   <div id="invWrap">
     <div class="panel chamf" id="invP">
       <h3>持ち物 <small id="bagName"></small></h3>
-      <div id="equipW"></div>
+      <div class="eqwrap"><div id="bodyW"><svg viewBox="0 0 120 250"><g fill="rgba(220,210,180,.13)" stroke="rgba(220,210,180,.35)" stroke-width="1.5"><circle cx="60" cy="28" r="17"/><path d="M42 52 Q60 46 78 52 L92 60 L100 120 L90 122 L84 74 L82 128 L80 236 L66 236 L61 140 L59 140 L54 236 L40 236 L38 128 L36 74 L30 122 L20 120 L28 60 Z"/></g></svg><div id="eqSlots"></div></div><div id="equipW"></div></div>
       <div class="equip">
         <div><div class="lbl" style="margin-top:0">手持ち（1）</div><div id="hotI"></div></div>
-        <div><div class="lbl" style="margin-top:0">防具</div><div id="armorS"></div></div>
       </div>
       <div class="lbl">ドラッグで移動・ドラッグ中に R で回転・右クリックでメニュー（分ける／捨てる）・持ち物の枠の外へドラッグで捨てる・Shift+クリックで一括移動</div><div id="ctxM"></div>
     </div>
@@ -164,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v11';
+const SAVE_KEY='driftisle_save_v12';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -195,7 +195,7 @@ const I={
  brick:{n:'耐火レンガ',st:16},charcoal:{n:'木炭',st:20},
  copper_ore:{n:'孔雀石（銅鉱石）',st:12},tin_ore:{n:'錫石',st:12},iron_ore:{n:'赤鉄鉱',st:12},
  copper_ingot:{n:'銅インゴット',st:8,sz:[2,1]},bronze_ingot:{n:'青銅インゴット',st:8,sz:[2,1]},iron_bloom:{n:'鉄塊（ブルーム）',st:4},iron_ingot:{n:'錬鉄インゴット',st:8,sz:[2,1]},
- torch:{n:'松明',sz:[1,2],dur:240,light:1},mino:{n:'蓑（みの）',sz:[2,3],armor:1},
+ torch:{n:'松明',sz:[1,2],dur:240,light:1},mino:{n:'蓑（みの）',sz:[2,3],armor:1,wear:'outer'},tshirt:{n:'Tシャツ',sz:[2,2],wear:'top'},jeans:{n:'ジーンズ',sz:[2,2],wear:'bottom',pockets:1},
  stone_knife:{n:'石のナイフ',sz:[1,2],tool:{tree:3,anim:15},knife:1,dur:60,mat:'chert',shape:'knife'},
  stone_axe:{n:'石斧',sz:[1,3],tool:{tree:18,anim:14},dur:80,mat:'chert',shape:'axe'},
  stone_pick:{n:'石のつるはし',sz:[2,3],tool:{rock:18,tier:1,anim:10},dur:80,mat:'stone',shape:'pick'},
@@ -213,7 +213,7 @@ const I={
  campfire:{n:'焚き火',sz:[2,2],place:'campfire'},shelter:{n:'簡易シェルターの骨組み',sz:[2,3],place:'shelter'},bed:{n:'寝床',sz:[2,3],place:'bed'},workbench:{n:'作業台',sz:[3,2],place:'workbench'},
  box:{n:'木箱',sz:[2,2],place:'box'},kiln:{n:'土窯',sz:[3,3],place:'kiln'},bloomery:{n:'製錬炉',sz:[3,3],place:'bloomery'},anvil:{n:'金床',sz:[2,2],place:'anvil'},
  foundation:{n:'木の土台',st:5,sz:[2,2],place:'foundation'},wall:{n:'木の壁',st:5,sz:[2,2],place:'wall'},doorway:{n:'木の戸口',st:5,sz:[2,2],place:'doorway'},ceiling:{n:'木の天井',st:5,sz:[2,2],place:'ceiling'},
- basket:{n:'背負いかご',sz:[2,2]},leather_pack:{n:'革の背負い袋',sz:[2,2]},canoe:{n:'外洋カヌー',sz:[2,1]}
+ basket:{n:'背負いかご',sz:[2,2],wear:'back',pack:[4,4]},leather_pack:{n:'革の背負い袋',sz:[2,2],wear:'back',pack:[5,5]},canoe:{n:'外洋カヌー',sz:[2,1]}
 };
 const UPG={basket:{lv:1,w:4,h:4},leather_pack:{lv:2,w:5,h:5}};
 const BAGNAME=['鞄なし','背負いかご 4×4','革の背負い袋 5×5'];
@@ -243,7 +243,7 @@ const R=[
 const DISABLED=['unfired_pot','pot_empty','pot_salt','pot_fresh','unfired_crucible','crucible','unfired_mold','mold','brick','charcoal',
  'copper_ore','tin_ore','iron_ore','copper_ingot','bronze_ingot','iron_bloom','iron_ingot',
  'copper_knife','copper_axe','copper_pick','bronze_axe','bronze_pick','bronze_spear','iron_knife','iron_axe','iron_pick','iron_spear',
- 'kiln','bloomery','anvil','canoe'];
+ 'kiln','bloomery','anvil','canoe','foundation','wall','doorway','ceiling'];
 DISABLED.forEach(k=>delete I[k]);
 for(let k=R.length-1;k>=0;k--){const r=R[k];if(!I[r.o]||Object.keys(r.i).some(x=>!I[x])||(r.t||[]).some(x=>!I[x])||(r.s&&!I[r.s]&&r.s!=='campfire'&&r.s!=='workbench'))R.splice(k,1);}
 R.forEach((r,k)=>{r.id=k;r.q=r.q||1;r.s=r.s||'';});
@@ -322,6 +322,8 @@ const DR={
  copper_ingot:p=>p.poly([[3,12],[29,12],[26,5],[6,5]],'#c87533'),bronze_ingot:p=>p.poly([[3,12],[29,12],[26,5],[6,5]],'#c9a24a'),iron_ingot:p=>p.poly([[3,12],[29,12],[26,5],[6,5]],'#6e737a'),
  iron_bloom:p=>{p.e(8,9,6,5.5,'#3e3b38');p.sp(2,3,12,12,'#1a1816',.25,15);p.sp(2,3,12,12,'#6a6660',.1,16);},
  torch:p=>{p.l(8,30,8,12,'#7a4e2a',2);p.r(6,9,5,4,'#c9b07a');p.poly([[8,1],[12,6],[11,9],[5,9],[4,6]],'#f08a20');p.e(8,6.5,1.6,2.4,'#ffd84a');},
+ tshirt:p=>{p.poly([[8,4],[13,3],[16,6],[19,3],[24,4],[30,10],[26,14],[24,12],[24,29],[8,29],[8,12],[6,14],[2,10]],'#e8e4da');p.poly([[13,3],[16,6],[19,3]],'#bfb9ac');p.l(8,28,24,28,'#c8c2b4',1);},
+ jeans:p=>{p.poly([[7,3],[25,3],[27,30],[18,30],[16,12],[14,30],[5,30]],'#3e5a86');p.l(7,4,25,4,'#2c4466',2);p.l(16,5,16,12,'#2c4466',1);p.l(9,7,12,10,'#56729e',1);p.l(23,7,20,10,'#56729e',1);},
  mino:p=>{p.poly([[16,3],[30,44],[2,44]],'#b89a50');for(let x=4;x<29;x+=2)p.l(16,6,x,44,x%4?'#a08440':'#c8aa60');p.r(11,3,10,4,'#8a7038');},
  basket:p=>{p.poly([[4,8],[28,8],[25,30],[7,30]],'#b8904a');for(let y=10;y<30;y+=3)p.l(5,y,27,y,'#8a6a32');for(let x=8;x<26;x+=4)p.l(x,9,x,29,'#a07c3c');p.l(6,8,10,2,'#8a6a32',2);p.l(26,8,22,2,'#8a6a32',2);},
  leather_pack:p=>{p.r(5,6,22,24,'#7a4a2a');p.r(7,8,18,8,'#8a5a36');p.r(14,14,4,4,'#c9a46a');p.l(9,6,12,1,'#5a3420',2);p.l(23,6,20,1,'#5a3420',2);},
@@ -645,7 +647,7 @@ function skyCols(h,rain){for(let k=0;k<SKYK.length-1;k++){if(h>=SKYK[k][0]&&h<=S
 const sunDir=new THREE.Vector3();
 function updateSky(){const pa=skyGeo.attributes.position.array,ca=skyGeo.attributes.color.array,c=new THREE.Color();const glow=new THREE.Color('#ffc890');const dl=daylight(hours);
  for(let i=0;i<pa.length/3;i++){const y=pa[i*3+1]/500;const t=Math.pow(Math.max(0,y),.55);c.copy(skyHor).lerp(skyTop,t);if(y<0)c.copy(skyHor).multiplyScalar(.9);
-  const d=(pa[i*3]*sunDir.x+pa[i*3+1]*sunDir.y+pa[i*3+2]*sunDir.z)/500;if(d>.7&&sunDir.y>-.1){c.lerp(glow,(d-.7)/.3*.45*(1-weather.rain*.8)*(dl>0?1:.3));}ca[i*3]=c.r;ca[i*3+1]=c.g;ca[i*3+2]=c.b;}
+  const d=(pa[i*3]*sunDir.x+pa[i*3+1]*sunDir.y+pa[i*3+2]*sunDir.z)/500;if(d>.7&&sunDir.y>-.1){c.lerp(glow,(d-.7)/.3*.45*(1-weather.dark*.8)*(dl>0?1:.3));}ca[i*3]=c.r;ca[i*3+1]=c.g;ca[i*3+2]=c.b;}
  skyGeo.attributes.color.needsUpdate=true;}
 
 // ================= Entities (instanced) =================
@@ -733,10 +735,12 @@ function spawnAnimal(far){for(let k=0;k<60;k++){const x=(rng()*2-1)*190,z=(rng()
 
 // ================= Game state =================
 const pl={x:0,y:5,z:0,vy:0,yaw:0,pitch:0,hp:100,food:85,water:85,warm:55,stam:100,sick:0,onG:false,swim:false,placeRot:0,eye:1.62};
-let GR={pl:{w:1,h:2,items:[]},pr:{w:1,h:2,items:[]},pk:null},hot=new Array(1).fill(null),armor=null,bagLv=0,sel=0,era=0,day=1,hours=7.5;
+let EQ={head:null,top:{id:'tshirt',n:1},bottom:{id:'jeans',n:1},feet:null,back:null},GR={pl:{w:1,h:2,items:[]},pr:{w:1,h:2,items:[]},pk:null},hot=new Array(1).fill(null),armor=null,bagLv=0,sel=0,era=0,day=1,hours=7.5;
 let structs=[],foundMap=new Map(),wallMap=new Map(),ceilMap=new Map();
 let removed={},fruitEmpty={},spawnBed=null,won=false,cheat=false,carcasses=[],action=null;let state='menu',openCont=null,invDirty=true;
-const weather={rain:0,target:0,timer:200};
+const weather={state:'clear',rain:0,cloud:.12,storm:0,T:{rain:0,cloud:.12,storm:0},timer:240,dark:0,flash:0,thT:12};
+const WST={clear:{cloud:.12,rain:0,storm:0,dur:[240,480],next:[['cloudy',1]],m:'空が晴れてきた'},cloudy:{cloud:.7,rain:0,storm:0,dur:[150,320],next:[['clear',.5],['rain',.5]],m:'雲が広がってきた'},rain:{cloud:.92,rain:.75,storm:0,dur:[120,260],next:[['cloudy',.65],['storm',.35]],m:'雨が降り出しそうだ…'},storm:{cloud:1,rain:1,storm:1,dur:[90,200],next:[['rain',1]],m:'風が強まってきた…嵐が来る'}};
+const weatherName=()=>weather.storm>.5?'嵐':weather.rain>.35?'雨':weather.cloud>.5?'曇り':'晴れ';
 const DAYLEN=720,REACH=3.6;
 
 // ================= Structures =================
@@ -815,7 +819,13 @@ function fits(c,id,x,y,r,ign){const s=SZ(id),w=r?s[1]:s[0],h=r?s[0]:s[1];if(x<0|
 function findSpot(c,id){for(const r of[0,1])for(let y=0;y<c.h;y++)for(let x=0;x<c.w;x++)if(fits(c,id,x,y,r))return{x,y,r};return null;}
 function gridAdd(c,id,n,d){const st=STK(id);if(st>1)for(const o of c.items)if(o.id===id&&o.n<st){const k=Math.min(st-o.n,n);o.n+=k;n-=k;if(!n)return 0;}
  while(n>0){const sp=findSpot(c,id);if(!sp)break;const k=Math.min(st,n);const it={id,n:k,x:sp.x,y:sp.y,r:sp.r};if(I[id].dur)it.d=d!=null?d:I[id].dur;c.items.push(it);n-=k;}return n;}
-const grids=()=>[GR.pl,GR.pr].concat(GR.pk?[GR.pk]:[]);
+const grids=()=>[GR.pl,GR.pr,GR.pk].filter(Boolean);
+const EQK=['head','top','outer','back','bottom','feet'],EQN={head:'頭',top:'上衣',outer:'上着',back:'鞄',bottom:'下衣',feet:'靴'};
+const eqGet=k=>k==='outer'?armor:EQ[k];
+function eqSet(k,v){if(k==='outer')armor=v;else EQ[k]=v;}
+function eqEmptyOK(k){if(k==='bottom')return !(GR.pl&&GR.pl.items.length)&&!(GR.pr&&GR.pr.items.length);if(k==='back')return !(GR.pk&&GR.pk.items.length);return true;}
+function onEquip(k,id){const d=I[id];if(k==='bottom'&&d.pockets){GR.pl={w:1,h:2,items:[]};GR.pr={w:1,h:2,items:[]};}if(k==='back'&&d.pack){GR.pk={w:d.pack[0],h:d.pack[1],items:[]};bagLv=id==='leather_pack'?2:1;}invDirty=true;}
+function onUnequip(k){if(k==='bottom'){GR.pl=null;GR.pr=null;}if(k==='back'){GR.pk=null;bagLv=0;}invDirty=true;}
 const allInv=()=>grids().flatMap(g=>g.items);
 function invAdd(id,n,d){for(const g of grids()){n=gridAdd(g,id,n,d);if(!n)return 0;}return n;}
 function nearGItems(id){return gitems.filter(o=>o.id===id&&Math.hypot(o.x-pl.x,o.z-pl.z)<6).sort((a,b)=>Math.hypot(a.x-pl.x,a.z-pl.z)-Math.hypot(b.x-pl.x,b.z-pl.z));}
@@ -847,13 +857,14 @@ function renderGrid(el,c,key){el.style.width=c.w*CELLPX+'px';el.style.height=c.h
  c.items.forEach((it,k)=>{const[w,hh]=isz(it);h+=`<div class="it" data-g="${key}" data-k="${k}" style="left:${it.x*CELLPX}px;top:${it.y*CELLPX}px;width:${w*CELLPX}px;height:${hh*CELLPX}px"><img class="px" src="${icon(it.id,it.r)}" alt="">${it.n>1?`<b>${it.n}</b>`:''}${durHTML(it)}</div>`;});
  el.innerHTML=h+'<div class="hl" style="display:none"></div>';}
 function renderInv(){CELLPX=innerWidth<1400?40:48;document.documentElement.style.setProperty('--cell',CELLPX+'px');
- $('#bagName').textContent='Tシャツ・ジーンズ'+(GR.pk?'・'+I[bagLv===2?'leather_pack':'basket'].n:'');
- $('#equipW').innerHTML=`<div class="eqr"><span class="eqn">服</span><span class="eqv">Tシャツ（収納なし）</span></div><div class="eqr"><span class="eqn">ジーンズ</span><div class="eqg"><div><div class="lbl">左ポケット</div><div class="ggrid" id="g_pl" data-g="pl"></div></div><div><div class="lbl">右ポケット</div><div class="ggrid" id="g_pr" data-g="pr"></div></div></div></div><div class="eqr"><span class="eqn">鞄</span>${GR.pk?'<div class="ggrid" id="g_pk" data-g="pk"></div>':'<span class="eqv">なし（背負いかごを作ると装備できる）</span>'}</div>`;
- renderGrid($('#g_pl'),GR.pl,'pl');renderGrid($('#g_pr'),GR.pr,'pr');if(GR.pk)renderGrid($('#g_pk'),GR.pk,'pk');
- let h='';for(let i=0;i<hot.length;i++)h+=slotHTML(hot[i],`data-h="${i}"`,i+1);$('#hotI').innerHTML=h;$('#armorS').innerHTML=slotHTML(armor,'data-a="1"');
+ $('#bagName').textContent='装備をドラッグで着脱';
+ {const POS={head:[72,0],top:[72,62],outer:[0,62],back:[144,62],bottom:[72,128],feet:[72,192]};$('#eqSlots').innerHTML=EQK.map(k=>{const it=eqGet(k);return `<div class="slot eqs" data-eq="${k}" style="left:${POS[k][0]}px;top:${POS[k][1]}px">${it?`<img class="px" src="${icon(it.id)}" alt="">`:`<span class="eql">${EQN[k]}</span>`}</div>`;}).join('');}
+ $('#equipW').innerHTML=(GR.pl?`<div class="lbl" style="margin-top:0">${I[EQ.bottom.id].n}のポケット</div><div class="eqg"><div><div class="lbl">左</div><div class="ggrid" id="g_pl" data-g="pl"></div></div><div><div class="lbl">右</div><div class="ggrid" id="g_pr" data-g="pr"></div></div></div>`:'<div class="lbl" style="margin-top:0">ポケットなし</div>')+(GR.pk?`<div class="lbl">${I[EQ.back.id].n}</div><div class="ggrid" id="g_pk" data-g="pk"></div>`:'<div class="lbl">鞄なし（背負いかごを作ると背負える）</div>');
+ if(GR.pl){renderGrid($('#g_pl'),GR.pl,'pl');renderGrid($('#g_pr'),GR.pr,'pr');}if(GR.pk)renderGrid($('#g_pk'),GR.pk,'pk');
+ let h='';for(let i=0;i<hot.length;i++)h+=slotHTML(hot[i],`data-h="${i}"`,i+1);$('#hotI').innerHTML=h;
  if(openCont&&(openCont.cont||openCont.st)){$('#contP').style.display='';$('#contT').textContent=SD[openCont.t].n;
   if(openCont.cont){$('#contG').style.display='';$('#stBody').innerHTML='';renderGrid($('#contG'),openCont.cont,'cont');}else{$('#contG').style.display='none';renderStation();}}else $('#contP').style.display='none';
- $('#spawnP').style.display=cheat?'':'none';if(cheat&&!$('#spw').children.length)$('#spw').innerHTML=Object.keys(I).filter(k=>k!=='canoe'&&!UPG[k]).map(k=>`<div data-sp="${k}" title="${I[k].n}"><img class="px" src="${icon(k)}" alt=""></div>`).join('');
+ $('#spawnP').style.display=cheat?'':'none';if(cheat&&!$('#spw').children.length)$('#spw').innerHTML=Object.keys(I).map(k=>`<div data-sp="${k}" title="${I[k].n}"><img class="px" src="${icon(k)}" alt=""></div>`).join('');
  renderCraft();}
 function stSlot(s,key,i){const it=s.st[key][i];const P0=key==='in'&&it&&PROC[s.t][it.id];const pr=P0?s.st.prog[i]/P0[1]:0;
  return `<div class="slot" data-st="${key}" data-i="${i}">${it?`<img class="px" src="${icon(it.id)}" alt="">${it.n>1?`<b>${it.n}</b>`:''}`:''}${pr>0?`<div class="prog"><i style="width:${Math.min(100,pr*100)}%"></i></div>`:''}</div>`;}
@@ -873,7 +884,7 @@ const curStation=()=>openCont&&SD[openCont.t].station?openCont.t:'';
 const stationReady=t=>!!openCont&&openCont.t===t&&isLit(openCont);
 function hasMats(r){if(cheat)return true;if(r.t&&r.t.some(t=>!countItem(t)))return false;for(const k in r.i)if(countItem(k)<r.i[k])return false;return true;}
 function canCraft(r){if(cheat)return true;if(r.s&&!stationReady(r.s))return false;if(r.t&&r.t.some(t=>!countItem(t)))return false;for(const k in r.i)if(countItem(k)<r.i[k])return false;return true;}
-const recVisible=r=>r.e<=era+1&&!(UPG[r.o]&&bagLv>=UPG[r.o].lv);
+const recVisible=r=>r.e<=era+1;
 function renderCraft(){const cs=curStation();const base=cheat?R:R.filter(r=>r.s===''||r.s===cs);const vis=base.filter(r=>cheat||recVisible(r));const hidden=cheat?0:base.filter(r=>r.e>era+1).length;let h='';
  $('#craftT').textContent=cs?STN[cs]+'のクラフト':'手作業のクラフト';
  for(const st of Object.keys(STN)){const L=vis.filter(r=>r.s===st);if(!L.length)continue;const nr=st===''||stationReady(st);
@@ -895,8 +906,8 @@ function descItem(id){const d=I[id];const L=[];
  if(d.food)L.push(`満腹 +${d.food.h}`+(d.food.w?` / 水分 ${d.food.w>0?'+':''}${d.food.w}`:'')+(d.food.sick?'（食あたりの危険）':''));
  if(d.tool){const t=d.tool;if(t.tree)L.push('伐採 '+t.tree);if(t.rock)L.push(`採掘 ${t.rock}（${TIERN[t.tier]}等級）`);if(t.anim)L.push('攻撃 '+t.anim);}
  if(d.knife)L.push('手に持って獲物の死体を解体できる');if(d.dur&&!d.light)L.push('耐久 '+d.dur);if(d.light)L.push('手に持つと明るい（約4分で燃え尽きる）');
- if(d.armor)L.push('防具欄に入れると雨や水濡れで体が冷えにくい');if(d.place)L.push('手持ちに入れて左クリックで設置');
- if(UPG[id])L.push(`作ると鞄として背負う（収納 ${UPG[id].w}×${UPG[id].h}）`);
+ if(d.armor)L.push('上着の欄に入れると雨や水濡れで体が冷えにくい');if(d.place)L.push('手持ちに入れて左クリックで設置');
+ if(I[id].pack)L.push(`鞄の欄に入れて背負う（収納 ${I[id].pack.join('×')}）`);if(I[id].pockets)L.push('下衣の欄に入れるとポケット（左右 1×2）が使える');if(I[id].wear==='top')L.push('上衣の欄に入れて着る');
  if(I[id].carry)L.push('大きいので持ち物には入らない。左クリックで担いで運び、もう一度左クリックで下ろす。近く（6m以内）に置けばクラフトの材料になる');if(id==='driftwood')L.push('砂浜に流れ着く。燃料になり、割ると枝が3本取れる');if(id==='leaf')L.push('シェルターの屋根葺きや燃料に使う。低木（シャリンバイ）を手でむしる・広葉樹を伐り倒す・カラムシや野イチゴから取れる');if(id==='pebble')L.push('焚き火の石組みに使える');
  if(id==='bamboo')L.push('燃料や竹槍の材料になる');if(id==='sasa')L.push('燃料や寝床の材料になる');if(id==='takenoko')L.push('生はえぐい。焚き火で焼こう');if(id==='pot_empty')L.push('水辺で F を押すと水を汲める／雨の中で手に持つと雨水が溜まる');if(id==='pot_fresh')L.push('右クリックで飲む（水分 +40）');if(id==='pot_salt')L.push('焚き火で煮沸すると真水になる');
  if(FUEL[id])L.push(`燃料 ${FUEL[id]}秒`);if(id==='bone_needle')L.push('蓑や背負い袋を縫うのに使う（消費しない）');if(KQ[id])L.push(`解体の収量 ${Math.round(KQ[id]*100)}%`);
@@ -908,7 +919,7 @@ function craftQueue(r,n){if(!canCraft(r))return;if(!craftDur(r)){craft(r);if(sta
 function checkEra(id){const t=ERA_TRIG[id];if(t!=null&&t>era)setEra(t);}
 function craft(r){if(!cheat)for(const k in r.i)removeItem(k,r.i[k]);
  if(r.o==='canoe'){winGame();return;}
- if(UPG[r.o]){const u=UPG[r.o];bagLv=u.lv;const old=GR.pk;GR.pk={w:u.w,h:u.h,items:[]};if(old)old.items.forEach(it=>{const rm=gridAdd(GR.pk,it.id,it.n,it.d);if(rm)dropItems([{id:it.id,n:rm,d:it.d}],pl.x,pl.z);});msg(`${I[r.o].n}を背負った（鞄 ${u.w}×${u.h}）`,'good');invDirty=true;return;}
+ if(I[r.o].wear==='back'&&!EQ.back){EQ.back={id:r.o,n:1};onEquip('back',r.o);sfx('craft');msg(`${I[r.o].n}を背負った（鞄 ${I[r.o].pack.join('×')}）`,'good');return;}
  sfx('craft');addItem(r.o,r.q,null,true);msg(`作成：${I[r.o].n}${r.q>1?' ×'+r.q:''}`,'good');const t=ERA_TRIG[r.o];if(t!=null&&t>era)setEra(t);}
 function setEra(e){era=e;$('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#eraName').textContent=ERA[era];const b=$('#eraBanner');b.classList.add('on');setTimeout(()=>b.classList.remove('on'),4200);invDirty=true;}
 
@@ -917,9 +928,9 @@ let drag=null;const ghostEl=$('#dragG'),tipEl=$('#tip');
 const contOf=key=>GR[key]||openCont.cont;
 function canAccept(key,id){const t=openCont.t;if(key==='fuel')return fuelOK(t,id);if(key==='tool')return id==='crucible';if(key==='in')return !!PROC[t][id];return false;}
 function addToSlots(arr,id,n,d){const st=STK(id);if(st>1)for(const o of arr)if(o&&o.id===id&&o.n<st){const k=Math.min(st-o.n,n);o.n+=k;n-=k;if(!n)return 0;}for(let i=0;i<arr.length&&n>0;i++)if(!arr[i]){const k=Math.min(st,n);arr[i]={id,n:k};if(d!=null)arr[i].d=d;n-=k;}return n;}
-function srcRemove(src){if(src.type==='st'){openCont.st[src.key][src.i]=null;return;}if(src.type==='grid'){const c=contOf(src.key);c.items.splice(c.items.indexOf(src.it),1);}else if(src.type==='hot')hot[src.i]=null;else armor=null;}
+function srcRemove(src){if(src.type==='st'){openCont.st[src.key][src.i]=null;return;}if(src.type==='grid'){const c=contOf(src.key);c.items.splice(c.items.indexOf(src.it),1);}else if(src.type==='hot')hot[src.i]=null;else if(src.type==='eq'){eqSet(src.key,null);onUnequip(src.key);}}
 function srcGet(el){const it=el.closest('.it');if(it){const c=contOf(it.dataset.g);const o=c.items[+it.dataset.k];return o?{type:'grid',key:it.dataset.g,it:o}:null;}
- const s=el.closest('.slot');if(!s||!s.closest('#inv'))return null;if(s.dataset.st){const o=openCont.st[s.dataset.st][+s.dataset.i];return o?{type:'st',key:s.dataset.st,i:+s.dataset.i,it:o}:null;}if(s.dataset.h!=null){const o=hot[+s.dataset.h];return o?{type:'hot',i:+s.dataset.h,it:o}:null;}if(s.dataset.a){return armor?{type:'armor',it:armor}:null;}return null;}
+ const s=el.closest('.slot');if(!s||!s.closest('#inv'))return null;if(s.dataset.st){const o=openCont.st[s.dataset.st][+s.dataset.i];return o?{type:'st',key:s.dataset.st,i:+s.dataset.i,it:o}:null;}if(s.dataset.h!=null){const o=hot[+s.dataset.h];return o?{type:'hot',i:+s.dataset.h,it:o}:null;}if(s.dataset.eq){const o=eqGet(s.dataset.eq);return o?{type:'eq',key:s.dataset.eq,it:o}:null;}return null;}
 function ghostUpdate(x,y){const[w,h]=isz(drag.it);ghostEl.style.width=w*CELLPX+'px';ghostEl.style.height=h*CELLPX+'px';ghostEl.style.left=(x-drag.gx*CELLPX-CELLPX/2)+'px';ghostEl.style.top=(y-drag.gy*CELLPX-CELLPX/2)+'px';ghostEl.firstChild.src=icon(drag.it.id,drag.it.r);}
 function hoverGrid(x,y){document.querySelectorAll('.hl').forEach(h=>h.style.display='none');if(!drag)return null;const el=document.elementFromPoint(x,y);const g=el&&el.closest&&el.closest('.ggrid');if(!g)return null;
  const c=contOf(g.dataset.g);const rc=g.getBoundingClientRect();const cx=Math.floor((x-rc.left)/CELLPX),cy=Math.floor((y-rc.top)/CELLPX);const tx=cx-drag.gx,ty=cy-drag.gy;
@@ -930,8 +941,8 @@ function hoverGrid(x,y){document.querySelectorAll('.hl').forEach(h=>h.style.disp
 function returnDrag(){const d=drag;if(d.split){d.orig.n+=d.it.n;return;}const s=d.src;
  if(s.type==='grid'){const c=contOf(s.key);const it=d.it;if(fits(c,it.id,s.ox,s.oy,s.or)){it.x=s.ox;it.y=s.oy;it.r=s.or;c.items.push(it);}else{const rem=gridAdd(c,it.id,it.n,it.d);if(rem)addItem(it.id,rem,it.d,true);}}
  else if(s.type==='st'&&openCont&&openCont.st&&!openCont.st[s.key][s.i])openCont.st[s.key][s.i]=d.it;
- else if(s.type==='hot'&&!hot[s.i])hot[s.i]=d.it;else if(s.type==='armor'&&!armor)armor=d.it;else addItem(d.it.id,d.it.n,d.it.d,true);}
-function giveBack(it){const s=drag.src;if(s.type==='st'&&!openCont.st[s.key][s.i]&&canAccept(s.key,it.id)){openCont.st[s.key][s.i]=it;return;}if(s.type==='hot'&&!hot[s.i]){hot[s.i]=it;return;}if(s.type==='armor'&&!armor&&I[it.id].armor){armor=it;return;}
+ else if(s.type==='hot'&&!hot[s.i])hot[s.i]=d.it;else if(s.type==='eq'&&!eqGet(s.key)){eqSet(s.key,d.it);onEquip(s.key,d.it.id);}else addItem(d.it.id,d.it.n,d.it.d,true);}
+function giveBack(it){const s=drag.src;if(s.type==='st'&&!openCont.st[s.key][s.i]&&canAccept(s.key,it.id)){openCont.st[s.key][s.i]=it;return;}if(s.type==='hot'&&!hot[s.i]){hot[s.i]=it;return;}if(s.type==='eq'&&!eqGet(s.key)&&I[it.id].wear===s.key){eqSet(s.key,it);onEquip(s.key,it.id);return;}
  if(s.type==='grid'){const c=contOf(s.key);if(fits(c,it.id,s.ox,s.oy,it.r||0)){it.x=s.ox;it.y=s.oy;c.items.push(it);return;}const rem=gridAdd(c,it.id,it.n,it.d);if(!rem)return;it={...it,n:rem};}
  const rem=invAdd(it.id,it.n,it.d);if(rem)dropItems([{...it,n:rem}],pl.x,pl.z);}
 function quickMove(src){const it=src.it;srcRemove(src);let rem=it.n;
@@ -939,9 +950,9 @@ function quickMove(src){const it=src.it;srcRemove(src);let rem=it.n;
  else if(src.type==='st')rem=invAdd(it.id,it.n,it.d);
  else if(src.type==='grid'&&GR[src.key]&&openCont&&openCont.cont)rem=gridAdd(openCont.cont,it.id,it.n,it.d);
  else if(src.type==='grid'&&src.key==='cont')rem=invAdd(it.id,it.n,it.d);
- else if(src.type==='grid'){if(I[it.id].armor&&!armor){armor={id:it.id,n:1};rem=0;}else{const i=hot.findIndex(h=>!h);if(i>=0){hot[i]={id:it.id,n:it.n};if(it.d!=null)hot[i].d=it.d;rem=0;}}}
+ else if(src.type==='grid'){const wk=I[it.id].wear;if(wk&&!eqGet(wk)){eqSet(wk,{id:it.id,n:1,d:it.d});onEquip(wk,it.id);rem=0;}else{const i=hot.findIndex(h=>!h);if(i>=0){hot[i]={id:it.id,n:it.n};if(it.d!=null)hot[i].d=it.d;rem=0;}}}
  else rem=invAdd(it.id,it.n,it.d);
- if(rem>0){it.n=rem;if(src.type==='grid'){contOf(src.key).items.push(it);}else if(src.type==='hot')hot[src.i]=it;else if(src.type==='st')openCont.st[src.key][src.i]=it;else armor=it;}
+ if(rem>0){it.n=rem;if(src.type==='grid'){contOf(src.key).items.push(it);}else if(src.type==='hot')hot[src.i]=it;else if(src.type==='st')openCont.st[src.key][src.i]=it;else if(src.type==='eq'){eqSet(src.key,it);onEquip(src.key,it.id);}}
  cleanupDrop();renderInv();}
 function cleanupDrop(){}
 $('#inv').addEventListener('contextmenu',e=>e.preventDefault());
@@ -953,8 +964,9 @@ function showCtx(src,x,y){const it=src.it,m=$('#ctxM');let h='';if(it.n>1)h+='<d
   if(c==='one'){it.n--;dropItems([{id:it.id,n:1,d:it.d}],fx,fz);}else{srcRemove(src);dropItems([{id:it.id,n:it.n,d:it.d}],fx,fz);}
   msg(I[it.id].n+'を捨てた');invDirty=true;renderInv();};}
 $('#inv').addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('#ctxM'))return;hideCtx();const src=srcGet(e.target);if(!src)return;e.preventDefault();
+ if(src.type==='eq'&&!eqEmptyOK(src.key)){msg('中身を出してから外そう','bad');return;}
  if(e.button===2){showCtx(src,e.clientX,e.clientY);return;}
- if(e.shiftKey){quickMove(src);return;}
+ if(e.shiftKey){if(src.type==='eq'){const it=src.it;srcRemove(src);addItem(it.id,1,it.d,true);renderInv();return;}quickMove(src);return;}
  let gx=0,gy=0;const itEl=e.target.closest('.it');if(itEl){const rc=itEl.getBoundingClientRect();gx=Math.floor((e.clientX-rc.left)/CELLPX);gy=Math.floor((e.clientY-rc.top)/CELLPX);}
  else{const[w,h]=isz(src.it);gx=Math.floor(w/2);gy=Math.floor(h/2);}
  const it=src.it;
@@ -972,7 +984,7 @@ addEventListener('mouseup',e=>{if(!drag)return;const el=document.elementFromPoin
   if(!cur){hot[i]={id:it.id,n:it.n,d:it.d};}
   else if(cur.id===it.id&&STK(it.id)>1){const k=Math.min(STK(it.id)-cur.n,it.n);cur.n+=k;it.n-=k;if(it.n>0)returnDrag();}
   else if(drag.split)returnDrag();else{hot[i]={id:it.id,n:it.n,d:it.d};giveBack({...cur,r:0});}}
- else if(slot&&slot.closest('#inv')&&slot.dataset.a){if(!I[it.id].armor||drag.split)returnDrag();else{const cur=armor;armor={id:it.id,n:1};if(cur)giveBack({...cur,r:0});}}
+ else if(slot&&slot.closest('#inv')&&slot.dataset.eq){const k=slot.dataset.eq;if(I[it.id].wear!==k||drag.split)returnDrag();else{const cur=eqGet(k);if(cur&&!eqEmptyOK(k)){msg('中身を出してから外そう','bad');returnDrag();}else{if(cur)onUnequip(k);eqSet(k,{id:it.id,n:1,d:it.d});onEquip(k,it.id);if(cur)giveBack({...cur,r:0});}}}
  else if(slot&&slot.closest('#inv')&&slot.dataset.st){const key=slot.dataset.st,i=+slot.dataset.i,arr=openCont.st[key],cur=arr[i];
   if(!canAccept(key,it.id))returnDrag();else if(!cur)arr[i]={id:it.id,n:it.n,d:it.d};
   else if(cur.id===it.id&&STK(it.id)>1){const k=Math.min(STK(it.id)-cur.n,it.n);cur.n+=k;it.n-=k;if(it.n>0)returnDrag();}
@@ -1176,7 +1188,7 @@ function canStep(nx,nz){if(pl.swim)return true;const ng=standAt(nx,nz),d=Math.hy
 function updatePlayer(dt){
  const inp=state==='play';const f=inp?(keys.KeyW?1:0)-(keys.KeyS?1:0):0,s=inp?(keys.KeyD?1:0)-(keys.KeyA?1:0):0;const sy=Math.sin(pl.yaw),cy=Math.cos(pl.yaw);let fx=-sy*f+cy*s,fz=-cy*f-sy*s;const ml=Math.hypot(fx,fz);if(ml>0){fx/=ml;fz/=ml;}
  if(inp&&keys.ShiftLeft&&ml>0)pl.crouchOn=false;pl.crouch=!!pl.crouchOn&&!pl.swim;pl.eye+=((pl.crouch?1.0:1.62)-(pl.eye||1.62))*Math.min(1,dt*12);
- const sprint=keys.ShiftLeft&&ml>0&&pl.stam>1&&!pl.swim&&!pl.crouch&&!pl.carry;const spd=(sprint?7.2:4.3)*(pl.swim?.55:1)*(pl.crouch?.45:1)*(pl.carry?.7:1)*(pl.hp<20?.8:1);
+ const sprint=keys.ShiftLeft&&ml>0&&pl.stam>1&&!pl.swim&&!pl.crouch&&!pl.carry;const spd=(cheat?(sprint?18:6):(sprint?4.3:2.6))*(pl.swim?.55:1)*(pl.crouch?.45:1)*(pl.carry?.7:1)*(pl.hp<20?.8:1);
  {const mx=fx*spd*dt,mz=fz*spd*dt;for(const[ax,az]of[[mx,mz],[mx,0],[0,mz]]){if(!ax&&!az)continue;const[nx,nz]=collide(pl.x+ax,pl.z+az,pl.y);if(canStep(nx,nz)){pl.x=nx;pl.z=nz;break;}}}
  const g=standAt(pl.x,pl.z),wl=waterLevel(pl.x,pl.z);pl.swim=wl-g>1.45&&pl.y<wl-.9;
  if(pl.swim){pl.y+=(wl-1.42-pl.y)*Math.min(1,dt*3);if(keys.Space)pl.y+=dt*1.5;pl.vy=0;pl.onG=false;}
@@ -1188,8 +1200,8 @@ function updatePlayer(dt){
  // climate: subtropical
  const dl=daylight(hours),shel=sheltered(),rainHit=weather.rain*(shel?0:1),mino=armor&&I[armor.id].armor;
  let shade=0;if(dl>0){let n=0;for(const e of near(pl.x,pl.z,3))if(e.alive&&ED[e.t].k==='tree'&&Math.hypot(e.x-pl.x,e.z-pl.z)<3)n++;shade=Math.min(1,n/2);if(shel)shade=1;}
- let tw=46+30*dl*(1-weather.rain)*(1-shade*.6)-6*(1-dl);
- tw-=rainHit*(mino?4:16);if(pl.wet)tw-=mino?12:20;
+ let tw=46+30*dl*(1-weather.dark)*(1-shade*.6)-6*(1-dl);
+ tw-=rainHit*(mino?4:16)+weather.storm*(shel?0:(mino?6:12));if(pl.wet)tw-=mino?12:20;
  let fire=0;for(const st of structs)if(SD[st.t].warm&&isLit(st)){const d=Math.hypot(st.x-pl.x,st.z-pl.z);if(d<6)fire=Math.max(fire,30*(1-d/6.5));}tw+=fire;
  tw-=Math.max(0,pl.y-20)*.5;pl.tw=tw;
  pl.burnT=(pl.burnT||0)-dt;for(const st of structs)if(st.t==='campfire'&&isLit(st)&&Math.hypot(st.x-pl.x,st.z-pl.z)<1&&pl.y<st.y+.7){pl.hp-=14*dt;pl.cause='火傷';if(pl.burnT<=0){pl.burnT=1;sfx('hurt');msg('熱っ！焚き火で火傷した','bad');}break;}
@@ -1239,10 +1251,12 @@ function updateStations(dt){for(const s of structs){const st=s.st;if(!st)continu
 const RAIN_N=1400;let rainGeo,rainMesh;
 function buildRain(){rainGeo=new THREE.BufferGeometry();const p=new Float32Array(RAIN_N*6);for(let i=0;i<RAIN_N;i++){const x=(Math.random()-.5)*60,y=Math.random()*30,z=(Math.random()-.5)*60;p.set([x,y,z,x+.05,y-.7,z],i*6);}
  rainGeo.setAttribute('position',new THREE.BufferAttribute(p,3));rainMesh=new THREE.LineSegments(rainGeo,new THREE.LineBasicMaterial({color:0xb8c8d8,transparent:true,opacity:0}));rainMesh.frustumCulled=false;scene.add(rainMesh);}
-function updateWeather(dt){weather.timer-=dt;if(weather.timer<=0){weather.target=Math.random()<.35?1:0;weather.timer=weather.target?60+Math.random()*100:180+Math.random()*300;if(weather.target)msg('スコールが来そうだ…');}
- weather.rain+=(weather.target-weather.rain)*dt*.08;const op=weather.rain*.45;rainMesh.material.opacity=op*(inCave()?.3:1);rainMesh.visible=op>.02;
+function updateWeather(dt){weather.timer-=dt;if(weather.timer<=0){const nx=WST[weather.state].next;let r=Math.random(),ns=nx[0][0];for(const[k,w]of nx){if(r<w){ns=k;break;}r-=w;}weather.state=ns;const W=WST[ns];weather.T={rain:W.rain,cloud:W.cloud,storm:W.storm};weather.timer=W.dur[0]+Math.random()*(W.dur[1]-W.dur[0]);msg(W.m);}
+ for(const k of['cloud','rain','storm']){const rt=k==='cloud'?.018:.025;weather[k]+=(weather.T[k]-weather[k])*Math.min(1,dt*rt);}weather.dark=Math.max(weather.cloud*.55,weather.rain*.9,weather.storm);
+ weather.flash=Math.max(0,weather.flash-dt*3);if(weather.storm>.6){weather.thT-=dt;if(weather.thT<=0){weather.thT=7+Math.random()*14;weather.flash=1;if(AU.ctx&&AU.on){const dly=.4+Math.random()*1.8;nz('lowpass',180,.8,.5*weather.storm,2.8,dly,60);nz('lowpass',600,.7,.25*weather.storm,.5,dly);}}}
+ const op=weather.rain*.45;rainMesh.material.opacity=op*(inCave()?.3:1);rainMesh.visible=op>.02;
  if(rainMesh.visible){const p=rainGeo.attributes.position.array;const cx=camera.position.x,cy=camera.position.y,cz=camera.position.z;
-  for(let i=0;i<RAIN_N;i++){const o=i*6;p[o+1]-=26*dt;p[o+4]-=26*dt;if(p[o+1]<cy-12||Math.abs(p[o]-cx)>32||Math.abs(p[o+2]-cz)>32){const x=cx+(Math.random()-.5)*60,y=cy+8+Math.random()*16,z=cz+(Math.random()-.5)*60;p[o]=x;p[o+1]=y;p[o+2]=z;p[o+3]=x+.05;p[o+4]=y-.7;p[o+5]=z;}}
+  for(let i=0;i<RAIN_N;i++){const o=i*6;const vs=(26+weather.storm*16)*dt;p[o+1]-=vs;p[o+4]-=vs;p[o]+=weather.storm*9*dt;p[o+3]=p[o]+.05+weather.storm*.35;if(p[o+1]<cy-12||Math.abs(p[o]-cx)>32||Math.abs(p[o+2]-cz)>32){const x=cx+(Math.random()-.5)*60,y=cy+8+Math.random()*16,z=cz+(Math.random()-.5)*60;p[o]=x;p[o+1]=y;p[o+2]=z;p[o+3]=x+.05;p[o+4]=y-.7;p[o+5]=z;}}
   rainGeo.attributes.position.needsUpdate=true;}}
 
 // ================= Audio (WebAudio synth) =================
@@ -1280,7 +1294,7 @@ let seaF=0,seaT=0,birdT=3,bugT=1,crackT=0;
 function updateAudio(dt){if(!AU.ctx)return;const C=AU.ctx,t=C.currentTime;const on=AU.on&&(state==='play'||state==='inv'||state==='map')?1:0;
  seaT-=dt;if(seaT<=0){seaT=.5;let n=0;for(let k=0;k<12;k++){const a=k/12*6.283;if(terrainH(pl.x+Math.cos(a)*30,pl.z+Math.sin(a)*30)<0)n++;}seaF=n/12;}
  const set=(nd,v)=>nd.g.gain.setTargetAtTime(Math.max(0,v)*on,t,.5);const dl=daylight(hours),shel=sheltered();
- const cave=inCave(),cvf=cave?.3:1;if(AU.revIn)AU.revIn.gain.setTargetAtTime(cave?1.1:0,t,.4);set(AU.ocean,(.05+.4*seaF)*cvf);set(AU.surf,seaF*.14*(.55+.45*Math.sin(t*.45))*cvf);const gust=.55+.45*Math.sin(t*.11)*Math.sin(t*.27+1.3);set(AU.wind,(.025+Math.max(0,pl.y)*.0012+.04*weather.rain)*gust*(shel?.4:1)*cvf);AU.wind.fl.frequency.setTargetAtTime(220+160*gust,t,2);set(AU.rain,.24*weather.rain*(shel?.45:1));
+ const cave=inCave(),cvf=cave?.3:1;if(AU.revIn)AU.revIn.gain.setTargetAtTime(cave?1.1:0,t,.4);set(AU.ocean,(.05+.4*seaF)*cvf);set(AU.surf,seaF*.14*(.55+.45*Math.sin(t*.45))*cvf);const gust=.55+.45*Math.sin(t*.11)*Math.sin(t*.27+1.3);set(AU.wind,(.025+Math.max(0,pl.y)*.0012+.04*weather.rain+.14*weather.storm)*gust*(shel?.4:1)*cvf);AU.wind.fl.frequency.setTargetAtTime(220+160*gust,t,2);set(AU.rain,.24*weather.rain*(shel?.45:1));
  let fd=99;for(const s of structs)if(s.st&&s.st.lit){const d=Math.hypot(s.x-pl.x,s.z-pl.z);if(d<fd)fd=d;}set(AU.fire,fd<10?.28*(1-fd/10):0);
  if(!on)return;
  crackT-=dt;if(fd<8&&crackT<=0){crackT=.04+Math.random()*.25;nz('highpass',2500+Math.random()*2500,1,.14*(1-fd/8),.02);}
@@ -1309,7 +1323,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:11,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:12,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1336,9 +1350,11 @@ const twistG=new THREE.Group();camera.add(twistG);twistG.position.set(0,-.24,-.4
 function updateTwist(t){const on=!!(action&&action.anim==='twist');twistG.visible=on;if(!on)return;const u=twistG.userData,a=t*7;
  u.L.rotation.x=Math.sin(a)*.6;u.R.rotation.x=-Math.sin(a)*.6;u.L.position.y=Math.cos(a)*.015;u.R.position.y=-Math.cos(a)*.015;u.F.rotation.x=a*1.4;u.T.rotation.z=Math.sin(t*2.3)*.4;
  const p=action.t/action.dur;u.F.scale.x=.6+p*.6;}
-const handGeo=sx=>M([P(new THREE.BoxGeometry(.085,.075,.115),'#c8986f',{y:-.005}),P(new THREE.BoxGeometry(.075,.03,.1),'#b98a62',{y:.04,z:-.005}),cyl(V3(0,-.03,.05),V3(.09*sx,-.38,.34),.04,.05,'#b98a62',6)],0);
-const handM=new THREE.Mesh(handGeo(1),MAT);heldG.add(handM);const handL=new THREE.Mesh(handGeo(-1),MAT);camera.add(handL);
-function updateHeld(t){updateTwist(t);const tw=!!(action&&action.anim==='twist');handM.visible=!tw&&!pl.carry;handL.visible=!tw&&!pl.carry;{const bb=pl.moving&&pl.onG?Math.sin(bobPh+1.2)*.016:0,emp=!held();handL.position.set(emp?-.3:-.36,(emp?-.27:-.38)+Math.abs(bb),emp?-.55:-.6);handL.rotation.set(emp?.15:0,0,emp?.12:.05);}if(tw){if(heldMesh)heldMesh.visible=false;return;}if(heldMesh)heldMesh.visible=true;const s=held();const id=s?s.id:null;if(id!==heldId){if(heldMesh)heldG.remove(heldMesh);heldMesh=id?buildHeld(id):null;if(heldMesh)heldG.add(heldMesh);heldId=id;}
+function armGeo(a,b){const d=new THREE.Vector3().subVectors(b,a),L=d.length(),g=new THREE.BoxGeometry(.1,L+.05,.1);g.translate(0,L/2,0);gq(g,new THREE.Quaternion().setFromUnitVectors(YAX,d.normalize()));g.translate(a.x,a.y,a.z);return M([P(g,'#b88460')],0);}
+const handM=new THREE.Mesh(armGeo(V3(0,0,0),V3(.16,-.5,.5)),MAT);heldG.add(handM);
+const handL=new THREE.Mesh(armGeo(V3(0,0,0),V3(-.16,-.5,.5)),MAT);camera.add(handL);
+const handL2=new THREE.Mesh(armGeo(V3(-.03,.1,0),V3(-.6,-.42,.42)),MAT);handL2.visible=false;heldG.add(handL2);
+function updateHeld(t){updateTwist(t);const tw=!!(action&&action.anim==='twist');const two=!!(held()&&['axe','pick','spear'].includes(I[held().id].shape));handM.visible=!tw&&!pl.carry;handL.visible=!tw&&!pl.carry&&!two;{const bb=pl.moving&&pl.onG?Math.sin(bobPh+1.2)*.016:0,emp=!held();handL.position.set(emp?-.3:-.36,(emp?-.27:-.36)+Math.abs(bb),emp?-.55:-.6);handL.rotation.set(0,0,0);}if(tw){if(heldMesh)heldMesh.visible=false;return;}if(heldMesh)heldMesh.visible=true;const s=held();const id=s?s.id:null;if(id!==heldId){if(heldMesh)heldG.remove(heldMesh);heldMesh=id?buildHeld(id):null;if(heldMesh)heldG.add(heldMesh);heldId=id;}handL2.visible=two&&!tw&&!pl.carry;
  if(pl.carry)return;const bob=pl.moving&&pl.onG?Math.sin(bobPh)*.018:0;let px=.34+bob*.5,py=-.34+Math.abs(bob),pz=-.6,rx=0,rz=0;const u=swingT>=0?Math.min(1,swingT):-1;
  if(!heldMesh){px-=.04;py+=.1;}
  if(u>=0&&!heldMesh){const j=u<.3?-u/.3*.06:u<.5?-.06+(u-.3)/.2*.42:.36*(1-(u-.5)/.5);pz-=j;px-=j*.35;py+=j*.15;}
@@ -1364,16 +1380,16 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  camera.position.set(pl.x,camY+(pl.eye||1.62)+Math.sin(bobPh)*.028*bobAmp,pl.z);camera.rotation.set(pl.pitch,pl.yaw,0);
  if(playing){updateAim();updatePlacement();}
  const dl=daylight(hours);const ang=(hours-6)/12*Math.PI;sunDir.set(Math.cos(ang),Math.sin(ang),.35).normalize();
- skyT-=dt;if(skyT<=0){skyT=.4;skyCols(hours,weather.rain);updateSky();}
- skyMesh.position.copy(camera.position);stars.position.copy(camera.position);stars.material.opacity=(1-dl)*(1-weather.rain)*.9;
- sunDisc.position.copy(camera.position).addScaledVector(sunDir,440);sunDisc.lookAt(camera.position);sunDisc.material.opacity=sunDir.y>-.05?(1-weather.rain*.9):0;
- scene.fog.color.copy(skyHor);scene.fog.far=(90+80*dl)*(1-weather.rain*.45);scene.fog.near=15+25*dl*(1-weather.rain*.5);
+ skyT-=dt;if(skyT<=0){skyT=.4;skyCols(hours,weather.dark);updateSky();}
+ skyMesh.position.copy(camera.position);stars.position.copy(camera.position);stars.material.opacity=(1-dl)*(1-weather.dark)*.9;
+ sunDisc.position.copy(camera.position).addScaledVector(sunDir,440);sunDisc.lookAt(camera.position);sunDisc.material.opacity=sunDir.y>-.05?(1-weather.dark*.95):0;
+ scene.fog.color.copy(skyHor);scene.fog.far=(90+80*dl)*(1-weather.dark*.45-weather.storm*.15);scene.fog.near=15+25*dl*(1-weather.dark*.5);
  const lightDir=sunDir.y>0?sunDir:tmpV.set(-sunDir.x,-sunDir.y*.8+.2,sunDir.z).normalize();
  sun.position.set(pl.x+lightDir.x*150,lightDir.y*150,pl.z+lightDir.z*150);sun.target.position.set(pl.x,pl.y,pl.z);
- sun.intensity=(sunDir.y>0?1.05*dl+.05:.12)*(1-weather.rain*.7);sun.color.setHex(sunDir.y>0?0xfff0d8:0x8aa0d0);
- hemi.intensity=(.12+.5*dl)*(1-weather.rain*.3);amb.intensity=.16;
- const pa=seaGeo.attributes.position.array;for(let i=0;i<pa.length;i+=3)pa[i+1]=seaBase[i+1]+Math.sin(seaBase[i]*.08+elapsed*1.2)*(.1+weather.rain*.1)+Math.cos(seaBase[i+2]*.1+elapsed*.9)*.08;seaGeo.attributes.position.needsUpdate=true;
- for(const c of clouds){c.position.x+=dt*1.2;if(c.position.x>340)c.position.x=-340;c.material.emissive.setScalar(.15+.25*dl*(1-weather.rain));}
+ sun.intensity=(sunDir.y>0?1.05*dl+.05:.12)*(1-weather.dark*.7);sun.color.setHex(sunDir.y>0?0xfff0d8:0x8aa0d0);
+ hemi.intensity=(.12+.5*dl)*(1-weather.dark*.3)+weather.flash*1.6;amb.intensity=.16;
+ const pa=seaGeo.attributes.position.array;for(let i=0;i<pa.length;i+=3)pa[i+1]=seaBase[i+1]+Math.sin(seaBase[i]*.08+elapsed*1.2)*(.1+weather.rain*.1+weather.storm*.35)+Math.cos(seaBase[i+2]*.1+elapsed*.9)*.08;seaGeo.attributes.position.needsUpdate=true;
+ for(const c of clouds){c.position.x+=dt*1.2;if(c.position.x>340)c.position.x=-340;c.material.emissive.setScalar(.15+.25*dl*(1-weather.dark));c.material.color.setScalar(1-weather.dark*.55);c.position.x+=dt*weather.storm*6;}
  for(let k=shakes.length-1;k>=0;k--){const s=shakes[k];s.t-=dt;const e=s.e;if(s.t<=0||!e.alive){if(e.alive)setEntVisible(e,true);shakes.splice(k,1);continue;}
   const ox=e.x,oz=e.z;e.x=ox+Math.sin(s.t*80)*.05;e.z=oz+Math.cos(s.t*70)*.05;setEntVisible(e,true);e.x=ox;e.z=oz;}
  for(const s of structs)if(s.mesh.userData.flame)s.mesh.userData.flame.scale.y=.85+Math.sin(elapsed*18+s.x)*.15;
@@ -1389,7 +1405,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  renderer.render(scene,camera);}
 function updateHUD(){canvas.style.cursor=state==='play'?'none':'';for(const[k]of STATS){const v=clamp(pl[k],0,100);$('#b_'+k).style.width=v+'%';$('#v_'+k).textContent=Math.round(v);}
  $('#b_warm').style.background=pl.warm>75?'#e0603e':pl.warm<25?'#5fa0e0':'#e8c88a';
- const hh=Math.floor(hours),mm=Math.floor((hours-hh)*6)*10;$('#clock').textContent=`${day}日目　${hh}:${String(mm).padStart(2,'0')}${hours>=19||hours<5?'　夜':''}${weather.rain>.4?'　雨':''}`;
+ const hh=Math.floor(hours),mm=Math.floor((hours-hh)*6)*10;$('#clock').textContent=`${day}日目　${hh}:${String(mm).padStart(2,'0')}${hours>=19||hours<5?'　夜':''}　${weatherName()}`;
  const ti=state==='play'?targetInfo():null;$('#target').innerHTML=ti?`<b>${ti[0]}</b><span>${ti[1]}</span>${ti[2]?`<i>${ti[2]}</i>`:''}`:'';
  const cold=pl.warm<18,heat=pl.warm>92,danger=pl.hp<30||cold||heat;$('#vign').style.boxShadow=`inset 0 0 160px rgba(${cold?'60,120,220':heat?'230,120,30':'200,40,20'},${danger?.45:0})`;}
 
@@ -1399,7 +1415,7 @@ function startGame(data){auInit();$('#loading').style.display='block';
  SEED=data?data.seed:Math.floor(Math.random()*1e9);initNoise(SEED);rng=mulberry32(SEED*7+3);
  buildGeos();buildTerrain();buildCaves();buildSky();buildWater();buildRain();genEntities();
  if(data){Object.assign(pl,data.pl);day=data.day;hours=data.hours;era=data.era;won=!!data.won;spawnBed=data.spawnBed;sel=data.sel||0;bagLv=data.bagLv||0;
-  GR=data.GR||GR;hot=data.hot&&data.hot.length?data.hot:[null];if(sel>=hot.length)sel=0;armor=data.armor;removed=data.removed||{};fruitEmpty=data.fruitEmpty||{};
+  GR=data.GR||GR;EQ=data.EQ||EQ;hot=data.hot&&data.hot.length?data.hot:[null];if(sel>=hot.length)sel=0;armor=data.armor;removed=data.removed||{};fruitEmpty=data.fruitEmpty||{};
   for(const id in removed){const e=ENT[id];if(e){e.alive=false;setEntVisible(e,false);}}for(const id in fruitEmpty){const e=ENT[id];if(e&&e.fim)setFruit(e,false);}
   data.structs.forEach(s=>addStruct(s.t,s.x,s.y,s.z,s.rot,s.cont,s.st));(data.gitems||[]).forEach(o=>addGItem(o.id,o.n,o.d,o.x,o.z));(data.carries||[]).forEach(o=>addCarry(o.t,o.x,o.z,o.ry));if(pl.carry)setCarry(pl.carry);cheat=!!data.cheat;
   (data.carcasses||[]).forEach(c=>{const m=makeAnimal(c.t);const o={t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp,mesh:m.g,legs:m.legs,alive:true};scene.add(m.g);layCarcass(o);carcasses.push(o);});}
@@ -1408,9 +1424,9 @@ function startGame(data){auInit();$('#loading').style.display='block';
  for(let a=-10;a<10;a++)for(let b=-10;b<10;b++)DEC.set(a+','+b,buildDecor(a,b));updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===11)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===12)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===11&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===12&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
