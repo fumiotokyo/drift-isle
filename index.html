@@ -163,7 +163,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v9';
+const SAVE_KEY='driftisle_save_v10';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -177,7 +177,7 @@ function fbm(x,y,o){let s=0,a=.5,f=1,n=0;for(let i=0;i<o;i++){s+=a*vnoise(x*f,y*
 const ERA=['石器時代','火の時代','土器時代','銅器時代','青銅器時代','鉄器時代'];
 const GOALS=[
  '浜辺や森で枝・小石・チャートを拾い、カラムシから繊維を採ろう（F）。石の道具と焚き火が最初の目標。',
- '作業台と寝床を作ろう。池のほとりの粘土で土窯を建て、未焼成の壺などを入れて燃料を足し点火すると土器が焼ける。',
+ '流木と紐で簡易シェルターを建て、枝と葉で仕上げよう。中に寝床を置けば安心して眠れる。作業台があれば木の土台や箱も作れる。',
  '土窯の道具欄にるつぼを入れ、燃料を足して点火し、孔雀石を投入すると製錬できる。孔雀石は緑青色の染みがある岩肌から掘れる。',
  '銅のつるはしで、黒褐色の粒が混じる岩肌から錫石を掘り、銅と合わせて青銅を作ろう。',
  '耐火レンガで製錬炉、青銅で金床を作ろう。赤錆色の岩肌は青銅のつるはしで赤鉄鉱が掘れる。',
@@ -238,16 +238,23 @@ const R=[
  {o:'anvil',i:{bronze_ingot:6,log:1},t:['mold'],s:'kiln',e:4},{o:'iron_ingot',i:{iron_bloom:1},s:'anvil',e:4},
  {o:'iron_knife',i:{iron_ingot:1,stick:1},s:'anvil',e:5},{o:'iron_axe',i:{iron_ingot:2,stick:2},s:'anvil',e:5},{o:'iron_pick',i:{iron_ingot:2,stick:2},s:'anvil',e:5},{o:'iron_spear',i:{iron_ingot:2,stick:3},s:'anvil',e:5}
 ];
+// 一旦無効化（順に追加し直す）: 金属・鉱石・土器・窯・炉・金床・カヌー
+const DISABLED=['unfired_pot','pot_empty','pot_salt','pot_fresh','unfired_crucible','crucible','unfired_mold','mold','brick','charcoal',
+ 'copper_ore','tin_ore','iron_ore','copper_ingot','bronze_ingot','iron_bloom','iron_ingot',
+ 'copper_knife','copper_axe','copper_pick','bronze_axe','bronze_pick','bronze_spear','iron_knife','iron_axe','iron_pick','iron_spear',
+ 'kiln','bloomery','anvil','canoe'];
+DISABLED.forEach(k=>delete I[k]);
+for(let k=R.length-1;k>=0;k--){const r=R[k];if(!I[r.o]||Object.keys(r.i).some(x=>!I[x])||(r.t||[]).some(x=>!I[x])||(r.s&&!I[r.s]&&r.s!=='campfire'&&r.s!=='workbench'))R.splice(k,1);}
 R.forEach((r,k)=>{r.id=k;r.q=r.q||1;r.s=r.s||'';});
 const FUEL={leaf:3,driftwood:40,sasa:6,bamboo:25,stick:15,log:60,fat:40,charcoal:120,fiber:5};
-const PROC={campfire:{raw_meat:['cooked_meat',20],takenoko:['yaki_takenoko',15],pot_salt:['pot_fresh',30]},
+const PROC={campfire:{raw_meat:['cooked_meat',20],takenoko:['yaki_takenoko',15]},
  kiln:{unfired_pot:['pot_empty',40],unfired_crucible:['crucible',40],unfired_mold:['mold',35],clay:['brick',25],log:['charcoal',40],copper_ore:['copper_ingot',45,'crucible']},
  bloomery:{iron_ore:['iron_bloom',60]}};
 const SLOTS={campfire:{in:3,out:3},kiln:{tool:1,in:4,out:4},bloomery:{in:3,out:3}};
 const fuelOK=(t,id)=>t==='bloomery'?id==='charcoal':!!FUEL[id];
 const KQ={stone_knife:.5,copper_knife:.75,iron_knife:1,stone_axe:.3,copper_axe:.4,bronze_axe:.45,iron_axe:.55};
 const BUTCH={goat:{raw_meat:4,fat:2,bone:3,hide:1},boar:{raw_meat:6,fat:4,bone:5,hide:2}};
-const ERA_TRIG={campfire:1,pot_empty:2,crucible:2,mold:2,copper_ingot:3,bronze_ingot:4,iron_ingot:5};
+const ERA_TRIG={campfire:1};
 const ED={
  shii:{n:'スダジイ',k:'tree',lv:[6,10],r:.42,hp:110,logs:[3,5],re:4},tabu:{n:'タブノキ',k:'tree',lv:[6,10],r:.4,hp:100,logs:[3,5],re:4},
  gajumaru:{n:'ガジュマル',k:'tree',lv:[8,12],r:.8,hp:150,logs:[4,6],re:5},matsu:{n:'リュウキュウマツ',k:'tree',r:.3,hp:90,logs:[3,4],re:4},
@@ -286,7 +293,7 @@ const DR={
  takenoko:p=>{p.poly([[8,1],[13,14],[3,14]],'#8a6a3a');p.poly([[8,1],[11,9],[6,10]],'#a88450');p.l(4,11,12,9,'#6a4e2a');p.l(5,7,10,6,'#6a4e2a');p.r(3,14,10,1,'#5a4a2a');p.l(8,1,9,0,'#7aa84a');},
  yaki_takenoko:p=>{p.poly([[8,2],[12,14],[4,14]],'#d8b878');p.l(8,4,8,13,'#b08a50');p.l(5,10,11,10,'#8a5a2a');p.l(6,7,10,6,'#8a5a2a');p.sp(4,6,8,8,'#5a3a1a',.15,21);},
  log:p=>{p.r(2,4,25,9,'#6e4a2c');for(let k=0;k<5;k++)p.l(5+k*5,5,6+k*5,11,'#583a22');p.e(27,8.5,3.2,4.6,'#d8b07a');p.e(27,8.5,1.8,2.8,'#c0925a');p.s(27,8,'#9a6a3a');},
- driftwood:p=>{p.poly([[2,10],[6,5],[56,4],[62,7],[58,11],[8,12]],'#c8bca4');p.l(8,8,56,7,'#a89c84',1);p.l(20,5,24,1,'#b8ac94',2);p.l(40,5,45,2,'#b8ac94',2);p.e(61,7.5,1.6,2.4,'#e0d6c0');},
+ driftwood:p=>{p.poly([[2,10],[6,5],[56,4],[62,7],[58,11],[8,12]],'#8f8068');p.l(8,8,56,7,'#6e6250',1);p.l(20,5,24,1,'#7c6e58',2);p.l(40,5,45,2,'#7c6e58',2);p.e(61,7.5,1.6,2.4,'#b0a28a');},
  leaf:p=>{p.poly([[3,13],[4,6],[9,2],[13,4],[12,10],[7,13]],'#4a8a34');p.l(3,13,11,4,'#2f6a24',1);p.poly([[8,15],[9,10],[14,8],[15,12]],'#5e9a3e');},
  sharinbai:p=>{p.e(8,8,6,5,'#3a6a2e');p.l(8,15,8,9,'#6b4a2f',1);},
  pebble:p=>{p.e(5,10,3,2.4,'#9a968e');p.e(11,9,2.6,2,'#86827a');p.e(8,5,2.2,1.8,'#a8a49c');p.s(4,9,'#c0bcb4');},
@@ -318,7 +325,7 @@ const DR={
  basket:p=>{p.poly([[4,8],[28,8],[25,30],[7,30]],'#b8904a');for(let y=10;y<30;y+=3)p.l(5,y,27,y,'#8a6a32');for(let x=8;x<26;x+=4)p.l(x,9,x,29,'#a07c3c');p.l(6,8,10,2,'#8a6a32',2);p.l(26,8,22,2,'#8a6a32',2);},
  leather_pack:p=>{p.r(5,6,22,24,'#7a4a2a');p.r(7,8,18,8,'#8a5a36');p.r(14,14,4,4,'#c9a46a');p.l(9,6,12,1,'#5a3420',2);p.l(23,6,20,1,'#5a3420',2);},
  canoe:p=>{p.poly([[1,5],[31,5],[26,12],[6,12]],'#8a5a32');p.r(4,4,24,2,'#6a4224');},
- shelter:p=>{p.l(4,44,16,8,'#c8bca4',3);p.l(28,44,16,8,'#c8bca4',3);p.l(13,14,19,14,'#8a6a3a',2);for(let k=0;k<6;k++)p.l(16,9,24+k,44-k*5,'#7a5534',1);p.l(14,6,18,10,'#c8bca4',2);p.l(18,6,14,10,'#c8bca4',2);},
+ shelter:p=>{p.l(4,44,16,8,'#8f8068',3);p.l(28,44,16,8,'#8f8068',3);p.l(13,14,19,14,'#8a6a3a',2);for(let k=0;k<6;k++)p.l(16,9,24+k,44-k*5,'#7a5534',1);p.l(14,6,18,10,'#8f8068',2);p.l(18,6,14,10,'#8f8068',2);},
  campfire:p=>{for(let k=0;k<8;k++){const a=k/8*6.283;p.e(16+Math.cos(a)*11,23+Math.sin(a)*5,2.6,2.2,'#7d7a74');}p.l(7,24,25,18,'#6b4a2f',3);p.l(7,18,25,24,'#5a3b22',3);p.poly([[16,3],[22,13],[20,20],[12,20],[10,13]],'#f08a20');p.e(16,15,2.5,4,'#ffd84a');},
  bed:p=>{p.r(5,3,22,42,'#5a8a3a');p.sp(5,3,22,42,'#4a7a2e',.25,17);p.sp(5,3,22,42,'#6e9e48',.15,18);p.r(3,2,2,44,'#6b4a2f');p.r(27,2,2,44,'#6b4a2f');},
  workbench:p=>{p.r(3,8,42,5,'#a8784a');p.r(5,13,3,17,'#7a5530');p.r(40,13,3,17,'#7a5530');p.r(5,22,38,3,'#8a6238');p.r(10,5,8,3,'#8d8a84');p.l(28,7,38,4,'#6b4a2f',2);},
@@ -424,6 +431,8 @@ function biro(v){const r=mulberry32(400+v);const parts=[];const H=5.5+r()*1.5;co
  const top=pts[4];parts.push(P(new THREE.IcosahedronGeometry(.32,0),'#6a5a40',{x:top.x,y:top.y,z:top.z}));
  for(let k=0;k<16;k++){const a=k*.393+r()*.2,droop=.1+r()*.9;const pe=V3(top.x+Math.cos(a)*.9,top.y+.35-droop*.5,top.z+Math.sin(a)*.9);
   parts.push(cyl(top,pe,.03,.02,'#6a7a3a',3));parts.push(P(new THREE.CircleGeometry(1.35,9,-1.1,2.2),'#3c6a2a',{x:pe.x,y:pe.y,z:pe.z,rx:-Math.PI/2,rz:-droop,ry:-a,ord:'YZX',top:'#5f8f3a'}));}
+ for(let k=0;k<12;k++){const a=k*.524+.26+r()*.15,droop=.3+r()*.5,pe=V3(top.x+Math.cos(a)*.3,top.y+.2-droop*.25,top.z+Math.sin(a)*.3);parts.push(P(new THREE.CircleGeometry(1.0,8,-1.25,2.5),k%2?'#355f26':'#41702e',{x:pe.x,y:pe.y,z:pe.z,rx:-Math.PI/2,rz:-droop,ry:-a,ord:'YZX',top:'#5a8a38'}));}
+ parts.push(P(jit(new THREE.IcosahedronGeometry(.62,1),.15,470+v),'#4a4232',{x:top.x,y:top.y-.25,z:top.z,sy:.7,top:'#3a5a28'}));
  return M(parts,.07,400+v);}
 function hego(v){const r=mulberry32(500+v);const parts=[];const H=3+r()*1.2;const top=V3((r()-.5)*.4,H,(r()-.5)*.4);parts.push(cyl(V3(0,-.2,0),top,.17,.12,'#3a2e26',6));
  for(let k=0;k<10;k++){const a=k*.628+r()*.2;let prev=top.clone(),pitch=.55+r()*.3;for(let s=0;s<3;s++){const dir=V3(Math.cos(a)*Math.cos(pitch),Math.sin(pitch),Math.sin(a)*Math.cos(pitch));const nx=prev.clone().addScaledVector(dir,.85);parts.push(flatSeg(prev,nx,.6*(1-s*.25),'#3a7228','#6aa040'));prev=nx;pitch-=.55;}}
@@ -468,7 +477,7 @@ function buildGeos(){const C=THREE;
   GEO['shore'+v]=M([P(jit(new C.IcosahedronGeometry(1.1,1),.5,v+61),'#4a4844',{y:.25,sx:1.4,sy:.55,top:'#6a665e'})],.12,v+6);
   GEO['F_adan'+v]=ADANF[v];GEO['F_ichigo'+v]=ICHF[v];}
  GEO.stick0=M([P(new C.CylinderGeometry(.04,.05,1,4),'#7a5534',{y:.05,rz:Math.PI/2}),P(new C.CylinderGeometry(.025,.03,.35,4),'#6d4a2c',{x:.2,y:.05,z:.1,rz:Math.PI/2,ry:.8})],.1,6);
- for(let v=0;v<2;v++){const r=mulberry32(1300+v),L=1.6+r()*.8;GEO['driftwood'+v]=M([P(jit(new C.CylinderGeometry(.11,.15,L,6),.04,1301+v),'#cbbfa6',{y:.12,rz:Math.PI/2,top:'#ded4be'}),P(new C.CylinderGeometry(.04,.06,.6,4),'#b8ac94',{x:L*.2,y:.2,z:.2,rx:1.2,ry:.5}),P(new C.CylinderGeometry(.03,.05,.45,4),'#c0b49c',{x:-L*.3,y:.18,z:-.15,rx:-1.3})],.1,1301+v);}
+ for(let v=0;v<2;v++){const r=mulberry32(1300+v),L=1.6+r()*.8;GEO['driftwood'+v]=M([P(jit(new C.CylinderGeometry(.11,.15,L,6),.04,1301+v),'#66594a',{y:.12,rz:Math.PI/2,top:'#776a58'}),P(new C.CylinderGeometry(.04,.06,.6,4),'#5a4e40',{x:L*.2,y:.2,z:.2,rx:1.2,ry:.5}),P(new C.CylinderGeometry(.03,.05,.45,4),'#615546',{x:-L*.3,y:.18,z:-.15,rx:-1.3})],.1,1301+v);}
  GEO.takenoko0=M([P(jit(new C.ConeGeometry(.15,.55,6),.03,1101),'#7a5a32',{y:.22,top:'#c0a060'}),P(new C.ConeGeometry(.05,.18,4),'#7aa04a',{y:.55,rz:.2})],.12,1101);
  GEO.stone0=M([P(jit(new C.IcosahedronGeometry(.24,0),.08,7),'#8d8a84',{y:.1,sy:.7})],.15,7);
  GEO.pebble0=M([P(jit(new C.IcosahedronGeometry(.09,0),.03,8),'#9a968e',{x:-.1,y:.04,sy:.6}),P(jit(new C.IcosahedronGeometry(.07,0),.03,9),'#86827a',{x:.12,y:.03,z:.06,sy:.6}),P(jit(new C.IcosahedronGeometry(.06,0),.02,10),'#a8a49c',{z:-.12,y:.03,sy:.6})],.15,8);
@@ -482,7 +491,7 @@ function buildGeos(){const C=THREE;
  const sp=[];for(let k=0;k<8;k++){const a=k/8*Math.PI*2;sp.push(P(jit(new C.IcosahedronGeometry(.16,0),.06,k),'#7d7a74',{x:Math.cos(a)*.55,y:.08,z:Math.sin(a)*.55}));}
  sp.push(P(new C.CylinderGeometry(.07,.07,.9,5),'#5a3b22',{y:.12,rz:Math.PI/2,ry:.5}));sp.push(P(new C.CylinderGeometry(.07,.07,.9,5),'#4f331d',{y:.18,rz:Math.PI/2,ry:-.7}));sp.push(P(new C.CylinderGeometry(.35,.4,.05,7),'#2a2420',{y:.02}));
  GEO.s_campfire=M(sp,.1,13);
- {const DW='#c8bca4',DW2='#b8ac94',sp2=[];for(const x of[-1.5,1.5]){sp2.push(cyl(V3(x,-.05,-1.25),V3(x,2.05,.12),.07,.06,DW,6),cyl(V3(x+.05,-.05,1.25),V3(x+.05,2.05,-.12),.07,.06,DW2,6),P(new C.TorusGeometry(.09,.025,4,8),'#a8824a',{x,y:1.82,ry:Math.PI/2}));}
+ {const DW='#6e6150',DW2='#5e5242',sp2=[];for(const x of[-1.5,1.5]){sp2.push(cyl(V3(x,-.05,-1.25),V3(x,2.05,.12),.07,.06,DW,6),cyl(V3(x+.05,-.05,1.25),V3(x+.05,2.05,-.12),.07,.06,DW2,6),P(new C.TorusGeometry(.09,.025,4,8),'#a8824a',{x,y:1.82,ry:Math.PI/2}));}
   sp2.push(cyl(V3(-1.95,1.84,0),V3(1.95,1.84,0),.065,.06,DW,6));GEO.s_shelter=M(sp2,.08,14);
   GEO.shelterLeaf=M([P(new C.PlaneGeometry(.42,.78),'#3e7a2e',{top:'#5e9a3e'}),P(new C.PlaneGeometry(.3,.6),'#4a8636',{x:.12,y:-.05,z:.02,rz:.3})],.12,16);
   GEO.shelterStick=M([cyl(V3(0,1.8,.08),V3(0,-.05,1.5),.035,.03,'#7a5534',4),cyl(V3(0,1.1,.68),V3(.14,1.3,.75),.012,.01,'#6d4a2c',3)],.1,15);}
@@ -1031,10 +1040,10 @@ function updateAim(){camera.getWorldDirection(vDir);vEye.copy(camera.position);
  aim={t,water:t?null:water,ground,rockFace:!t&&!water&&ground&&ground.s<=REACH&&normalY(ground.x,ground.z)<.72&&!foundMap.get(fKey(ground.x,ground.z))};}
 function targetInfo(){const t=aim.t;if(t&&t.kind==='gitem')return[I[t.o.id].n+(t.o.n>1?' ×'+t.o.n:''),'F: 拾う'];if(t&&t.kind==='carry')return[I[t.o.t].n,pl.carry?'':'左クリック: 担ぐ'];if(pl.carry&&!(t&&t.kind==='struct'&&pl.carry==='log'&&t.o.st&&fuelOK(t.o.t,'log')))return[I[pl.carry].n+'を担いでいる','左クリック: 下ろす'];if(pl.carry)return[SD[t.o.t].n,'左クリック: 丸太をくべる'];
  if(!t){if(aim.water){const s=held();return[aim.water.fresh?'湧き水の池（真水）':'海（海水）',s&&s.id==='pot_empty'?'F: 壺に水を汲む':(aim.water.fresh?'F: 水を飲む':'F: 飲む（危険）')];}
-  if(aim.rockFace){const v=veinAt(aim.ground.x,aim.ground.z);return['岩肌',heldTool('rock')?'左クリック: 採掘':'つるはしで掘れる',v?VEIN[v].hint:''];}return null;}
+  if(aim.rockFace){const v=veinAt(aim.ground.x,aim.ground.z);return['岩肌',heldTool('rock')?'左クリック: 採掘':'つるはしで掘れる'];}return null;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
   if(d.k==='tree'){let s=heldTool('tree')>=10?'左クリック: 伐採':(d.leaf?'左クリック: 笹を採る（斧で根元から伐ると竹が取れる）':'左クリック: 枝を採る（斧で伐採できる）');if(d.fruit&&e.fruit)s='F: 実を採る ／ '+s;return[d.n,s];}
-  if(d.k==='rock'){const tier=heldTool('tier');return[d.n,!heldTool('rock')?'つるはしで掘れる':'左クリック: 採掘',e.vein?VEIN[e.vein].hint:''];}
+  if(d.k==='rock'){const tier=heldTool('tier');return[d.n,!heldTool('rock')?'つるはしで掘れる':'左クリック: 採掘'];}
   if(d.k==='bush')return[d.n,e.fruit?'F: 実を摘む':'実は再生待ち'];
   if(d.k==='shrub')return[d.n,'左クリック: 葉と枝をむしる（素手でも可）'];if(d.k==='fiber')return[d.n,'F: 繊維を採る ／ 左クリック: 葉を取る'];if(d.k==='pick')return[d.n,'F: 拾う'];if(d.k==='clay')return[d.n,'F: 粘土を掘る'];}
  if(t.kind==='animal')return[AD[t.o.t].n,'左クリック: 攻撃'];
@@ -1080,7 +1089,7 @@ function primaryClick(){if(pl.carry){const t=aim.t;if(!(pl.carry==='log'&&t&&t.k
 let swingT=-1,hitDone=false,swingCd=0;
 function mineYield(vein,big){const tier=heldTool('tier');
  if(Math.random()<.18)dropAt('pebble',1+Math.floor(Math.random()*2));if(Math.random()<(big?.08:.12))dropAt('stone',1);if(Math.random()<.02)dropAt('chert',1);
- if(vein){const V=VEIN[vein];if(tier<V.need){if(Math.random()<.3)msg(`${V.n}らしき鉱石が見えるが、${TIERN[V.need]}等級以上のつるはしでないと砕けない`,'bad');}else if(Math.random()<(big?.1:.07))dropAt(V.ore,1);}}
+}
 function doHit(){const t=aim.t;
  if(!t){if(aim.rockFace){if(!heldTool('rock')){msg('岩肌を掘るにはつるはしが必要');return;}useDur();sfx('mine');mineYield(veinAt(aim.ground.x,aim.ground.z),false);}return;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
@@ -1285,7 +1294,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:9,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:10,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,bag,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1383,9 +1392,9 @@ function startGame(data){auInit();$('#loading').style.display='block';
  for(let a=-10;a<10;a++)for(let b=-10;b<10;b++)DEC.set(a+','+b,buildDecor(a,b));updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===9)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===10)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===9&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===10&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
