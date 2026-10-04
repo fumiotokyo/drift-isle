@@ -164,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v25';
+const SAVE_KEY='driftisle_save_v26';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -243,7 +243,7 @@ const R=[
 const DISABLED=['unfired_pot','pot_empty','pot_salt','pot_fresh','unfired_crucible','crucible','unfired_mold','mold','brick','charcoal',
  'copper_ore','tin_ore','iron_ore','copper_ingot','bronze_ingot','iron_bloom','iron_ingot',
  'copper_knife','copper_axe','copper_pick','bronze_axe','bronze_pick','bronze_spear','iron_knife','iron_axe','iron_pick','iron_spear',
- 'kiln','bloomery','anvil','canoe','adan_fruit','driftwood','foundation','wall','doorway','ceiling'];
+ 'stone_pick','kiln','bloomery','anvil','canoe','adan_fruit','driftwood','foundation','wall','doorway','ceiling'];
 DISABLED.forEach(k=>delete I[k]);
 for(let k=R.length-1;k>=0;k--){const r=R[k];if(!I[r.o]||Object.keys(r.i).some(x=>!I[x])||(r.t||[]).some(x=>!I[x])||(r.s&&!I[r.s]&&r.s!=='campfire'&&r.s!=='workbench'))R.splice(k,1);}
 R.forEach((r,k)=>{r.id=k;r.q=r.q||1;r.s=r.s||'';});
@@ -534,7 +534,7 @@ function buildGeos(){const C=THREE;
 }
 
 // ================= World =================
-const WORLD=880,HALF=440,SEG=300,CELL=WORLD/SEG,AREA=4;
+const WORLD=1760,HALF=880,SEG=600,CELL=WORLD/SEG,AREA=16;
 let SEED=1,rng,heights,ponds=[],veins=[],caves=[];
 // 日本の内陸の森: なだらかな丘・谷・ところどころの山、外周は越えられない高い尾根で囲む。海はない。
 const CX=0,CZ=0,RIM0=0;
@@ -549,11 +549,11 @@ let KOP=[];
 function genKopjes(){KOP=[];const r=mulberry32(SEED+5150);let tr=0;while(KOP.length<0&&tr<3000){tr++;const x=(r()*2-1)*300,z=(r()*2-1)*300;if(KOP.some(k=>Math.hypot(k.x-x,k.z-z)<110)||Math.hypot(x,z)<40)continue;KOP.push({x,z,r:12+r()*14,H:7+r()*9,ph:r()*6.28});}}
 function kopAt(x,z,m){for(const k of KOP)if(Math.hypot(x-k.x,z-k.z)<k.r+(m||0))return k;return null;}
 function rawHeight(x,z){
- let h=12+(fbm(x*.003+50,z*.003+50,4)-.5)*14+(fbm(x*.01+10,z*.01-30,3)-.5)*3.5;
+ let h=16+(fbm(x*.0011+50,z*.0011+50,4)-.5)*36+(fbm(x*.0035+10,z*.0035-30,3)-.5)*9;
  for(const k of KOP){const dx=x-k.x,dz=z-k.z,d=Math.hypot(dx,dz);if(d>k.r*1.25)continue;const a=Math.atan2(dz,dx),rr=k.r*(1+.18*Math.sin(3*a+k.ph)+.1*Math.sin(5*a+k.ph*2));const t=clamp(1-d/rr,0,1);
   h+=k.H*Math.pow(t,.45)*(1+.25*(fbm(x*.08+k.ph,z*.08,2)-.5));}
- const e=Math.max(Math.abs(x),Math.abs(z))+(fbm(x*.02+11,z*.02-5,2)-.5)*24;const es=smst(285,350,e);
- if(es>0){h+=Math.pow(es,1.3)*60;const st=9,tt=h/st,fl=Math.floor(tt),fr=tt-fl,q=clamp((fr-.55)/.45,0,1);h+=((fl+q*q*(3-2*q))*st-h)*smst(.15,.5,es)*.8;}
+ const e=Math.max(Math.abs(x),Math.abs(z))+(fbm(x*.01+11,z*.01-5,2)-.5)*40;const es=smst(570,700,e);
+ if(es>0){h+=Math.pow(es,1.3)*75;const st=9,tt=h/st,fl=Math.floor(tt),fr=tt-fl,q=clamp((fr-.55)/.45,0,1);h+=((fl+q*q*(3-2*q))*st-h)*smst(.15,.5,es)*.8;}
  return Math.max(5,h);}
 const HI=(i,j)=>heights[j*(SEG+1)+i];
 function terrainH(x,z){const fx=(x+HALF)/CELL,fz=(z+HALF)/CELL;const i=Math.floor(fx),j=Math.floor(fz);if(i<0||j<0||i>=SEG||j>=SEG)return -14;
@@ -563,7 +563,7 @@ function pondRa(p,a){return p.r*(1+p.k[0]*Math.sin(2*a+p.k[1])+p.k[2]*Math.sin(3
 function pondR(p,x,z){return pondRa(p,Math.atan2(z-p.z,x-p.x));}
 function inPond(x,z,m){for(const p of ponds)if(Math.hypot(x-p.x,z-p.z)<pondR(p,x,z)+m)return p;return null;}
 function waterLevel(x,z){const p=inPond(x,z,.3);return p?p.level:0;}
-let CLR=[];function genClearings(){CLR=[];const r=mulberry32(SEED+4242);let tr=0;while(CLR.length<14&&tr<4000){tr++;const x=(r()*2-1)*250,z=(r()*2-1)*250;if(CLR.some(c=>Math.hypot(c.x-x,c.z-z)<90))continue;CLR.push({x,z,r:6+r()*5,ph:r()*6.28});}}
+let CLR=[];function genClearings(){CLR=[];const r=mulberry32(SEED+4242);let tr=0;while(CLR.length<40&&tr<8000){tr++;const x=(r()*2-1)*500,z=(r()*2-1)*500;if(CLR.some(c=>Math.hypot(c.x-x,c.z-z)<90))continue;CLR.push({x,z,r:6+r()*5,ph:r()*6.28});}}
 function clearingAt(x,z){let v=0;for(const c of CLR){const dx=x-c.x,dz=z-c.z;if(Math.abs(dx)>c.r*1.6||Math.abs(dz)>c.r*1.6)continue;const a=Math.atan2(dz,dx),rr=c.r*(1+.22*Math.sin(3*a+c.ph)+.12*Math.sin(5*a+c.ph*2));v=Math.max(v,clamp((rr-Math.hypot(dx,dz))/2.5,0,1));}return v;}
 function forestAt(x,z){return clamp((fbm(x*.009+200,z*.009+200,4)-.52)/.2,0,1)*(1-clearingAt(x,z));}
 // caves: tunnel cut into a grid-aligned cliff. local u=lateral from tunnel centre, v=inward depth
@@ -606,7 +606,7 @@ function genCaves(){caves=[];return;const cr=mulberry32(SEED+777),D=[[1,0],[-1,0
   c.x=ox+li*sc;c.z=oz+lj*sc;c.cx=c.x+di*5;c.cz=c.z+dj*5;
   if(ponds.some(p=>Math.hypot(p.x-c.cx,p.z-c.cz)<p.r+22)||caves.some(o=>Math.hypot(o.cx-c.cx,o.cz-c.cz)<75))continue;caves.push(c);}}
 function veinAt(x,z){for(const v of veins)if(Math.hypot(x-v.x,z-v.z)<v.r)return v.t;return null;}
-function genVeins(){veins=[];[['copper',12,5,30],['tin',8,11,70],['iron',8,16,70]].forEach(([t,n,lo,hi])=>{let k=0,tr=0;while(k<n&&tr<3000){tr++;const x=(rng()*2-1)*340,z=(rng()*2-1)*340;const h=terrainH(x,z);if(h<lo||h>hi||inPond(x,z,10))continue;if(veins.some(v=>Math.hypot(v.x-x,v.z-z)<35))continue;veins.push({t,x,z,r:15+rng()*8});k++;}});}
+function genVeins(){veins=[];[['copper',12,5,30],['tin',8,11,70],['iron',8,16,70]].forEach(([t,n,lo,hi])=>{let k=0,tr=0;while(k<n&&tr<3000){tr++;const x=(rng()*2-1)*680,z=(rng()*2-1)*680;const h=terrainH(x,z);if(h<lo||h>hi||inPond(x,z,10))continue;if(veins.some(v=>Math.hypot(v.x-x,v.z-z)<35))continue;veins.push({t,x,z,r:15+rng()*8});k++;}});}
 function terrComps(MS){const N=SEG+1,H=heights,cm=new Int32Array(N*N).fill(-1),sz=[],q=new Int32Array(N*N);let qh=0,qt=0;
  const tryN=(a,b)=>{if(cm[b]>=0)return;const ha=H[a],hb=H[b];if((ha<-.5&&hb<-.5)||Math.abs(ha-hb)<=MS){cm[b]=cm[a];q[qt++]=b;}};
  const run=()=>{let n=0;while(qh<qt){const k=q[qh++];n++;const i=k%N;if(i>0)tryN(k,k-1);if(i<N-1)tryN(k,k+1);if(k>=N)tryN(k,k-N);if(k<N*N-N)tryN(k,k+N);}return n;};
@@ -625,7 +625,7 @@ function fillBasins(){const N=SEG+1,H=heights,L=.55,sea=new Uint8Array(N*N),q=[]
  for(let k=0;k<N*N;k++)if(H[k]<L&&!sea[k])H[k]=L;}
 function fixConnectivity(){const N=SEG+1,lock=new Uint8Array(N*N);
  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-HALF+i*CELL,z=-HALF+j*CELL;let L=i<3||j<3||i>N-4||j>N-4||inPond(x,z,1.5);
-  for(const c of caves){const p=(i-c.i0)*c.lx+(j-c.j0)*c.lz,q=(i-c.i0)*c.ix+(j-c.j0)*c.iz;if(p>=-3&&p<=6&&q>=-3&&q<=c.qm+4)L=true;}if(Math.max(Math.abs(x),Math.abs(z))>275)L=true;if(L)lock[j*N+i]=1;}
+  for(const c of caves){const p=(i-c.i0)*c.lx+(j-c.j0)*c.lz,q=(i-c.i0)*c.ix+(j-c.j0)*c.iz;if(p>=-3&&p<=6&&q>=-3&&q<=c.qm+4)L=true;}if(Math.max(Math.abs(x),Math.abs(z))>560)L=true;if(L)lock[j*N+i]=1;}
  const tried=new Set();
  for(let it=0;it<150;it++){const{cm,sz}=terrComps(WALK_MS);let best=null;
   for(let k=0;k<N*N;k++){const c=cm[k];if(c===0||sz[c]<6)continue;const i=k%N,j=(k/N)|0;
@@ -634,7 +634,7 @@ function fixConnectivity(){const N=SEG+1,lock=new Uint8Array(N*N);
   if(!best)break;tried.add(best.key);buildRamp(best,lock,CELL*.6);}}
 function buildTerrain(){genKopjes();
  heights=new Float32Array((SEG+1)*(SEG+1));ponds=[];let tries=0;
- {let tr=0;while(ponds.length<9&&tr<8000){const big=ponds.length<2;tr++;const x=(rng()*2-1)*250,z=(rng()*2-1)*250;const h=rawHeight(x,z);if(h>50)continue;let mx=-99,mn=99;for(let q=0;q<8;q++){const v=rawHeight(x+Math.cos(q*.785)*14,z+Math.sin(q*.785)*14);mx=Math.max(mx,v);mn=Math.min(mn,v);}if(mx-mn>(big?6:9)||mn<h-2.5)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<(big||p.big?140:60)))continue;
+ {let tr=0;while(ponds.length<24&&tr<16000){const big=ponds.length<4;tr++;const x=(rng()*2-1)*500,z=(rng()*2-1)*500;if(big&&ponds.some(q=>Math.hypot(q.x-x,q.z-z)<300))continue;const h=rawHeight(x,z);if(h>50)continue;let mx=-99,mn=99;for(let q=0;q<8;q++){const v=rawHeight(x+Math.cos(q*.785)*14,z+Math.sin(q*.785)*14);mx=Math.max(mx,v);mn=Math.min(mn,v);}if(mx-mn>(big?6:9)||mn<h-2.5)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<(big||p.big?140:60)))continue;
   const kr=mulberry32(SEED+31*ponds.length+5),pk=[.12+kr()*.14,kr()*6.28,.08+kr()*.1,kr()*6.28,.04+kr()*.05,kr()*6.28];ponds.push(big?{x,z,k:pk,r:11+rng()*4,level:h-.5,big:1,dep:2.4}:{x,z,k:pk,r:1.4+rng()*1.3,level:h-.15,dep:.35});}}
  genCaves();
  for(let j=0;j<=SEG;j++)for(let i=0;i<=SEG;i++){const x=-HALF+i*CELL,z=-HALF+j*CELL;let h=rawHeight(x,z);
@@ -669,7 +669,7 @@ function buildWater(){
  seaGeo.setAttribute('color',new THREE.BufferAttribute(col,3));
  const sea=new THREE.Mesh(seaGeo,new THREE.MeshPhongMaterial({vertexColors:true,flatShading:true,transparent:true,opacity:.82,shininess:90,specular:0x6688aa}));sea.position.y=-.05;sea.visible=false;sea.receiveShadow=true;scene.add(sea);
  ponds.forEach(p=>{const sh=new THREE.Shape();for(let k=0;k<48;k++){const a=k/48*6.2832,r=pondRa(p,a)+.35;if(k)sh.lineTo(Math.cos(a)*r,-Math.sin(a)*r);else sh.moveTo(Math.cos(a)*r,-Math.sin(a)*r);}const g=new THREE.ShapeGeometry(sh);g.rotateX(-Math.PI/2);const m=new THREE.Mesh(g,new THREE.MeshPhongMaterial({color:0x2c6e70,flatShading:true,side:THREE.DoubleSide,transparent:true,opacity:.85,shininess:80}));m.position.set(p.x,p.level,p.z);scene.add(m);});
- for(let k=0;k<60;k++){const c=new THREE.Mesh(GEO.cloud,new THREE.MeshLambertMaterial({vertexColors:true,emissive:0x404850,fog:false}));c.position.set((rng()*2-1)*640,80+rng()*30,(rng()*2-1)*640);c.rotation.y=rng()*6;c.scale.setScalar(.9+rng()*1.1);scene.add(c);clouds.push(c);}}
+ for(let k=0;k<120;k++){const c=new THREE.Mesh(GEO.cloud,new THREE.MeshLambertMaterial({vertexColors:true,emissive:0x404850,fog:false}));c.position.set((rng()*2-1)*1100,80+rng()*30,(rng()*2-1)*1100);c.rotation.y=rng()*6;c.scale.setScalar(.9+rng()*1.1);scene.add(c);clouds.push(c);}}
 
 // sky dome
 let skyGeo,skyMesh,sunDisc,stars;
@@ -697,7 +697,7 @@ function findSpawn(){const cl=CLR.slice().sort((a,b)=>Math.hypot(a.x,a.z)-Math.h
 function genEntities(){
  const PLANT={tree:1,bush:1,fiber:1,shrub:1};const L=[];const push=(t,x,z,s)=>{if(caveAt(x,z,1.4))return;{const vg=vegAt(x,z);if(vg<.15&&(PLANT[ED[t].k]||t==='stick'||t==='takenoko'||t==='clay'))return;if(ED[t].k==='tree'&&t!=='matsu'&&treeF(vg)<.05)return;}if(Math.hypot(x-SPAWN.x,z-SPAWN.z)<2.5&&ED[t].r)return;L.push({t,x,z,s:s||(.85+rng()*.3),ry:rng()*6.283,v:Math.floor(rng()*VN[t])});};
  SPAWN=findSpawn();const CS=3.5;
- for(let gx=-124;gx<124;gx++)for(let gz=-124;gz<124;gz++){const x=gx*CS+(rng()-.5)*CS*.9,z=gz*CS+(rng()-.5)*CS*.9;const h=terrainH(x,z);if(inPond(x,z,1.6)||kopAt(x,z,2))continue;const ny=normalY(x,z);
+ for(let gx=-248;gx<248;gx++)for(let gz=-248;gz<248;gz++){const x=gx*CS+(rng()-.5)*CS*.9,z=gz*CS+(rng()-.5)*CS*.9;const h=terrainH(x,z);if(inPond(x,z,1.6)||kopAt(x,z,2))continue;const ny=normalY(x,z);
   const wp=ponds.some(p=>p.big&&Math.hypot(x-p.x,z-p.z)<p.r+22);
   if(wp){const q=rng();if(q<.05)push('fig',x,z,.8+rng()*.4);else if(q<.09)push('biro',x,z,.85+rng()*.3);continue;}
   if(clearingAt(x,z)>.5)continue;
@@ -706,8 +706,8 @@ function genEntities(){
   else if(q<.006+.05*f+.0018)push('baobab',x,z,.85+rng()*.3);
   else if(q<.07+.05*f){const p=rng();if(p<.38)push('whistle',x,z,.7+rng()*.4);else if(p<.6)push('sharinbai',x,z,.7+rng()*.4);else if(p<.8)push('karamushi',x,z);else push('ichigo',x,z);}
   else if(q<.074+.05*f)push('termite',x,z,.8+rng()*.5);}
- const sc=(t,n,cond,area)=>{let k=0,tr=0;if(!area)n=Math.round(n*AREA);area=area||[0,0,410];while(k<n&&tr<n*80){tr++;const a=rng()*6.283,rr=Math.sqrt(rng())*area[2];const x=area[0]+Math.cos(a)*rr,z=area[1]+Math.sin(a)*rr;const h=terrainH(x,z);if(inPond(x,z,1.5))continue;if(!cond(h,normalY(x,z),x,z))continue;push(t,x,z);k++;}};
- sc('rock',90,(h,ny)=>ny>.75);sc('outcrop',70,(h,ny,x,z)=>Math.max(Math.abs(x),Math.abs(z))>290&&ny>.5);sc('rock',50,(h,ny,x,z)=>Math.max(Math.abs(x),Math.abs(z))>285&&ny>.6);for(const k of KOP)for(let q=0;q<10;q++){const a=rng()*6.283,d=k.r*(.3+rng()*.9),x=k.x+Math.cos(a)*d,z=k.z+Math.sin(a)*d;push(rng()<.5?'outcrop':'rock',x,z,.9+rng()*.6);}
+ const sc=(t,n,cond,area)=>{let k=0,tr=0;if(!area)n=Math.round(n*AREA);area=area||[0,0,820];while(k<n&&tr<n*80){tr++;const a=rng()*6.283,rr=Math.sqrt(rng())*area[2];const x=area[0]+Math.cos(a)*rr,z=area[1]+Math.sin(a)*rr;const h=terrainH(x,z);if(inPond(x,z,1.5))continue;if(!cond(h,normalY(x,z),x,z))continue;push(t,x,z);k++;}};
+ sc('rock',90,(h,ny)=>ny>.75);sc('outcrop',70,(h,ny,x,z)=>Math.max(Math.abs(x),Math.abs(z))>580&&ny>.5);sc('rock',50,(h,ny,x,z)=>Math.max(Math.abs(x),Math.abs(z))>570&&ny>.6);for(const k of KOP)for(let q=0;q<10;q++){const a=rng()*6.283,d=k.r*(.3+rng()*.9),x=k.x+Math.cos(a)*d,z=k.z+Math.sin(a)*d;push(rng()<.5?'outcrop':'rock',x,z,.9+rng()*.6);}
  veins.forEach(v=>{for(let k=0;k<5;k++){const a=rng()*6.283,d=rng()*v.r*.7;const x=v.x+Math.cos(a)*d,z=v.z+Math.sin(a)*d;if(terrainH(x,z)>1)push('outcrop',x,z,.8+rng()*.4);}});
  sc('stick',220,(h)=>h<80);sc('branch',60,(h,ny,x,z)=>h<80);sc('stone',110,(h,ny)=>h<90&&ny>.75);sc('pebble',200,(h,ny)=>h<90&&ny>.75);sc('chert',60,(h,ny)=>ny>.8&&h<60);sc('chert',50,(h,ny)=>h>3&&ny<.9);
  const sa=[SPAWN.x,SPAWN.z,24];sc('sharinbai',6,(h,ny)=>h>.8&&ny>.8,[SPAWN.x,SPAWN.z,35]);sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('pebble',8,(h)=>h>.3,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
@@ -793,12 +793,12 @@ function makeAnimal(t){const C=THREE;const g=new THREE.Group();let parts,legLen,
 let herdN=0;const herdT={};
 function addAnimal(t,x,z,herd){const m=makeAnimal(t);m.g.position.set(x,terrainH(x,z),z);const a={t,x,z,hp:AD[t].hp,dir:rng()*6.28,wt:rng()*3,flee:0,fs:3,alive:true,mesh:m.g,legs:m.legs,ph:rng()*6,spd:0,herd,bite:0};
  m.g.userData.ref={kind:'animal',o:a};scene.add(m.g);animals.push(a);return a;}
-function spawnHerd(t,far,cx,cz){const ad=AD[t];for(let k=0;k<80;k++){const x=cx!=null?cx+(rng()-.5)*40:(rng()*2-1)*250,z=cz!=null?cz+(rng()-.5)*40:(rng()*2-1)*250;if(!landOK(x,z))continue;if(far&&Math.hypot(x-pl.x,z-pl.z)<(ad.pred?70:90))continue;
+function spawnHerd(t,far,cx,cz){const ad=AD[t];for(let k=0;k<80;k++){const x=cx!=null?cx+(rng()-.5)*40:(rng()*2-1)*500,z=cz!=null?cz+(rng()-.5)*40:(rng()*2-1)*500;if(!landOK(x,z))continue;if(far&&Math.hypot(x-pl.x,z-pl.z)<(ad.pred?70:90))continue;
   const n=ad.herd[0]+Math.floor(rng()*(ad.herd[1]-ad.herd[0]+1)),h=++herdN;for(let q=0;q<n;q++){const a=rng()*6.28,r=2+rng()*7,ax=x+Math.cos(a)*r,az=z+Math.sin(a)*r;if(landOK(ax,az))addAnimal(t,ax,az,h);}return;}}
-const PREY_HERDS=[['impala',3],['zebra',2],['giraffe',1],['warthog',2]];
+const PREY_HERDS=[['impala',6],['zebra',4],['giraffe',2],['warthog',4]];
 function spawnAnimal(far){for(const[t,n]of PREY_HERDS){const have=new Set(animals.filter(a=>a.alive&&a.t===t).map(a=>a.herd)).size;if(have<n){spawnHerd(t,far);return;}}}
 function predatorTick(){const night=hours>=19||hours<5.5;const preds=animals.filter(a=>a.alive&&AD[a.t].pred);
- if(night){for(const t of['lion','hyena']){if(preds.some(a=>a.t===t))continue;const wh=ponds.filter(p=>p.big);const p=wh.length&&rng()<.75?wh[Math.floor(rng()*wh.length)]:null;spawnHerd(t,true,p?p.x:null,p?p.z:null);}}
+ if(night){for(const t of['lion','hyena']){if(new Set(preds.filter(a=>a.t===t).map(a=>a.herd)).size>=2)continue;const wh=ponds.filter(p=>p.big);const p=wh.length&&rng()<.75?wh[Math.floor(rng()*wh.length)]:null;spawnHerd(t,true,p?p.x:null,p?p.z:null);}}
  else for(const a of preds){if(Math.hypot(a.x-pl.x,a.z-pl.z)>60&&!a.angry){a.alive=false;scene.remove(a.mesh);}}}
 
 // ================= Game state =================
@@ -1043,9 +1043,9 @@ function quickMove(src){const it=src.it;srcRemove(src);let rem=it.n;
 function cleanupDrop(){}
 $('#inv').addEventListener('contextmenu',e=>e.preventDefault());
 function hideCtx(){$('#ctxM').style.display='none';}
-function showCtx(src,x,y){const it=src.it,m=$('#ctxM');let h='';if(it.n>1)h+='<div data-c="half">半分に分ける</div><div data-c="one">1つ捨てる</div>';h+=`<div data-c="all">捨てる${it.n>1?'（すべて）':''}</div>`;
+function showCtx(src,x,y){const it=src.it,m=$('#ctxM');let h='';if(I[it.id].food&&(src.type==='grid'||src.type==='hot'))h+='<div data-c="eat">食べる</div>';if(it.n>1)h+='<div data-c="half">半分に分ける</div><div data-c="one">1つ捨てる</div>';h+=`<div data-c="all">捨てる${it.n>1?'（すべて）':''}</div>`;
  m.innerHTML=h;m.style.display='block';tipEl.style.display='none';m.style.left=Math.min(x,innerWidth-140)+'px';m.style.top=Math.min(y,innerHeight-110)+'px';
- m.onmousedown=ev=>{ev.stopPropagation();ev.preventDefault();const c=ev.target.dataset.c;hideCtx();if(!c)return;const fx=pl.x-Math.sin(pl.yaw)*1.2,fz=pl.z-Math.cos(pl.yaw)*1.2;
+ m.onmousedown=ev=>{ev.stopPropagation();ev.preventDefault();const c=ev.target.dataset.c;hideCtx();if(!c)return;if(c==='eat'){eatFrom(it,src);return;}const fx=pl.x-Math.sin(pl.yaw)*1.2,fz=pl.z-Math.cos(pl.yaw)*1.2;
   if(c==='half'){const hn=Math.floor(it.n/2);it.n-=hn;drag={it:{id:it.id,n:hn,r:it.r||0},src,split:true,orig:it,gx:0,gy:0};ghostEl.style.display='block';ghostUpdate(ev.clientX,ev.clientY);renderInv();hoverGrid(ev.clientX,ev.clientY);return;}
   if(c==='one'){it.n--;dropItems([{id:it.id,n:1,d:it.d}],fx,fz);}else{srcRemove(src);dropItems([{id:it.id,n:it.n,d:it.d,c:it.c}],fx,fz);}
   msg(I[it.id].n+'を捨てた');invDirty=true;renderInv();};}
@@ -1114,11 +1114,11 @@ $('#bSound').onclick=()=>{AU.on=!AU.on;$('#bSound').textContent='音：'+(AU.on?
 $('#bCheat').onclick=()=>{cheat=!cheat;$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');msg(cheat?'チートモード ON：素材なしでクラフト・持ち物画面からアイテムを出せる':'チートモード OFF',cheat?'good':'');save();};
 const lastMouse={x:0,y:0};addEventListener('mousemove',e=>{lastMouse.x=e.clientX;lastMouse.y=e.clientY;},true);
 addEventListener('keyup',e=>{keys[e.code]=false;});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseL=false;});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;mouseL=false;aimThrow=false;});
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 canvas.addEventListener('mousedown',e=>{if(state!=='play')return;if(!locked&&!dragMode){lock(true);return;}
- if(dragMode)dragLook={x:e.clientX,y:e.clientY,moved:0};if(e.button===0){mouseL=true;primaryClick();}if(e.button===2)consume();});
-addEventListener('mouseup',e=>{if(e.button===0)mouseL=false;dragLook=null;});
+ if(dragMode)dragLook={x:e.clientX,y:e.clientY,moved:0};if(e.button===0){mouseL=true;primaryClick();}if(e.button===2){if(canThrow(held()))aimThrow=true;else consume();}});
+addEventListener('mouseup',e=>{if(e.button===0)mouseL=false;if(e.button===2)aimThrow=false;dragLook=null;});
 addEventListener('mousemove',e=>{if(state!=='play')return;let dx=0,dy=0;
  if(locked||(state==='play'&&!dragMode)){dx=e.movementX;dy=e.movementY;}else if(dragMode&&dragLook){dx=e.clientX-dragLook.x;dy=e.clientY-dragLook.y;dragLook.x=e.clientX;dragLook.y=e.clientY;dragLook.moved+=Math.abs(dx)+Math.abs(dy);if(dragLook.moved>6)mouseL=false;dx*=1.6;dy*=1.6;}else return;
  pl.yaw-=dx*.0022;pl.pitch=clamp(pl.pitch-dy*.0022,-1.5,1.5);});
@@ -1151,10 +1151,10 @@ function updateAim(){camera.getWorldDirection(vDir);vEye.copy(camera.position);
  aim={t,water:t?null:water,ground,rockFace:!t&&!water&&ground&&ground.s<=REACH&&normalY(ground.x,ground.z)<.72&&!foundMap.get(fKey(ground.x,ground.z))};}
 function targetInfo(){const t=aim.t;if(t&&t.kind==='gitem')return[I[t.o.id].n+(t.o.n>1?' ×'+t.o.n:''),t.o.c?'F: 中を見る ／ 左クリック: 手に持つ':'F: ポケットに入れる ／ 左クリック: 手に持つ'];{const h=held();if(h&&!isUsable(I[h.id])&&!(t&&t.kind==='struct'&&t.o.t==='shelter'))return[I[h.id].n+(h.n>1?' ×'+h.n:'')+'を持っている','左クリック: 足元に置く'];}if(t&&t.kind==='carry')return[I[t.o.t].n,pl.carry?'':'左クリック: 担ぐ'];if(pl.carry&&!(t&&t.kind==='struct'&&pl.carry==='log'&&t.o.st&&fuelOK(t.o.t,'log')))return[I[pl.carry].n+'を担いでいる','左クリック: 下ろす'];if(pl.carry)return[SD[t.o.t].n,'左クリック: 丸太をくべる'];
  if(!t){if(aim.water){const s=held();return[aim.water.fresh?'湧き水の池（真水）':'海（海水）',s&&s.id==='pot_empty'?'F: 壺に水を汲む':(aim.water.fresh?'F: 水を飲む':'F: 飲む（危険）')];}
-  if(aim.rockFace){const v=veinAt(aim.ground.x,aim.ground.z);return['岩肌',heldTool('rock')?'左クリック: 採掘':'つるはしで掘れる'];}return null;}
+  if(aim.rockFace){const v=veinAt(aim.ground.x,aim.ground.z);return['岩肌',heldTool('rock')?'左クリック: 採掘':'今の道具では掘れない'];}return null;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
   if(d.k==='tree'){let s=heldTool('tree')>=10?'左クリック: 伐採':(d.leaf?'左クリック: 笹を採る（斧で根元から伐ると竹が取れる）':'左クリック: 枝を採る（斧で伐採できる）');if(d.fruit&&e.fruit)s='F: 実を採る ／ '+s;return[d.n,s];}
-  if(d.k==='rock'){const tier=heldTool('tier');return[d.n,!heldTool('rock')?'つるはしで掘れる':'左クリック: 採掘'];}
+  if(d.k==='rock'){const tier=heldTool('tier');return[d.n,!heldTool('rock')?'今の道具では掘れない':'左クリック: 採掘'];}
   if(d.k==='bush')return[d.n,e.fruit?'F: 実を摘む':'実は再生待ち'];
   if(d.k==='shrub')return[d.n,'左クリック: 葉と枝をむしる（素手でも可）'];if(d.k==='fiber')return[d.n,'F: 繊維を採る ／ 左クリック: 葉を取る'];if(d.k==='pick')return[d.n,'F: 拾う'];if(d.k==='clay')return[d.n,'F: 粘土を掘る'];}
  if(t.kind==='animal')return[AD[t.o.t].n,'左クリック: 攻撃'];
@@ -1190,12 +1190,15 @@ function consume(){const s=held();if(!s)return false;const d=I[s.id];if(!(d.food
  if(s.id==='pot_salt'){msg('海水は飲めない。焚き火で煮沸しよう','bad');return true;}if(s.id==='pot_empty')return false;
  if(d.food&&pl.food>=99&&d.food.h>d.food.w){msg('もうお腹いっぱいだ');return true;}
  const slot=sel;startAction(d.food?`${d.n}を食べている`:'水を飲んでいる',d.food?4.5:4,()=>{if(hot[slot]!==s)return;consumeNow(slot);},'play');return true;}
+function foodEffect(id){const d=I[id];sfx('eat');pl.food=Math.min(100,pl.food+d.food.h);pl.water=clamp(pl.water+d.food.w,0,100);
+ if(d.food.sick&&Math.random()<d.food.sick){pl.sick=25;msg(id==='raw_meat'?'お腹の調子が悪い…（生肉は焼こう）':'えぐみでお腹を壊した…（焼いて食べよう）','bad');}}
+function eatFrom(it,src){const d=I[it.id];if(pl.food>=99&&d.food.h>d.food.w){msg('もうお腹いっぱいだ');return;}
+ startAction(`${d.n}を食べている`,4.5,()=>{const c=src.type==='grid'&&contOf(src.key);const ok=src.type==='hot'?hot[src.i]===it:!!(c&&c.items.includes(it));if(!ok||it.n<=0)return;foodEffect(it.id);it.n--;if(!it.n)srcRemove(src);invDirty=true;},'craft');}
 function consumeNow(slot){const s=hot[slot];if(!s)return;const d=I[s.id];
- if(d.food){sfx('eat');pl.food=Math.min(100,pl.food+d.food.h);pl.water=clamp(pl.water+d.food.w,0,100);
-  if(d.food.sick&&Math.random()<d.food.sick){pl.sick=25;msg(s.id==='raw_meat'?'お腹の調子が悪い…（生肉は焼こう）':'えぐみでお腹を壊した…（焼いて食べよう）','bad');}s.n--;if(!s.n)hot[slot]=null;invDirty=true;return true;}
+ if(d.food){foodEffect(s.id);s.n--;if(!s.n)hot[slot]=null;invDirty=true;return true;}
  if(s.id==='pot_fresh'){sfx('drink');pl.water=Math.min(100,pl.water+40);hot[slot]={id:'pot_empty',n:1};msg('真水を飲んだ');invDirty=true;return true;}
  if(s.id==='pot_salt'){msg('海水は飲めない。焚き火で煮沸しよう','bad');return true;}return false;}
-function primaryClick(){if(pl.carry){const t=aim.t;if(!(pl.carry==='log'&&t&&t.kind==='struct'&&feedLog(t.o)))dropCarry();mouseL=false;return;}
+function primaryClick(){if(aimThrow&&canThrow(held())){throwHeld();mouseL=false;return;}if(pl.carry){const t=aim.t;if(!(pl.carry==='log'&&t&&t.kind==='struct'&&feedLog(t.o)))dropCarry();mouseL=false;return;}
  if(aim.t&&aim.t.kind==='carry'){if(hot[sel]&&!pl.bare){msg('両手を空けないと担げない（左クリックで手の物を下ろす）','bad');mouseL=false;return;}pickCarry(aim.t.o);mouseL=false;return;}
  if(aim.t&&aim.t.kind==='gitem'){if(pl.bare&&hot[sel]){msg('手持ちの枠がふさがっている（1 で持ち替える）','bad');}else handPick(aim.t.o);mouseL=false;return;}
  const s=held();if(!s)return;const d=I[s.id];if(!isUsable(d)){handDrop();mouseL=false;return;}if(d.food||d.pot){if(d.pot&&aim.water)interact();else consume();mouseL=false;return;}if(d.place){tryPlace();mouseL=false;}}
@@ -1204,7 +1207,7 @@ function mineYield(vein,big){const tier=heldTool('tier');
  if(Math.random()<.18)dropAt('pebble',1+Math.floor(Math.random()*2));if(Math.random()<(big?.08:.12))dropAt('stone',1);if(Math.random()<.02)dropAt('chert',1);
 }
 function doHit(){const t=aim.t;
- if(!t){if(aim.rockFace){if(!heldTool('rock')){msg('岩肌を掘るにはつるはしが必要');return;}useDur();sfx('mine');mineYield(veinAt(aim.ground.x,aim.ground.z),false);}return;}
+ if(!t){if(aim.rockFace){if(!heldTool('rock')){msg('岩肌は今の道具では掘れない');return;}useDur();sfx('mine');mineYield(veinAt(aim.ground.x,aim.ground.z),false);}return;}
  if(t.kind==='ent'){const e=t.o,d=ED[e.t];
   if(!held()&&(d.k==='tree'||d.k==='rock')){e.hp=Math.max(1,e.hp-2);sfx('thud');shake(e);return;}
   if(d.k==='tree'){const dmg=heldTool('tree');
@@ -1212,13 +1215,34 @@ function doHit(){const t=aim.t;
     if(e.hp<=0){const nl=d.logs[0]+Math.floor(Math.random()*(d.logs[1]-d.logs[0]+1));if(d.wood)dropAt(d.wood,nl);else{const a=Math.atan2(e.x-pl.x,e.z-pl.z);for(let k=0;k<nl;k++){const r=1.2+k*1.9;addCarry('log',e.x+Math.sin(a)*r+(Math.random()-.5)*.6,e.z+Math.cos(a)*r+(Math.random()-.5)*.6,a+Math.PI/2+(Math.random()-.5)*.4);}}
      dropAt(d.leaf||'stick',d.leaf?2+Math.floor(Math.random()*3):1+Math.floor(Math.random()*3));if(d.fib)dropAt('fiber',d.fib);if(!d.wood&&Math.random()<.6)dropAt('branch',1);if(d.lv)dropAt('leaf',d.lv[0]+Math.floor(Math.random()*(d.lv[1]-d.lv[0]+1)));killEnt(e);e.hp=d.hp;sfx('fall');msg(d.n+'を切り倒した');}}
    else{if(dmg)useDur();sfx('chop');shake(e);if(Math.random()<.3)dropAt(d.leaf||'stick',1);}return;}
-  if(d.k==='rock'){if(!heldTool('rock')){msg('岩を掘るにはつるはしが必要');return;}e.hp-=heldTool('rock');useDur();sfx('mine');shake(e);mineYield(e.vein,true);
+  if(d.k==='rock'){if(!heldTool('rock')){msg('岩は今の道具では掘れない');return;}e.hp-=heldTool('rock');useDur();sfx('mine');shake(e);mineYield(e.vein,true);
    if(e.hp<=0){dropAt('stone',2);for(let k=0;k<(e.t==='outcrop'?2:1);k++)addCarry('boulder',e.x+(Math.random()-.5)*1.2,e.z+(Math.random()-.5)*1.2,Math.random()*6.28);killEnt(e);e.hp=d.hp;msg(d.n+'を砕いた。岩が残った');}return;}
   if(d.k==='shrub'){e.hp-=held()?3:2;shake(e);sfx('cut');if(Math.random()<.35)dropAt('leaf',1);if(e.hp<=0){dropAt('leaf',4+Math.floor(Math.random()*3));dropAt('stick',1+Math.floor(Math.random()*2));killEnt(e);e.hp=d.hp;msg(d.n+'をむしり取った');}return;}
   if(d.k==='bush'||d.k==='fiber'){shake(e);sfx('cut');if(Math.random()<.4)dropAt('leaf',1);return;}}
- if(t.kind==='animal'){const a=t.o;const dmg=heldTool('anim')||(held()?5:3);a.hp-=dmg;if(AD[a.t].pred)a.angry=true;else{a.flee=6;if(a.herd)herdT[a.herd]={t:8,x:pl.x,z:pl.z};}a.fs=Math.max(a.fs,2);useDur();a.hurt=.25;sfx('thud');
-  if(a.hp<=0){a.alive=false;const c={t:a.t,x:a.x,z:a.z,ry:a.dir,mesh:a.mesh,legs:a.legs,exp:day+2,alive:true};layCarcass(c);carcasses.push(c);msg(AD[a.t].n+'を仕留めた。ナイフか斧を持って解体しよう');}}
+ if(t.kind==='animal'){useDur();hurtAnimal(t.o,heldTool('anim')||(held()?5:3));}
  if(t.kind==='carcass')butcher(t.o);}
+function hurtAnimal(a,dmg){if(!a.alive)return;a.hp-=dmg;if(AD[a.t].pred)a.angry=true;else{a.flee=6;if(a.herd)herdT[a.herd]={t:8,x:pl.x,z:pl.z};}a.fs=Math.max(a.fs,2);a.hurt=.25;sfx('thud');
+ if(a.hp<=0){a.alive=false;const c={t:a.t,x:a.x,z:a.z,ry:a.dir,mesh:a.mesh,legs:a.legs,exp:day+2,alive:true};layCarcass(c);carcasses.push(c);msg(AD[a.t].n+'を仕留めた。ナイフか斧を持って解体しよう');}}
+// 近接武器を投げる: 右クリックで構え → 左クリックで投げる。当たった所・落ちた所に3Dモデルで落ちる
+let aimThrow=false;const projs=[];const THROWN={knife:1.1,axe:1.25,spear:1.6};
+function canThrow(s){return !!(s&&I[s.id].shape&&THROWN[I[s.id].shape]);}
+function throwHeld(){const s=held();if(!s)return;if(action){msg('ほかの作業中だ','bad');return;}if(pl.stam<6){msg('疲れていて投げられない','bad');return;}
+ const d=I[s.id];hot[sel]=null;invDirty=true;pl.stam-=8;sfx('swing');aimThrow=false;
+ const dir=new THREE.Vector3();camera.getWorldDirection(dir);const p=new THREE.Vector3();camera.getWorldPosition(p);p.addScaledVector(dir,.6);p.y-=.1;
+ const sp=d.shape==='spear'?27:21;const v=dir.multiplyScalar(sp);v.y+=1.2;
+ const g=buildHeld(s.id);g.rotation.set(0,0,0);g.position.copy(p);g.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(g);
+ projs.push({s,g,p,v,t:0,spin:d.shape!=='spear',mul:THROWN[d.shape]});}
+function landProj(q,x,z,broke){scene.remove(q.g);const i=projs.indexOf(q);if(i>=0)projs.splice(i,1);if(broke){msg(I[q.s.id].n+'が壊れた','bad');return;}addGItem(q.s.id,q.s.n,q.s.d,x,z);}
+function updateProjs(dt){for(let i=projs.length-1;i>=0;i--){const q=projs[i];q.t+=dt;let done=false;
+ for(let k=0;k<4&&!done;k++){const h=dt/4;q.v.y-=9.8*h;q.p.addScaledVector(q.v,h);
+  for(const a of animals){if(!a.alive)continue;const ad=AD[a.t],gy=terrainH(a.x,a.z),top=a.t==='giraffe'?4.6:a.t==='warthog'?.9:a.t==='hyena'?1.1:1.5,rad=a.t==='giraffe'?1.1:a.t==='warthog'?.6:.85;
+   if(Math.hypot(q.p.x-a.x,q.p.z-a.z)<rad&&q.p.y>gy+.15&&q.p.y<gy+top){const dmg=Math.round(((I[q.s.id].tool||{}).anim||5)*q.mul);hurtAnimal(a,dmg);msg(`${ad.n}に命中（${dmg}）`);
+    let broke=false;if(q.s.d!=null){q.s.d-=2;broke=q.s.d<=0;}landProj(q,q.p.x,q.p.z,broke);done=true;break;}}
+  if(done)break;
+  for(const e of near(q.p.x,q.p.z,2)){const d=ED[e.t];if(!e.alive||e.dead||d.k!=='tree')continue;if(Math.hypot(q.p.x-e.x,q.p.z-e.z)<.45*(e.s||1)&&q.p.y<terrainH(e.x,e.z)+5){sfx('chop');landProj(q,q.p.x-q.v.x*.03,q.p.z-q.v.z*.03,false);done=true;break;}}
+  if(done)break;
+  if(q.p.y<=terrainH(q.p.x,q.p.z)+.05||q.t>6||Math.max(Math.abs(q.p.x),Math.abs(q.p.z))>HALF-5){sfx('thud');landProj(q,q.p.x,q.p.z,false);done=true;}}
+ if(done)continue;q.g.position.copy(q.p);tmpV.copy(q.v).normalize();q.g.quaternion.setFromUnitVectors(YAX,tmpV);if(q.spin)q.g.rotateX(-q.t*15);}}
 function layCarcass(c){c.mesh.rotation.set(0,c.ry,Math.PI/2);c.mesh.position.set(c.x,terrainH(c.x,c.z)+(AD[c.t].lay),c.z);c.mesh.scale.setScalar(1);c.legs.forEach(l=>l.rotation.x=0);c.mesh.userData.ref={kind:'carcass',o:c};}
 function removeCarcass(c){c.alive=false;scene.remove(c.mesh);const i=carcasses.indexOf(c);if(i>=0)carcasses.splice(i,1);}
 function butcher(c){if(action)return;const h=held();const q=h&&KQ[h.id];if(!q){msg('解体するにはナイフか斧を手に持とう','bad');return;}
@@ -1259,7 +1283,7 @@ function collide(nx,nz,feet){const Rr=.35;
    if(d2<Rr*Rr){if(d2>1e-8){const d=Math.sqrt(d2);nx=cx+dx/d*Rr;nz=cz+dz/d*Rr;}else{const o=[nx-b.x0,b.x1-nx,nz-b.z0,b.z1-nz];const m=Math.min(...o);if(m===o[0])nx=b.x0-Rr;else if(m===o[1])nx=b.x1+Rr;else if(m===o[2])nz=b.z0-Rr;else nz=b.z1+Rr;}}}}
  for(const c of caves){if(feet>c.y+2.6||!inTunnel(c,pl.x,pl.z,0))continue;const[u,v]=caveLoc(c,nx,nz);if(v<.5)continue;
   const lim=c.hw*Math.min(...c.ws.slice(1))-.7,cu=clamp(u,-lim,lim),cv=Math.min(v,c.L-.2);if(cu!==u||cv!==v){nx=c.ox+c.lx*(c.sc+cu)+c.ix*cv;nz=c.oz+c.lz*(c.sc+cu)+c.iz*cv;}}
- const B=340;nx=clamp(nx,-B,B);nz=clamp(nz,-B,B);return[nx,nz];}
+ const B=690;nx=clamp(nx,-B,B);nz=clamp(nz,-B,B);return[nx,nz];}
 const ROCKT={rock:.95,shore:.6,outcrop:1.5},STTOP={campfire:.25,workbench:.99,box:.72,anvil:.86,bloomery:2.25,kiln:1.1};
 function rockSurf(e,x,z){const Rs=e.r+.3,d=Math.hypot(x-e.x,z-e.z);if(d>=Rs)return null;return e.y+ROCKT[e.t]*e.s*Math.sqrt(1-(d/Rs)**2);}
 function stTop(s,x,z){const T=STTOP[s.t];if(T==null)return null;const R=s.r+.4,d=Math.hypot(x-s.x,z-s.z);if(d>=R)return null;return s.y+(s.t==='kiln'?T*Math.sqrt(1-(d/R)**2):T);}
@@ -1302,7 +1326,7 @@ function updatePlayer(dt){
  if(h&&h.id==='pot_empty'&&rainHit>.5){rainPot+=dt;if(rainPot>20){rainPot=0;hot[sel]={id:'pot_fresh',n:1};msg('壺に雨水が溜まった','good');invDirty=true;}}else rainPot=0;}
 function daylight(h){if(h<5||h>20)return 0;if(h<7.5)return(h-5)/2.5;if(h>17.5)return(20-h)/2.5;return 1;}
 let animTimer=0;
-function landOK(x,z){return terrainH(x,z)>=1.2&&!inPond(x,z,1.5)&&!caveAt(x,z,1)&&Math.max(Math.abs(x),Math.abs(z))<330;}
+function landOK(x,z){return terrainH(x,z)>=1.2&&!inPond(x,z,1.5)&&!caveAt(x,z,1)&&Math.max(Math.abs(x),Math.abs(z))<560;}
 function fleeDir(a,base){const O=[0,.45,-.45,.9,-.9,1.35,-1.35,1.8,-1.8,2.3,-2.3,2.8,-2.8,Math.PI];
  for(const o of O){const d=base+o;let ok=true;for(const r of[2,5,9]){if(!landOK(a.x+Math.sin(d)*r,a.z+Math.cos(d)*r)){ok=false;break;}}if(ok)return d;}return base+Math.PI;}
 function herdInfo(){const H={};for(const a of animals){if(!a.alive||!a.herd)continue;const h=H[a.herd]||(H[a.herd]={x:0,z:0,n:0});h.x+=a.x;h.z+=a.z;h.n++;}for(const k in H){H[k].x/=H[k].n;H[k].z/=H[k].n;}return H;}
@@ -1426,7 +1450,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:25,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:26,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z,c:o.c})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1462,6 +1486,8 @@ function updateHeld(t){updateTwist(t);const tw=!!(action&&action.anim==='twist')
  if(pl.carry)return;const bob=pl.moving&&pl.onG?Math.sin(bobPh)*.018:0;let px=.34+bob*.5,py=-.34+Math.abs(bob),pz=-.6,rx=0,rz=0;const u=swingT>=0?Math.min(1,swingT):-1;
  if(!heldMesh){px-=.04;py+=.1;}
  if(u>=0&&!heldMesh){const j=u<.3?-u/.3*.06:u<.5?-.06+(u-.3)/.2*.42:.36*(1-(u-.5)/.5);pz-=j;px-=j*.35;py+=j*.15;}
+ else if(aimThrow&&canThrow(held())){const sp=I[held().id].shape==='spear';px=sp?.3:.4;py=sp?-.12:-.16;pz=sp?-.22:-.62;rx=sp?-1.15:.3;rz=sp?0:-.15;}
+ else if(u>=0&&I[held().id].shape==='spear'){const k=Math.min(1,u/.18,(1-u)/.2),j=u<.35?-u/.35*.16:u<.55?-.16+(u-.35)/.2*.72:.56*(1-(u-.55)/.45);rx=-.95*k;px-=.06*k;py+=.06*k;pz-=j;}
  else if(u>=0){const ease=x=>x*x*(3-2*x);let wx,wz,dx,dy,dz;const W=[.4,-1.05,.16,.36,-.06],S=[-1.6,.35,-.1,-.2,-.15];
   if(u<.45){const e=ease(u/.45);[wx,wz,dx,dy,dz]=W.map(v=>v*e);}else if(u<.62){const e=ease((u-.45)/.17);[wx,wz,dx,dy,dz]=W.map((v,i)=>v+(S[i]-v)*e);}else{const e=ease((u-.62)/.38);[wx,wz,dx,dy,dz]=S.map(v=>v*(1-e));}
   rx=wx;rz=wz;px+=dx;py+=dy;pz+=dz;}
@@ -1473,11 +1499,11 @@ let bobPh=0,bobAmp=0,camY=0,mapT=0;
 let last=performance.now(),uiT=0,saveT=0,lightT=0,skyT=0,decT=0,elapsed=0;
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;elapsed+=dt;
  if(state==='menu')return;updateAudio(dt);const playing=state==='play';const running=playing||state==='inv'||state==='map';
- if(running){hours+=dt*24/DAYLEN;if(hours>=24){hours-=24;day++;newDay();}updatePlayer(dt);updateAnimals(dt);updateWeather(dt);updateStations(dt);updateAction(dt);}
+ if(running){hours+=dt*24/DAYLEN;if(hours>=24){hours-=24;day++;newDay();}updatePlayer(dt);updateAnimals(dt);updateProjs(dt);updateWeather(dt);updateStations(dt);updateAction(dt);}
  stUiT-=dt;if(stUiT<=0){stUiT=.3;if(state==='inv'&&openCont&&openCont.st&&!drag)renderStation();}
  mapT-=dt;if(mapT<=0){mapT=.25;drawMini();if(state==='map')drawBigMap();}
  if(playing){
-  swingCd-=dt;const h=held(),hd=h&&I[h.id];if(mouseL&&!pl.carry&&!(held()&&!isUsable(I[held().id]))&&swingT<0&&swingCd<=0&&pl.stam>3&&!(hd&&(hd.place||hd.food||hd.pot))){swingT=0;hitDone=false;const bg=!!(h&&['axe','pick','spear'].includes(hd.shape));pl.stam-=bg?6:3;swingCd=bg?1.35:.45;pl.swDur=bg?1:.38;sfx('swing');}
+  swingCd-=dt;const h=held(),hd=h&&I[h.id];if(mouseL&&!aimThrow&&!pl.carry&&!(held()&&!isUsable(I[held().id]))&&swingT<0&&swingCd<=0&&pl.stam>3&&!(hd&&(hd.place||hd.food||hd.pot))){swingT=0;hitDone=false;const bg=!!(h&&['axe','pick','spear'].includes(hd.shape));pl.stam-=bg?6:3;swingCd=bg?1.35:.45;pl.swDur=bg?1:.38;sfx('swing');}
   if(swingT>=0){swingT+=dt/(pl.swDur||1);if(!hitDone&&swingT>.55){hitDone=true;doHit();}if(swingT>=1)swingT=-1;}}
  if(pl.moving&&pl.onG&&playing){bobPh+=dt*(pl.sprint?11:8);bobAmp=Math.min(1,bobAmp+dt*4);}else bobAmp=Math.max(0,bobAmp-dt*4);
  camY+=(pl.y-camY)*Math.min(1,dt*18);if(Math.abs(pl.y-camY)>1.5)camY=pl.y;
@@ -1524,7 +1550,7 @@ function startGame(data){auInit();$('#loading').style.display='block';
   data.structs.forEach(s=>addStruct(s.t,s.x,s.y,s.z,s.rot,s.cont,s.st));(data.gitems||[]).forEach(o=>addGItem(o.id,o.n,o.d,o.x,o.z,o.c));(data.carries||[]).forEach(o=>addCarry(o.t,o.x,o.z,o.ry));if(pl.carry)setCarry(pl.carry);cheat=!!data.cheat;
   (data.carcasses||[]).forEach(c=>{const m=makeAnimal(c.t);const o={t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp,mesh:m.g,legs:m.legs,alive:true};scene.add(m.g);layCarcass(o);carcasses.push(o);});}
  else{pl.x=SPAWN.x;pl.z=SPAWN.z;pl.y=terrainH(pl.x,pl.z)+.2;pl.yaw=Math.atan2(pl.x,pl.z);msg('ケニアのサバンナで目を覚ました…');msg('枝・小石・チャートを拾おう（F）');}
- for(let k=0;k<8;k++)spawnAnimal(false);
+ for(let k=0;k<16;k++)spawnAnimal(false);
  updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
