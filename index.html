@@ -164,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v26';
+const SAVE_KEY='driftisle_save_v27';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -253,8 +253,8 @@ const PROC={campfire:{raw_meat:['cooked_meat',20],takenoko:['yaki_takenoko',15]}
  bloomery:{iron_ore:['iron_bloom',60]}};
 const SLOTS={campfire:{in:3,out:3},kiln:{tool:1,in:4,out:4},bloomery:{in:3,out:3}};
 const fuelOK=(t,id)=>t==='bloomery'?id==='charcoal':!!FUEL[id];
-const KQ={stone_knife:.5,copper_knife:.75,iron_knife:1,stone_axe:.3,copper_axe:.4,bronze_axe:.45,iron_axe:.55};
-const BUTCH={goat:{raw_meat:4,fat:2,bone:3,hide:1},boar:{raw_meat:6,fat:4,bone:5,hide:2}};
+const KQ={stone_knife:.5,copper_knife:.75,iron_knife:1,stone_axe:.3,copper_axe:.4,bronze_axe:.45,iron_axe:.55,wood_spear:.25,bronze_spear:.35,iron_spear:.45};
+const BUTCH={goat:{raw_meat:4,fat:2,bone:3,hide:1},boar:{raw_meat:6,fat:4,bone:5,hide:2},impala:{raw_meat:4,fat:1,bone:3,hide:1},zebra:{raw_meat:8,fat:3,bone:5,hide:2},warthog:{raw_meat:5,fat:3,bone:3,hide:1},giraffe:{raw_meat:14,fat:4,bone:8,hide:3},lion:{raw_meat:6,fat:2,bone:5,hide:2},hyena:{raw_meat:4,fat:1,bone:3,hide:1}};
 const ERA_TRIG={campfire:1};
 const ED={
  shii:{n:'コナラ',k:'tree',lv:[6,10],r:.42,hp:110,logs:[3,5],re:4},tabu:{n:'ブナ',k:'tree',lv:[6,10],r:.4,hp:100,logs:[3,5],re:4},
@@ -547,9 +547,17 @@ function desertAt(x,z,h){return 1-vegAt(x,z,h);}
 // ケニアのサバンナ（マサイマラ風）: ほぼ平らな草原にゆるい起伏、ところどころに花崗岩の岩山（コピエ）
 let KOP=[];
 function genKopjes(){KOP=[];const r=mulberry32(SEED+5150);let tr=0;while(KOP.length<0&&tr<3000){tr++;const x=(r()*2-1)*300,z=(r()*2-1)*300;if(KOP.some(k=>Math.hypot(k.x-x,k.z-z)<110)||Math.hypot(x,z)<40)continue;KOP.push({x,z,r:12+r()*14,H:7+r()*9,ph:r()*6.28});}}
+// 地域: 見晴らしの丘 HILL・小さな森 GRV・岩と砂の荒れ地 DES（最初の荒れ地の中にオアシス）
+let HILL=[],GRV=[],DES=[];
+function genZones(){const r=mulberry32(SEED+777);HILL=[];GRV=[];DES=[];const all=[];
+ const put=(L,n,rmin,rmax,lim,gap,extra)=>{let tr=0;while(L.length<n&&tr<5000){tr++;const x=(r()*2-1)*lim,z=(r()*2-1)*lim,rr=rmin+r()*(rmax-rmin);if(Math.hypot(x,z)<rr+60)continue;if(all.some(o=>Math.hypot(o.x-x,o.z-z)<o.r+rr+gap))continue;const o={x,z,r:rr,ph:r()*6.28,...extra(r)};L.push(o);all.push(o);}};
+ put(DES,3,100,150,400,40,()=>({}));put(HILL,8,45,85,470,30,r=>({H:16+r()*14}));put(GRV,11,25,50,470,20,()=>({}));}
+function zoneV(L,x,z,k){let v=0;for(const o of L){const dx=x-o.x,dz=z-o.z;if(Math.abs(dx)>o.r*1.3||Math.abs(dz)>o.r*1.3)continue;const a=Math.atan2(dz,dx),rr=o.r*(1+.18*Math.sin(3*a+o.ph)+.09*Math.sin(5*a+o.ph*2));v=Math.max(v,clamp((1-Math.hypot(dx,dz)/rr)*k,0,1));}return v;}
+const desAt=(x,z)=>zoneV(DES,x,z,2.5),groveAt=(x,z)=>zoneV(GRV,x,z,2);
 function kopAt(x,z,m){for(const k of KOP)if(Math.hypot(x-k.x,z-k.z)<k.r+(m||0))return k;return null;}
 function rawHeight(x,z){
- let h=16+(fbm(x*.0011+50,z*.0011+50,4)-.5)*36+(fbm(x*.0035+10,z*.0035-30,3)-.5)*9;
+ let h=16+(fbm(x*.0011+50,z*.0011+50,4)-.5)*50+(fbm(x*.0035+10,z*.0035-30,3)-.5)*16;
+ for(const o of HILL){const dx=x-o.x,dz=z-o.z;if(Math.abs(dx)>o.r*1.3||Math.abs(dz)>o.r*1.3)continue;const a=Math.atan2(dz,dx),rr=o.r*(1+.2*Math.sin(3*a+o.ph)+.1*Math.sin(5*a+o.ph*2)),t=clamp(1-Math.hypot(dx,dz)/rr,0,1);h+=o.H*t*t*(3-2*t)*(1+.12*(fbm(x*.03+o.ph,z*.03,2)-.5));}
  for(const k of KOP){const dx=x-k.x,dz=z-k.z,d=Math.hypot(dx,dz);if(d>k.r*1.25)continue;const a=Math.atan2(dz,dx),rr=k.r*(1+.18*Math.sin(3*a+k.ph)+.1*Math.sin(5*a+k.ph*2));const t=clamp(1-d/rr,0,1);
   h+=k.H*Math.pow(t,.45)*(1+.25*(fbm(x*.08+k.ph,z*.08,2)-.5));}
  const e=Math.max(Math.abs(x),Math.abs(z))+(fbm(x*.01+11,z*.01-5,2)-.5)*40;const es=smst(570,700,e);
@@ -632,9 +640,9 @@ function fixConnectivity(){const N=SEG+1,lock=new Uint8Array(N*N);
    for(const[di,dj]of[[1,0],[-1,0],[0,1],[0,-1]]){const i2=i+di,j2=j+dj;if(i2<0||j2<0||i2>=N||j2>=N)continue;const k2=j2*N+i2;if(cm[k2]===c||tried.has(k*4+di+1+(dj+1)*2))continue;
     const d=Math.abs(heights[k]-heights[k2])+(cm[k2]===0?0:4);if(!best||d<best.d)best={i,j,di,dj,d,key:k*4+di+1+(dj+1)*2};}}
   if(!best)break;tried.add(best.key);buildRamp(best,lock,CELL*.6);}}
-function buildTerrain(){genKopjes();
+function buildTerrain(){genKopjes();genZones();
  heights=new Float32Array((SEG+1)*(SEG+1));ponds=[];let tries=0;
- {let tr=0;while(ponds.length<24&&tr<16000){const big=ponds.length<4;tr++;const x=(rng()*2-1)*500,z=(rng()*2-1)*500;if(big&&ponds.some(q=>Math.hypot(q.x-x,q.z-z)<300))continue;const h=rawHeight(x,z);if(h>50)continue;let mx=-99,mn=99;for(let q=0;q<8;q++){const v=rawHeight(x+Math.cos(q*.785)*14,z+Math.sin(q*.785)*14);mx=Math.max(mx,v);mn=Math.min(mn,v);}if(mx-mn>(big?6:9)||mn<h-2.5)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<(big||p.big?140:60)))continue;
+ {let tr=0;while(ponds.length<24&&tr<16000){const big=ponds.length<4;tr++;const oa=ponds.length===0&&DES.length&&tr<3000;const x=oa?DES[0].x+(rng()*2-1)*35:(rng()*2-1)*500,z=oa?DES[0].z+(rng()*2-1)*35:(rng()*2-1)*500;if(!oa&&big&&desAt(x,z)>0)continue;if(big&&ponds.some(q=>Math.hypot(q.x-x,q.z-z)<300))continue;const h=rawHeight(x,z);if(h>50)continue;let mx=-99,mn=99;for(let q=0;q<8;q++){const v=rawHeight(x+Math.cos(q*.785)*14,z+Math.sin(q*.785)*14);mx=Math.max(mx,v);mn=Math.min(mn,v);}if(mx-mn>(big?6:9)||mn<h-2.5)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<(big||p.big?140:60)))continue;
   const kr=mulberry32(SEED+31*ponds.length+5),pk=[.12+kr()*.14,kr()*6.28,.08+kr()*.1,kr()*6.28,.04+kr()*.05,kr()*6.28];ponds.push(big?{x,z,k:pk,r:11+rng()*4,level:h-.5,big:1,dep:2.4}:{x,z,k:pk,r:1.4+rng()*1.3,level:h-.15,dep:.35});}}
  genCaves();
  for(let j=0;j<=SEG;j++)for(let i=0;i<=SEG;i++){const x=-HALF+i*CELL,z=-HALF+j*CELL;let h=rawHeight(x,z);
@@ -654,7 +662,7 @@ function buildTerrain(){genKopjes();
   if(h<-.3)tc.set('#9c8964');else if(h<1.5)tc.set('#c2aa76');else if(pd&&h<pd.level+.6)tc.set('#6e5a3e');
   else if(ny<.7){tc.set(vg<.3?'#4e4440':'#5f5c56');const v=veinAt(mx,mz);if(v)tc.lerp(t2.set(VT[v]),.55);}
   else if(h<2.3)tc.set('#a9a46c');
-  else{const f=forestAt(mx,mz),rs=smst(.58,.7,fbm(mx*.02+77,mz*.02-33,3));tc.set('#b8a058').lerp(t2.set('#8a8a44'),f*.6).lerp(t2.set('#a8643c'),rs*.65);if(kopAt(mx,mz,1))tc.lerp(t2.set('#8a8278'),.6);if(ny<.8)tc.lerp(t2.set('#7a7468'),.45);}
+  else{const f=Math.max(forestAt(mx,mz),groveAt(mx,mz)*1.2),rs=smst(.58,.7,fbm(mx*.02+77,mz*.02-33,3));tc.set('#b8a058').lerp(t2.set('#8a8a44'),f*.6).lerp(t2.set('#a8643c'),rs*.65);if(kopAt(mx,mz,1))tc.lerp(t2.set('#8a8278'),.6);{const de=desAt(mx,mz);if(de>0)tc.lerp(t2.set('#dcc590'),de*.85);}if(ny<.8)tc.lerp(t2.set('#7a7468'),.45);}
   const f=.95+cr()*.1;tc.r*=f;tc.g*=f;tc.b*=f;for(let k=0;k<3;k++){col[s+k*3]=tc.r;col[s+k*3+1]=tc.g;col[s+k*3+2]=tc.b;}};
  for(let j=0;j<SEG;j++)for(let i=0;i<SEG;i++){tri([i,j],[i,j+1],[i+1,j]);tri([i,j+1],[i+1,j+1],[i+1,j]);}
  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));g.computeVertexNormals();
@@ -699,9 +707,11 @@ function genEntities(){
  SPAWN=findSpawn();const CS=3.5;
  for(let gx=-248;gx<248;gx++)for(let gz=-248;gz<248;gz++){const x=gx*CS+(rng()-.5)*CS*.9,z=gz*CS+(rng()-.5)*CS*.9;const h=terrainH(x,z);if(inPond(x,z,1.6)||kopAt(x,z,2))continue;const ny=normalY(x,z);
   const wp=ponds.some(p=>p.big&&Math.hypot(x-p.x,z-p.z)<p.r+22);
-  if(wp){const q=rng();if(q<.05)push('fig',x,z,.8+rng()*.4);else if(q<.09)push('biro',x,z,.85+rng()*.3);continue;}
+  if(wp){const q=rng(),oa=desAt(x,z)>0;if(q<(oa?.025:.05))push('fig',x,z,.8+rng()*.4);else if(q<(oa?.16:.09))push('biro',x,z,.85+rng()*.3);continue;}
   if(clearingAt(x,z)>.5)continue;
-  const f=forestAt(x,z),q=rng();
+  const de=desAt(x,z);if(de>.35){const q=rng();if(q<.022*de)push('rock',x,z,.6+rng()*.9);else if(q<.026*de)push('outcrop',x,z,.6+rng()*.6);else if(q<.05*de)push('pebble',x,z);else if(q<.06*de)push('stone',x,z);else if(q<.066)push('karamushi',x,z);else if(q<.07)push('whistle',x,z,.5+rng()*.3);continue;}
+  {const hl=zoneV(HILL,x,z,1.6);if(hl>.6&&rng()<.03*hl){push(rng()<.4?'outcrop':'rock',x,z,.7+rng()*.6);continue;}}
+  const f=Math.min(4,forestAt(x,z)+groveAt(x,z)*4),q=rng();
   if(q<.006+.05*f){const p=rng();push(p<.62?'acacia':p<.8?'balanites':'whistle',x,z,.8+rng()*.45);}
   else if(q<.006+.05*f+.0018)push('baobab',x,z,.85+rng()*.3);
   else if(q<.07+.05*f){const p=rng();if(p<.38)push('whistle',x,z,.7+rng()*.4);else if(p<.6)push('sharinbai',x,z,.7+rng()*.4);else if(p<.8)push('karamushi',x,z);else push('ichigo',x,z);}
@@ -709,7 +719,7 @@ function genEntities(){
  const sc=(t,n,cond,area)=>{let k=0,tr=0;if(!area)n=Math.round(n*AREA);area=area||[0,0,820];while(k<n&&tr<n*80){tr++;const a=rng()*6.283,rr=Math.sqrt(rng())*area[2];const x=area[0]+Math.cos(a)*rr,z=area[1]+Math.sin(a)*rr;const h=terrainH(x,z);if(inPond(x,z,1.5))continue;if(!cond(h,normalY(x,z),x,z))continue;push(t,x,z);k++;}};
  sc('rock',90,(h,ny)=>ny>.75);sc('outcrop',70,(h,ny,x,z)=>Math.max(Math.abs(x),Math.abs(z))>580&&ny>.5);sc('rock',50,(h,ny,x,z)=>Math.max(Math.abs(x),Math.abs(z))>570&&ny>.6);for(const k of KOP)for(let q=0;q<10;q++){const a=rng()*6.283,d=k.r*(.3+rng()*.9),x=k.x+Math.cos(a)*d,z=k.z+Math.sin(a)*d;push(rng()<.5?'outcrop':'rock',x,z,.9+rng()*.6);}
  veins.forEach(v=>{for(let k=0;k<5;k++){const a=rng()*6.283,d=rng()*v.r*.7;const x=v.x+Math.cos(a)*d,z=v.z+Math.sin(a)*d;if(terrainH(x,z)>1)push('outcrop',x,z,.8+rng()*.4);}});
- sc('stick',220,(h)=>h<80);sc('branch',60,(h,ny,x,z)=>h<80);sc('stone',110,(h,ny)=>h<90&&ny>.75);sc('pebble',200,(h,ny)=>h<90&&ny>.75);sc('chert',60,(h,ny)=>ny>.8&&h<60);sc('chert',50,(h,ny)=>h>3&&ny<.9);
+ sc('stick',220,(h,ny,x,z)=>h<80&&rng()>desAt(x,z)*.9);sc('branch',60,(h,ny,x,z)=>h<80&&rng()>desAt(x,z)*.9);sc('stone',110,(h,ny)=>h<90&&ny>.75);sc('pebble',200,(h,ny)=>h<90&&ny>.75);sc('chert',60,(h,ny)=>ny>.8&&h<60);sc('chert',50,(h,ny)=>h>3&&ny<.9);
  const sa=[SPAWN.x,SPAWN.z,24];sc('sharinbai',6,(h,ny)=>h>.8&&ny>.8,[SPAWN.x,SPAWN.z,35]);sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('pebble',8,(h)=>h>.3,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
  ponds.forEach(p=>{if(!p.big)return;for(let k=0;k<28;k++){const a=k/28*6.283+rng()*.3,r=pondRa(p,a)+1.6+rng()*2.2,x=p.x+Math.cos(a)*r,z=p.z+Math.sin(a)*r;if(normalY(x,z)<.86||terrainH(x,z)<p.level+.15)continue;push('clay',x,z,1);}});
  // build instanced meshes
@@ -741,7 +751,7 @@ function setFruit(e,on){e.fruit=on;e.fim.setMatrixAt(e.idx,on&&e.alive?entMat(e)
 // decor chunks
 const DEC=new Map(),DCS=24;
 function buildDecor(cx,cz){const r=mulberry32(((SEED^(cx*73856093)^(cz*19349663))>>>0)+1);const G=[],F=[];
- for(let k=0;k<460;k++){const x=cx*DCS+r()*DCS,z=cz*DCS+r()*DCS;const h=terrainH(x,z);if(h<1.9||inPond(x,z,.6)||caveAt(x,z,.8))continue;if(normalY(x,z)<.74)continue;const gv=vegAt(x,z,h);if(r()>grassF(gv))continue;const f=forestAt(x,z);
+ for(let k=0;k<460;k++){const x=cx*DCS+r()*DCS,z=cz*DCS+r()*DCS;const h=terrainH(x,z);if(h<1.9||inPond(x,z,.6)||caveAt(x,z,.8))continue;if(normalY(x,z)<.74)continue;const gv=vegAt(x,z,h);if(r()>grassF(gv))continue;if(r()<desAt(x,z)*.93)continue;const f=Math.max(forestAt(x,z),groveAt(x,z));
   if(r()<f*.3){if(r()<.55)F.push([x,h,z,r()*6.28,.7+r()*.7]);}else G.push([x,h,z,r()*6.28,.75+r()*.75]);}
  const grp=new THREE.Group();
  const mk=(geo,Lx)=>{if(!Lx.length)return;const im=new THREE.InstancedMesh(geo,MATV,Lx.length);im.frustumCulled=false;im.receiveShadow=true;
@@ -1222,7 +1232,7 @@ function doHit(){const t=aim.t;
  if(t.kind==='animal'){useDur();hurtAnimal(t.o,heldTool('anim')||(held()?5:3));}
  if(t.kind==='carcass')butcher(t.o);}
 function hurtAnimal(a,dmg){if(!a.alive)return;a.hp-=dmg;if(AD[a.t].pred)a.angry=true;else{a.flee=6;if(a.herd)herdT[a.herd]={t:8,x:pl.x,z:pl.z};}a.fs=Math.max(a.fs,2);a.hurt=.25;sfx('thud');
- if(a.hp<=0){a.alive=false;const c={t:a.t,x:a.x,z:a.z,ry:a.dir,mesh:a.mesh,legs:a.legs,exp:day+2,alive:true};layCarcass(c);carcasses.push(c);msg(AD[a.t].n+'を仕留めた。ナイフか斧を持って解体しよう');}}
+ if(a.hp<=0){a.alive=false;const c={t:a.t,x:a.x,z:a.z,ry:a.dir,mesh:a.mesh,legs:a.legs,exp:day+2,alive:true};layCarcass(c);carcasses.push(c);msg(AD[a.t].n+'を仕留めた。ナイフ・斧・槍を持って左クリックで解体しよう');}}
 // 近接武器を投げる: 右クリックで構え → 左クリックで投げる。当たった所・落ちた所に3Dモデルで落ちる
 let aimThrow=false;const projs=[];const THROWN={knife:1.1,axe:1.25,spear:1.6};
 function canThrow(s){return !!(s&&I[s.id].shape&&THROWN[I[s.id].shape]);}
@@ -1245,9 +1255,9 @@ function updateProjs(dt){for(let i=projs.length-1;i>=0;i--){const q=projs[i];q.t
  if(done)continue;q.g.position.copy(q.p);tmpV.copy(q.v).normalize();q.g.quaternion.setFromUnitVectors(YAX,tmpV);if(q.spin)q.g.rotateX(-q.t*15);}}
 function layCarcass(c){c.mesh.rotation.set(0,c.ry,Math.PI/2);c.mesh.position.set(c.x,terrainH(c.x,c.z)+(AD[c.t].lay),c.z);c.mesh.scale.setScalar(1);c.legs.forEach(l=>l.rotation.x=0);c.mesh.userData.ref={kind:'carcass',o:c};}
 function removeCarcass(c){c.alive=false;scene.remove(c.mesh);const i=carcasses.indexOf(c);if(i>=0)carcasses.splice(i,1);}
-function butcher(c){if(action)return;const h=held();const q=h&&KQ[h.id];if(!q){msg('解体するにはナイフか斧を手に持とう','bad');return;}
+function butcher(c){if(action)return;const h=held();const q=h&&KQ[h.id];if(!q){msg('解体するにはナイフ・斧・槍のどれかを手に持とう','bad');return;}
  startAction(`${AD[c.t].n}を解体中`,8,()=>{if(!c.alive||held()!==h)return;if(Math.hypot(c.x-pl.x,c.z-pl.z)>5){msg('死体から離れすぎた','bad');return;}
-  const B=BUTCH[c.t];for(const k in B)addItem(k,Math.max(1,Math.round(B[k]*q)));useDur(3);sfx('cut');removeCarcass(c);msg(`${AD[c.t].n}を解体した（${I[h.id].n}・収量${Math.round(q*100)}%）`,'good');},'play');}
+  const B=BUTCH[c.t]||{raw_meat:3,bone:2,hide:1};dropItems(Object.keys(B).map(k=>({id:k,n:Math.max(1,Math.round(B[k]*q))})),c.x,c.z);useDur(3);sfx('cut');removeCarcass(c);msg(`${AD[c.t].n}を解体した（${I[h.id].n}・収量${Math.round(q*100)}%）`,'good');},'play');}
 const shakes=[];function shake(e){if(shakes.some(s=>s.e===e))return;shakes.push({e,t:.2});}
 
 // placement
@@ -1433,7 +1443,7 @@ const MAPN=384;let mapBase=null;
 function buildMap(){try{const c=document.createElement('canvas');c.width=c.height=MAPN;const g=c.getContext('2d');const im=g.createImageData(MAPN,MAPN);const col=new THREE.Color(),t2=new THREE.Color();
  for(let y=0;y<MAPN;y++)for(let x=0;x<MAPN;x++){const wx=-HALF+(x+.5)*WORLD/MAPN,wz=-HALF+(y+.5)*WORLD/MAPN;const h=terrainH(wx,wz);
   if(inPond(wx,wz,0))col.set('#2c6e70');else if(h<0){const d=-h;col.set(d<.4?'#6ccfc4':d<3?'#46c8c0':d<10?'#1f8ab0':'#0f4f80');}
-  else if(h<1.5)col.set('#dccb9c');else if(normalY(wx,wz)<.7)col.set('#77736a');else{col.set('#c4a862').lerp(t2.set('#7e7e40'),forestAt(wx,wz)*.7);if(kopAt(wx,wz,1))col.set('#8e8678');}
+  else if(h<1.5)col.set('#dccb9c');else if(normalY(wx,wz)<.7)col.set('#77736a');else{col.set('#c4a862').lerp(t2.set('#7e7e40'),Math.max(forestAt(wx,wz),groveAt(wx,wz))*.8).lerp(t2.set('#e2cf9c'),desAt(wx,wz)*.85);if(kopAt(wx,wz,1))col.set('#8e8678');}
   if(h>0)col.multiplyScalar(clamp(1+(h-terrainH(wx-1.7,wz-1.7))*.12,.7,1.3));
   const i=(y*MAPN+x)*4;im.data[i]=clamp(col.r*255,0,255);im.data[i+1]=clamp(col.g*255,0,255);im.data[i+2]=clamp(col.b*255,0,255);im.data[i+3]=255;}
  g.putImageData(im,0,0);mapBase=c;}catch(e){}}
@@ -1450,7 +1460,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:26,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:27,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z,c:o.c})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
