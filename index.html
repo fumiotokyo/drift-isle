@@ -164,7 +164,7 @@ button.ghost{background:transparent;color:var(--bone);box-shadow:inset 0 0 0 2px
 'use strict';
 const $=s=>document.querySelector(s);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v;
-const SAVE_KEY='driftisle_save_v24';
+const SAVE_KEY='driftisle_save_v25';
 
 // ================= Noise =================
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
@@ -272,7 +272,8 @@ const ED={
 for(const k in ED)if(ED[k].k==='tree'||ED[k].k==='rock')ED[k].hp*=5;
 const VN={acacia:3,whistle:2,baobab:2,balanites:3,fig:2,termite:2,branch:2,sugi:3,tsubaki:3,sakura:3,sharinbai:2,driftwood:2,pebble:1,takenoko:1,take:2,shii:3,tabu:3,gajumaru:2,matsu:3,biro:3,hego:2,adan:2,sotetsu:2,ichigo:2,karamushi:2,rock:3,shore:2,outcrop:3,stick:1,stone:1,chert:1,clay:1};
 const VEIN={copper:{n:'孔雀石',ore:'copper_ore',need:1,hint:'岩肌に緑青色の染みが見える'},tin:{n:'錫石',ore:'tin_ore',need:2,hint:'黒褐色の重い粒が混じっている'},iron:{n:'赤鉄鉱',ore:'iron_ore',need:3,hint:'赤錆色の岩肌だ'}};
-const AD={impala:{n:'インパラ',hp:45,spd:8.8,tired:6.5,meat:2,hide:1,scare:46,lay:.25},zebra:{n:'シマウマ',hp:110,spd:8.2,tired:6.2,meat:5,hide:2,scare:40,lay:.36},warthog:{n:'イボイノシシ',hp:70,spd:7.2,tired:6,meat:3,hide:1,scare:30,lay:.27},giraffe:{n:'キリン',hp:300,spd:7.6,tired:6,meat:10,hide:3,scare:60,lay:.7}};
+const AD={impala:{n:'インパラ',hp:45,spd:8.8,tired:6.5,meat:2,hide:1,scare:46,lay:.25,st:1.7,herd:[6,10]},zebra:{n:'シマウマ',hp:110,spd:8.2,tired:6.2,meat:5,hide:2,scare:40,lay:.36,st:2.1,herd:[5,8]},warthog:{n:'イボイノシシ',hp:70,spd:7.2,tired:6,meat:3,hide:1,scare:30,lay:.27,st:1.1,herd:[2,4]},giraffe:{n:'キリン',hp:300,spd:7.6,tired:6,meat:10,hide:3,scare:60,lay:.7,st:3.4,herd:[2,4]},
+ lion:{n:'ライオン',hp:190,spd:10.5,tired:6.6,meat:4,hide:2,lay:.4,st:2.2,pred:1,see:48,bite:16,bcd:1.8,herd:[2,3]},hyena:{n:'ハイエナ',hp:80,spd:8.6,tired:6.8,meat:2,hide:1,lay:.3,st:1.7,pred:1,see:38,bite:7,bcd:1.6,herd:[3,4]}};
 const TIERN=['','石','銅','青銅','鉄'];
 
 // ================= Pixel icons =================
@@ -428,15 +429,16 @@ function sugi(v){const r=mulberry32(1600+v);const parts=[];const H=10+r()*3;part
  return M(parts,.06,1600+v);}
 function acacia(v,sm){const r=mulberry32(1700+v+(sm?50:0));const parts=[];const H=(sm?1.6:3.6)+r()*1.2,W=sm?1.3:3.2;const T='#4a3c30';
  const base=V3(0,-.2,0),fork=V3((r()-.5)*.6,H*.55,(r()-.5)*.6);parts.push(cyl(base,fork,sm?.09:.18,sm?.07:.13,T,6));
- for(let k=0;k<(sm?3:4);k++){const a=k*(6.283/(sm?3:4))+r()*.6,e=V3(fork.x+Math.cos(a)*W*.55,H+r()*.4,fork.z+Math.sin(a)*W*.55);parts.push(cyl(fork,e,sm?.05:.11,sm?.03:.06,T,5));
-  parts.push(P(jit(new THREE.CylinderGeometry(W*.62,W*.5,.32,8),.12,1710+k+v*5),'#4e6a2c',{x:e.x*.75,y:e.y+.25,z:e.z*.75,top:'#7a9a44'}));}
- parts.push(P(jit(new THREE.CylinderGeometry(W*.85,W*.7,.36,9),.15,1730+v),'#4a6428',{x:fork.x,y:H+.45,z:fork.z,top:'#6e9040'}));
+ for(let k=0;k<(sm?3:5);k++){const a=k*(6.283/(sm?3:5))+r()*.6,e=V3(fork.x+Math.cos(a)*W*.55,H+r()*.4,fork.z+Math.sin(a)*W*.55);parts.push(cyl(fork,e,sm?.05:.11,sm?.03:.06,T,5));}
+ for(let k=0;k<(sm?7:16);k++){const a=r()*6.283,d=Math.sqrt(r())*W*.85,cs=W*(.3+r()*.18);parts.push(clump(fork.x+Math.cos(a)*d,H+.35+r()*.35-d*.06,fork.z+Math.sin(a)*d,cs,'#3e5a24','#6e9040',1710+k+v*23,.42));}
+ parts.push(P(jit(new THREE.CylinderGeometry(W*.8,W*.65,.5,10),.15,1730+v),'#3a5422',{x:fork.x,y:H+.3,z:fork.z,top:'#5e8034'}));
  return M(parts,.07,1700+v);}
 function baobab(v){const r=mulberry32(1800+v);const parts=[];const H=5.5+r()*1.5,T='#9a8a7a';
  parts.push(P(jit(new THREE.CylinderGeometry(1.1,1.6,H,9,3),.25,1801+v),T,{y:H/2-.3,top:'#8a7a6a'}));
  for(let k=0;k<7;k++){const a=k*.9+r(),s=V3(Math.cos(a)*.6,H-.4,Math.sin(a)*.6),e=V3(Math.cos(a)*(1.6+r()*.8),H+.6+r()*1.2,Math.sin(a)*(1.6+r()*.8));parts.push(cyl(s,e,.28,.12,T,5));
   for(let q=0;q<2;q++)parts.push(cyl(e,V3(e.x+(r()-.5)*1.2,e.y+.4+r()*.5,e.z+(r()-.5)*1.2),.1,.04,T,4));
-  parts.push(P(jit(new THREE.IcosahedronGeometry(.6,0),.2,1820+k+v*9),'#5a7034',{x:e.x,y:e.y+.6,z:e.z,sy:.5,top:'#7e9a48'}));}
+  for(let q=0;q<3;q++)parts.push(clump(e.x+(r()-.5)*1.4,e.y+.5+r()*.6,e.z+(r()-.5)*1.4,.9+r()*.4,'#4a6630','#7e9a48',1820+k*5+q+v*41,.7));}
+ parts.push(clump(0,H+1.3,0,1.6,'#4a6630','#7e9a48',1890+v,.6));
  return M(parts,.06,1800+v);}
 function matsu(v){const r=mulberry32(300+v);const parts=[];const T='#6a4630';const lx=(r()-.5)*1.6,lz=(r()-.5)*1.6;const pts=[];
  for(let k=0;k<=4;k++){const t=k/4;pts.push(V3(lx*t*t,-.3+6*t,lz*t*t));}
@@ -544,12 +546,14 @@ const treeF=v=>smst(.62,.92,v),grassF=v=>smst(.1,.4,v),shrubF=v=>smst(.35,.6,v)*
 function desertAt(x,z,h){return 1-vegAt(x,z,h);}
 // ケニアのサバンナ（マサイマラ風）: ほぼ平らな草原にゆるい起伏、ところどころに花崗岩の岩山（コピエ）
 let KOP=[];
-function genKopjes(){KOP=[];const r=mulberry32(SEED+5150);let tr=0;while(KOP.length<9&&tr<3000){tr++;const x=(r()*2-1)*300,z=(r()*2-1)*300;if(KOP.some(k=>Math.hypot(k.x-x,k.z-z)<110)||Math.hypot(x,z)<40)continue;KOP.push({x,z,r:12+r()*14,H:7+r()*9,ph:r()*6.28});}}
+function genKopjes(){KOP=[];const r=mulberry32(SEED+5150);let tr=0;while(KOP.length<0&&tr<3000){tr++;const x=(r()*2-1)*300,z=(r()*2-1)*300;if(KOP.some(k=>Math.hypot(k.x-x,k.z-z)<110)||Math.hypot(x,z)<40)continue;KOP.push({x,z,r:12+r()*14,H:7+r()*9,ph:r()*6.28});}}
 function kopAt(x,z,m){for(const k of KOP)if(Math.hypot(x-k.x,z-k.z)<k.r+(m||0))return k;return null;}
 function rawHeight(x,z){
  let h=12+(fbm(x*.003+50,z*.003+50,4)-.5)*14+(fbm(x*.01+10,z*.01-30,3)-.5)*3.5;
  for(const k of KOP){const dx=x-k.x,dz=z-k.z,d=Math.hypot(dx,dz);if(d>k.r*1.25)continue;const a=Math.atan2(dz,dx),rr=k.r*(1+.18*Math.sin(3*a+k.ph)+.1*Math.sin(5*a+k.ph*2));const t=clamp(1-d/rr,0,1);
   h+=k.H*Math.pow(t,.45)*(1+.25*(fbm(x*.08+k.ph,z*.08,2)-.5));}
+ const e=Math.max(Math.abs(x),Math.abs(z))+(fbm(x*.02+11,z*.02-5,2)-.5)*24;const es=smst(285,350,e);
+ if(es>0){h+=Math.pow(es,1.3)*60;const st=9,tt=h/st,fl=Math.floor(tt),fr=tt-fl,q=clamp((fr-.55)/.45,0,1);h+=((fl+q*q*(3-2*q))*st-h)*smst(.15,.5,es)*.8;}
  return Math.max(5,h);}
 const HI=(i,j)=>heights[j*(SEG+1)+i];
 function terrainH(x,z){const fx=(x+HALF)/CELL,fz=(z+HALF)/CELL;const i=Math.floor(fx),j=Math.floor(fz);if(i<0||j<0||i>=SEG||j>=SEG)return -14;
@@ -559,7 +563,7 @@ function pondRa(p,a){return p.r*(1+p.k[0]*Math.sin(2*a+p.k[1])+p.k[2]*Math.sin(3
 function pondR(p,x,z){return pondRa(p,Math.atan2(z-p.z,x-p.x));}
 function inPond(x,z,m){for(const p of ponds)if(Math.hypot(x-p.x,z-p.z)<pondR(p,x,z)+m)return p;return null;}
 function waterLevel(x,z){const p=inPond(x,z,.3);return p?p.level:0;}
-let CLR=[];function genClearings(){CLR=[];const r=mulberry32(SEED+4242);let tr=0;while(CLR.length<14&&tr<4000){tr++;const x=(r()*2-1)*320,z=(r()*2-1)*320;if(kopAt(x,z,10)||CLR.some(c=>Math.hypot(c.x-x,c.z-z)<90))continue;CLR.push({x,z,r:6+r()*5,ph:r()*6.28});}}
+let CLR=[];function genClearings(){CLR=[];const r=mulberry32(SEED+4242);let tr=0;while(CLR.length<14&&tr<4000){tr++;const x=(r()*2-1)*250,z=(r()*2-1)*250;if(CLR.some(c=>Math.hypot(c.x-x,c.z-z)<90))continue;CLR.push({x,z,r:6+r()*5,ph:r()*6.28});}}
 function clearingAt(x,z){let v=0;for(const c of CLR){const dx=x-c.x,dz=z-c.z;if(Math.abs(dx)>c.r*1.6||Math.abs(dz)>c.r*1.6)continue;const a=Math.atan2(dz,dx),rr=c.r*(1+.22*Math.sin(3*a+c.ph)+.12*Math.sin(5*a+c.ph*2));v=Math.max(v,clamp((rr-Math.hypot(dx,dz))/2.5,0,1));}return v;}
 function forestAt(x,z){return clamp((fbm(x*.009+200,z*.009+200,4)-.52)/.2,0,1)*(1-clearingAt(x,z));}
 // caves: tunnel cut into a grid-aligned cliff. local u=lateral from tunnel centre, v=inward depth
@@ -621,7 +625,7 @@ function fillBasins(){const N=SEG+1,H=heights,L=.55,sea=new Uint8Array(N*N),q=[]
  for(let k=0;k<N*N;k++)if(H[k]<L&&!sea[k])H[k]=L;}
 function fixConnectivity(){const N=SEG+1,lock=new Uint8Array(N*N);
  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-HALF+i*CELL,z=-HALF+j*CELL;let L=i<3||j<3||i>N-4||j>N-4||inPond(x,z,1.5);
-  for(const c of caves){const p=(i-c.i0)*c.lx+(j-c.j0)*c.lz,q=(i-c.i0)*c.ix+(j-c.j0)*c.iz;if(p>=-3&&p<=6&&q>=-3&&q<=c.qm+4)L=true;}if(Math.max(Math.abs(x),Math.abs(z))>345||kopAt(x,z,3))L=true;if(L)lock[j*N+i]=1;}
+  for(const c of caves){const p=(i-c.i0)*c.lx+(j-c.j0)*c.lz,q=(i-c.i0)*c.ix+(j-c.j0)*c.iz;if(p>=-3&&p<=6&&q>=-3&&q<=c.qm+4)L=true;}if(Math.max(Math.abs(x),Math.abs(z))>275)L=true;if(L)lock[j*N+i]=1;}
  const tried=new Set();
  for(let it=0;it<150;it++){const{cm,sz}=terrComps(WALK_MS);let best=null;
   for(let k=0;k<N*N;k++){const c=cm[k];if(c===0||sz[c]<6)continue;const i=k%N,j=(k/N)|0;
@@ -630,7 +634,7 @@ function fixConnectivity(){const N=SEG+1,lock=new Uint8Array(N*N);
   if(!best)break;tried.add(best.key);buildRamp(best,lock,CELL*.6);}}
 function buildTerrain(){genKopjes();
  heights=new Float32Array((SEG+1)*(SEG+1));ponds=[];let tries=0;
- {let tr=0;while(ponds.length<9&&tr<8000){const big=ponds.length<2;tr++;const x=(rng()*2-1)*320,z=(rng()*2-1)*320;const h=rawHeight(x,z);if(h>50||kopAt(x,z,15))continue;let mx=-99,mn=99;for(let q=0;q<8;q++){const v=rawHeight(x+Math.cos(q*.785)*14,z+Math.sin(q*.785)*14);mx=Math.max(mx,v);mn=Math.min(mn,v);}if(mx-mn>(big?6:9)||mn<h-2.5)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<(big||p.big?140:60)))continue;
+ {let tr=0;while(ponds.length<9&&tr<8000){const big=ponds.length<2;tr++;const x=(rng()*2-1)*250,z=(rng()*2-1)*250;const h=rawHeight(x,z);if(h>50)continue;let mx=-99,mn=99;for(let q=0;q<8;q++){const v=rawHeight(x+Math.cos(q*.785)*14,z+Math.sin(q*.785)*14);mx=Math.max(mx,v);mn=Math.min(mn,v);}if(mx-mn>(big?6:9)||mn<h-2.5)continue;if(ponds.some(p=>Math.hypot(p.x-x,p.z-z)<(big||p.big?140:60)))continue;
   const kr=mulberry32(SEED+31*ponds.length+5),pk=[.12+kr()*.14,kr()*6.28,.08+kr()*.1,kr()*6.28,.04+kr()*.05,kr()*6.28];ponds.push(big?{x,z,k:pk,r:11+rng()*4,level:h-.5,big:1,dep:2.4}:{x,z,k:pk,r:1.4+rng()*1.3,level:h-.15,dep:.35});}}
  genCaves();
  for(let j=0;j<=SEG;j++)for(let i=0;i<=SEG;i++){const x=-HALF+i*CELL,z=-HALF+j*CELL;let h=rawHeight(x,z);
@@ -703,7 +707,7 @@ function genEntities(){
   else if(q<.07+.05*f){const p=rng();if(p<.38)push('whistle',x,z,.7+rng()*.4);else if(p<.6)push('sharinbai',x,z,.7+rng()*.4);else if(p<.8)push('karamushi',x,z);else push('ichigo',x,z);}
   else if(q<.074+.05*f)push('termite',x,z,.8+rng()*.5);}
  const sc=(t,n,cond,area)=>{let k=0,tr=0;if(!area)n=Math.round(n*AREA);area=area||[0,0,410];while(k<n&&tr<n*80){tr++;const a=rng()*6.283,rr=Math.sqrt(rng())*area[2];const x=area[0]+Math.cos(a)*rr,z=area[1]+Math.sin(a)*rr;const h=terrainH(x,z);if(inPond(x,z,1.5))continue;if(!cond(h,normalY(x,z),x,z))continue;push(t,x,z);k++;}};
- sc('rock',90,(h,ny)=>ny>.75);for(const k of KOP)for(let q=0;q<10;q++){const a=rng()*6.283,d=k.r*(.3+rng()*.9),x=k.x+Math.cos(a)*d,z=k.z+Math.sin(a)*d;push(rng()<.5?'outcrop':'rock',x,z,.9+rng()*.6);}
+ sc('rock',90,(h,ny)=>ny>.75);sc('outcrop',70,(h,ny,x,z)=>Math.max(Math.abs(x),Math.abs(z))>290&&ny>.5);sc('rock',50,(h,ny,x,z)=>Math.max(Math.abs(x),Math.abs(z))>285&&ny>.6);for(const k of KOP)for(let q=0;q<10;q++){const a=rng()*6.283,d=k.r*(.3+rng()*.9),x=k.x+Math.cos(a)*d,z=k.z+Math.sin(a)*d;push(rng()<.5?'outcrop':'rock',x,z,.9+rng()*.6);}
  veins.forEach(v=>{for(let k=0;k<5;k++){const a=rng()*6.283,d=rng()*v.r*.7;const x=v.x+Math.cos(a)*d,z=v.z+Math.sin(a)*d;if(terrainH(x,z)>1)push('outcrop',x,z,.8+rng()*.4);}});
  sc('stick',220,(h)=>h<80);sc('branch',60,(h,ny,x,z)=>h<80);sc('stone',110,(h,ny)=>h<90&&ny>.75);sc('pebble',200,(h,ny)=>h<90&&ny>.75);sc('chert',60,(h,ny)=>ny>.8&&h<60);sc('chert',50,(h,ny)=>h>3&&ny<.9);
  const sa=[SPAWN.x,SPAWN.z,24];sc('sharinbai',6,(h,ny)=>h>.8&&ny>.8,[SPAWN.x,SPAWN.z,35]);sc('stick',10,(h)=>h>.5,sa);sc('stone',8,(h)=>h>.5,sa);sc('pebble',8,(h)=>h>.3,sa);sc('chert',6,(h)=>h>.5,sa);sc('karamushi',5,(h)=>h>1.6,[SPAWN.x,SPAWN.z,40]);
@@ -766,6 +770,16 @@ function makeAnimal(t){const C=THREE;const g=new THREE.Group();let parts,legLen,
    P(new C.ConeGeometry(.035,.24,4),'#ece6d6',{x:-.13,y:.56,z:.92,rx:-.9}),P(new C.ConeGeometry(.035,.24,4),'#ece6d6',{x:.13,y:.56,z:.92,rx:-.9}),
    B(.1,.08,.1,dk,{x:-.16,y:.66,z:.8}),B(.1,.08,.1,dk,{x:.16,y:.66,z:.8}),B(.08,.12,.9,dk,{y:.95,z:.1}),B(.03,.32,.03,dk,{y:.82,z:-.52,rx:-.2})];
   legLen=.4;hipY=.42;legPos=[[-.17,-.38],[.17,-.38],[-.17,.36],[.17,.36]];}
+ else if(t==='lion'){const col='#c89a58',dk='#5a3a22';legCol=col;lw=.13;const male=rng()<.4;
+  parts=[B(.56,.6,1.5,col,{y:.98}),B(.42,.42,.5,col,{y:1.16,z:.88}),B(.26,.2,.24,'#b88a4c',{y:1.06,z:1.16}),B(.1,.08,.06,'#3a2a20',{y:1.12,z:1.29}),B(.1,.1,.06,col,{x:-.15,y:1.42,z:.84}),B(.1,.1,.06,col,{x:.15,y:1.42,z:.84}),
+   B(.05,.05,.8,col,{y:1.02,z:-1.0,rx:-.5}),B(.1,.1,.12,dk,{y:.82,z:-1.36})];
+  if(male)parts.push(P(jit(new C.IcosahedronGeometry(.42,0),.1,77),'#6a4428',{y:1.2,z:.74,sx:1.25,sy:1.2,sz:.9}));
+  legLen=.82;hipY=.82;legPos=[[-.2,-.55],[.2,-.55],[-.2,.55],[.2,.55]];}
+ else if(t==='hyena'){const col='#9a8a68',dk='#3a3226';legCol=col;lw=.1;
+  parts=[B(.44,.52,1.15,col,{y:.86,rx:-.18}),B(.36,.36,.42,col,{y:1.08,z:.7}),B(.2,.18,.26,dk,{y:.98,z:.94}),B(.12,.14,.06,col,{x:-.12,y:1.3,z:.66}),B(.12,.14,.06,col,{x:.12,y:1.3,z:.66}),
+   B(.06,.2,.5,dk,{y:1.24,z:.25,rx:-.18}),B(.06,.36,.06,dk,{y:.78,z:-.62,rx:.4})];
+  const pr=mulberry32(91);for(let q=0;q<10;q++)parts.push(B(.46,.1,.1,dk,{y:.7+pr()*.35,z:-.45+pr()*.9,rx:-.18}));
+  legLen=.72;hipY=.72;legPos=[[-.15,-.42],[.15,-.42],[-.15,.42],[.15,.42]];}
  else{const col='#d8a258',dk='#7a4824';legCol='#e0bc80';lw=.16;
   parts=[B(.9,.95,1.7,col,{y:2.05,rx:.12}),B(.3,2.2,.36,col,{y:3.05,z:.95,rx:-.38}),B(.3,.32,.62,col,{y:4.1,z:1.45,rx:.3}),B(.12,.2,.12,dk,{x:-.08,y:4.35,z:1.32}),B(.12,.2,.12,dk,{x:.08,y:4.35,z:1.32}),
    B(.05,1.6,.08,dk,{y:3.1,z:.78,rx:-.38}),B(.06,.6,.06,col,{y:1.7,z:-.86,rx:.2})];
@@ -776,9 +790,16 @@ function makeAnimal(t){const C=THREE;const g=new THREE.Group();let parts,legLen,
  const lg=M([P(new C.BoxGeometry(lw,legLen,lw),legCol,{y:-legLen/2}),P(new C.BoxGeometry(lw*1.1,.07,lw*1.2),'#2a2420',{y:-legLen+.035})],0);
  const legs=legPos.map(([x,z])=>{const pv=new THREE.Group();pv.position.set(x,hipY,z);const m=new THREE.Mesh(lg,MAT);m.castShadow=true;pv.add(m);g.add(pv);return pv;});
  return{g,legs};}
-function spawnAnimal(far){for(let k=0;k<60;k++){const x=(rng()*2-1)*380,z=(rng()*2-1)*380;const h=terrainH(x,z);if(h>80||inPond(x,z,2)||caveAt(x,z,3))continue;if(far&&Math.hypot(x-pl.x,z-pl.z)<60)continue;
- const q_=rng(),t=q_<.36?'impala':q_<.66?'zebra':q_<.9?'warthog':'giraffe';const m=makeAnimal(t);m.g.position.set(x,h,z);const a={t,x,z,hp:AD[t].hp,dir:rng()*6.28,wt:0,flee:0,fs:3,alive:true,mesh:m.g,legs:m.legs,ph:rng()*6,spd:0};
- m.g.userData.ref={kind:'animal',o:a};scene.add(m.g);animals.push(a);return;}}
+let herdN=0;const herdT={};
+function addAnimal(t,x,z,herd){const m=makeAnimal(t);m.g.position.set(x,terrainH(x,z),z);const a={t,x,z,hp:AD[t].hp,dir:rng()*6.28,wt:rng()*3,flee:0,fs:3,alive:true,mesh:m.g,legs:m.legs,ph:rng()*6,spd:0,herd,bite:0};
+ m.g.userData.ref={kind:'animal',o:a};scene.add(m.g);animals.push(a);return a;}
+function spawnHerd(t,far,cx,cz){const ad=AD[t];for(let k=0;k<80;k++){const x=cx!=null?cx+(rng()-.5)*40:(rng()*2-1)*250,z=cz!=null?cz+(rng()-.5)*40:(rng()*2-1)*250;if(!landOK(x,z))continue;if(far&&Math.hypot(x-pl.x,z-pl.z)<(ad.pred?70:90))continue;
+  const n=ad.herd[0]+Math.floor(rng()*(ad.herd[1]-ad.herd[0]+1)),h=++herdN;for(let q=0;q<n;q++){const a=rng()*6.28,r=2+rng()*7,ax=x+Math.cos(a)*r,az=z+Math.sin(a)*r;if(landOK(ax,az))addAnimal(t,ax,az,h);}return;}}
+const PREY_HERDS=[['impala',3],['zebra',2],['giraffe',1],['warthog',2]];
+function spawnAnimal(far){for(const[t,n]of PREY_HERDS){const have=new Set(animals.filter(a=>a.alive&&a.t===t).map(a=>a.herd)).size;if(have<n){spawnHerd(t,far);return;}}}
+function predatorTick(){const night=hours>=19||hours<5.5;const preds=animals.filter(a=>a.alive&&AD[a.t].pred);
+ if(night){for(const t of['lion','hyena']){if(preds.some(a=>a.t===t))continue;const wh=ponds.filter(p=>p.big);const p=wh.length&&rng()<.75?wh[Math.floor(rng()*wh.length)]:null;spawnHerd(t,true,p?p.x:null,p?p.z:null);}}
+ else for(const a of preds){if(Math.hypot(a.x-pl.x,a.z-pl.z)>60&&!a.angry){a.alive=false;scene.remove(a.mesh);}}}
 
 // ================= Game state =================
 const pl={x:0,y:5,z:0,vy:0,yaw:0,pitch:0,hp:100,food:85,water:85,warm:55,stam:100,sick:0,onG:false,swim:false,placeRot:0,eye:1.62};
@@ -790,7 +811,6 @@ const WST={clear:{cloud:.12,rain:0,storm:0,dur:[240,480],next:[['cloudy',1]],m:'
 const weatherName=()=>weather.storm>.5?'嵐':weather.rain>.35?'雨':weather.cloud>.5?'曇り':'晴れ';
 const DAYLEN=7200,REACH=3.6;
 
-// ================= Structures =================
 function makeStructMesh(t){const g=new THREE.Group();const m=new THREE.Mesh(GEO['s_'+t],MAT);m.castShadow=true;m.receiveShadow=true;g.add(m);
  if(t==='shelter'){const L=[];for(let k=0;k<10;k++){const sm=new THREE.Mesh(GEO.shelterStick,MAT);sm.position.x=-1.4+(k+.5)*.28;sm.rotation.y=(k%3-1)*.06;sm.castShadow=true;sm.visible=false;g.add(sm);L.push(sm);}g.userData.sticks=L;const LV=[];for(let k=0;k<30;k++){const row=Math.floor(k/10),col=k%10,t=.18+row*.3;const lm=new THREE.Mesh(GEO.shelterLeaf,MATV);lm.position.set(-1.35+(col+.5)*.27+(row%2)*.06,1.8-1.85*t,.14+1.4*t);lm.rotation.set(-.65,(col%3-1)*.12,(row-1)*.05);lm.castShadow=true;lm.visible=false;g.add(lm);LV.push(lm);}g.userData.leaves=LV;}
  if(SD[t].light){const f=new THREE.Group();f.add(new THREE.Mesh(new THREE.ConeGeometry(.3,.8,5),FLAME1));const f2=new THREE.Mesh(new THREE.ConeGeometry(.16,.5,5),FLAME2);f2.position.y=-.05;f.add(f2);
@@ -1196,7 +1216,7 @@ function doHit(){const t=aim.t;
    if(e.hp<=0){dropAt('stone',2);for(let k=0;k<(e.t==='outcrop'?2:1);k++)addCarry('boulder',e.x+(Math.random()-.5)*1.2,e.z+(Math.random()-.5)*1.2,Math.random()*6.28);killEnt(e);e.hp=d.hp;msg(d.n+'を砕いた。岩が残った');}return;}
   if(d.k==='shrub'){e.hp-=held()?3:2;shake(e);sfx('cut');if(Math.random()<.35)dropAt('leaf',1);if(e.hp<=0){dropAt('leaf',4+Math.floor(Math.random()*3));dropAt('stick',1+Math.floor(Math.random()*2));killEnt(e);e.hp=d.hp;msg(d.n+'をむしり取った');}return;}
   if(d.k==='bush'||d.k==='fiber'){shake(e);sfx('cut');if(Math.random()<.4)dropAt('leaf',1);return;}}
- if(t.kind==='animal'){const a=t.o;const dmg=heldTool('anim')||(held()?5:3);a.hp-=dmg;a.flee=6;a.fs=Math.max(a.fs,2);useDur();a.hurt=.25;sfx('thud');
+ if(t.kind==='animal'){const a=t.o;const dmg=heldTool('anim')||(held()?5:3);a.hp-=dmg;if(AD[a.t].pred)a.angry=true;else{a.flee=6;if(a.herd)herdT[a.herd]={t:8,x:pl.x,z:pl.z};}a.fs=Math.max(a.fs,2);useDur();a.hurt=.25;sfx('thud');
   if(a.hp<=0){a.alive=false;const c={t:a.t,x:a.x,z:a.z,ry:a.dir,mesh:a.mesh,legs:a.legs,exp:day+2,alive:true};layCarcass(c);carcasses.push(c);msg(AD[a.t].n+'を仕留めた。ナイフか斧を持って解体しよう');}}
  if(t.kind==='carcass')butcher(t.o);}
 function layCarcass(c){c.mesh.rotation.set(0,c.ry,Math.PI/2);c.mesh.position.set(c.x,terrainH(c.x,c.z)+(AD[c.t].lay),c.z);c.mesh.scale.setScalar(1);c.legs.forEach(l=>l.rotation.x=0);c.mesh.userData.ref={kind:'carcass',o:c};}
@@ -1274,8 +1294,8 @@ function updatePlayer(dt){
  {const c=inCave();if(c&&!c.seen){c.seen=1;msg('洞窟だ。ここなら雨風をしのげる','good');}}
  pl.warm+=(clamp(tw,0,100)-pl.warm)*dt*.02;
  const hot_=pl.warm>75;pl.food-=.07*dt*(sprint?1.6:1);pl.water-=.1*dt*(sprint?1.5:1)*(hot_?1.7:1);
- let dmg=0;if(pl.food<=0)dmg+=.8;if(pl.water<=0)dmg+=1.2;if(pl.warm<18)dmg+=.6;if(pl.warm>92)dmg+=.6;if(pl.sick>0){dmg+=.3;pl.sick-=dt;}
- if(dmg){pl.hp-=dmg*dt;pl.cause=pl.water<=0?'渇き':pl.food<=0?'飢え':pl.warm<18?'低体温':pl.warm>92?'熱中症':'食あたり';}
+ let dmg=0;if(pl.bleed>0){pl.bleed-=dt;dmg+=.35;}if(pl.food<=0)dmg+=.8;if(pl.water<=0)dmg+=1.2;if(pl.warm<18)dmg+=.6;if(pl.warm>92)dmg+=.6;if(pl.sick>0){dmg+=.3;pl.sick-=dt;}
+ if(dmg){pl.hp-=dmg*dt;pl.cause=pl.bleed>0?(pl.cause&&pl.cause.includes('襲われ')?pl.cause:'出血'):pl.water<=0?'渇き':pl.food<=0?'飢え':pl.warm<18?'低体温':pl.warm>92?'熱中症':'食あたり';}
  else if(pl.food>45&&pl.water>45&&pl.warm>25&&pl.warm<85)pl.hp+=.35*dt;
  pl.food=clamp(pl.food,0,100);pl.water=clamp(pl.water,0,100);pl.hp=Math.min(100,pl.hp);if(pl.hp<=0)die(pl.cause||'怪我');
  const h=held();if(h&&I[h.id].light){if(rainHit>.35){hot[sel]={id:'stick',n:1};msg('松明の火が雨で消えた','bad');invDirty=true;}else{h.d-=dt;if(h.d<=0){hot[sel]=null;msg('松明が燃え尽きた');invDirty=true;}}}
@@ -1285,16 +1305,30 @@ let animTimer=0;
 function landOK(x,z){return terrainH(x,z)>=1.2&&!inPond(x,z,1.5)&&!caveAt(x,z,1)&&Math.max(Math.abs(x),Math.abs(z))<330;}
 function fleeDir(a,base){const O=[0,.45,-.45,.9,-.9,1.35,-1.35,1.8,-1.8,2.3,-2.3,2.8,-2.8,Math.PI];
  for(const o of O){const d=base+o;let ok=true;for(const r of[2,5,9]){if(!landOK(a.x+Math.sin(d)*r,a.z+Math.cos(d)*r)){ok=false;break;}}if(ok)return d;}return base+Math.PI;}
-function updateAnimals(dt){for(const a of animals){if(!a.alive)continue;const dx=a.x-pl.x,dz=a.z-pl.z,d=Math.hypot(dx,dz);if(d>140)continue;const ad=AD[a.t];const scare=pl.sprint?ad.scare:ad.scare*(pl.crouch?.45:.75);
- if(d<scare)a.flee=Math.max(a.flee,8);let spd=0;
- if(a.flee>0){a.flee-=dt;if(a.fo==null)a.fo=(Math.random()-.5)*.7;a.rt=(a.rt||0)-dt;if(a.rt<=0||a.fdir==null){a.rt=.35;a.fdir=fleeDir(a,Math.atan2(dx,dz)+a.fo);}a.dir=a.fdir;if(a.fs>0){spd=ad.spd;a.fs-=dt;}else spd=ad.tired;}
- else{a.fo=null;a.fs=Math.min(3.5,a.fs+dt*.5);a.wt-=dt;if(a.wt<=0){a.wt=2+Math.random()*4;a.walk=Math.random()<.5;a.dir+=Math.random()*2-1;}if(a.walk)spd=1.1;}
- a.ph+=dt*(1+spd*1.4);
- if(spd){const nx=a.x+Math.sin(a.dir)*spd*dt,nz=a.z+Math.cos(a.dir)*spd*dt;const h=terrainH(nx,nz);if(h<.8||inPond(nx,nz,1)||caveAt(nx,nz,1)||Math.hypot(nx,nz)>410)a.dir+=Math.PI*.6;else{a.x=nx;a.z=nz;}}
- a.mesh.position.set(a.x,terrainH(a.x,a.z),a.z);if(a.rot==null)a.rot=a.dir;{const df=Math.atan2(Math.sin(a.dir-a.rot),Math.cos(a.dir-a.rot));a.rot+=df*Math.min(1,dt*5);}a.mesh.rotation.y=a.rot;const amp=spd?Math.min(.7,.25+spd*.07):0;
- a.legs.forEach((l,k)=>{l.rotation.x=Math.sin(a.ph*5+((k===0||k===3)?0:Math.PI))*amp;});
+function herdInfo(){const H={};for(const a of animals){if(!a.alive||!a.herd)continue;const h=H[a.herd]||(H[a.herd]={x:0,z:0,n:0});h.x+=a.x;h.z+=a.z;h.n++;}for(const k in H){H[k].x/=H[k].n;H[k].z/=H[k].n;}return H;}
+const torchLit=()=>{const h=held();return !!(h&&I[h.id].light);};
+function updateAnimals(dt){const HI_=herdInfo();for(const k in herdT){herdT[k].t-=dt;if(herdT[k].t<=0)delete herdT[k];}
+ for(const a of animals){if(!a.alive)continue;const dx=a.x-pl.x,dz=a.z-pl.z,d=Math.hypot(dx,dz);if(d>160)continue;const ad=AD[a.t];let spd=0;const hc=HI_[a.herd];
+ if(ad.pred){const night=hours>=19||hours<5.5,low=a.hp<ad.hp*.25;a.bite-=dt;
+  const scared=a.t==='hyena'&&torchLit()&&!(pl.bleed>0)&&d<14;
+  if(low||scared){a.fleeP=low?99:3;}
+  if(a.fleeP>0){a.fleeP-=dt;a.dir=fleeDir(a,Math.atan2(dx,dz));spd=a.fs>0?ad.spd:ad.tired;a.fs-=dt;}
+  else{const see=ad.see*(night?1:.25)*(pl.crouch?.6:1)+(pl.bleed>0&&a.t==='hyena'?40:0);
+   if(state!=='dead'&&(a.angry||d<see)){a.angry=true;a.dir=Math.atan2(-dx,-dz);if(d>1.7){spd=a.fs>0?ad.spd:ad.tired;a.fs-=dt;}else if(a.bite<=0){a.bite=ad.bcd;pl.hp-=ad.bite;pl.bleed=Math.max(pl.bleed||0,40);pl.cause=ad.n+'に襲われた';sfx('hurt');msg(ad.n+'に噛まれた！出血している','bad');}}
+   else{a.fs=Math.min(3,a.fs+dt*.3);a.wt-=dt;if(a.wt<=0){a.wt=3+Math.random()*5;a.walk=Math.random()<.6;a.dir+=Math.random()*2-1;if(hc&&Math.hypot(hc.x-a.x,hc.z-a.z)>8)a.dir=Math.atan2(hc.x-a.x,hc.z-a.z);}if(a.walk)spd=1.2;}}}
+ else{const scare=pl.sprint?ad.scare:ad.scare*(pl.crouch?.45:.75);
+  if(d<scare&&a.herd){herdT[a.herd]={t:8,x:pl.x,z:pl.z};}else if(d<scare)a.flee=Math.max(a.flee,8);
+  const th=a.herd&&herdT[a.herd];if(th)a.flee=Math.max(a.flee,.5);
+  if(a.flee>0){a.flee-=dt;const tx=th?th.x:pl.x,tz=th?th.z:pl.z;a.rt=(a.rt||0)-dt;
+   if(a.rt<=0||a.fdir==null){a.rt=.35;let base=hc&&th?Math.atan2(hc.x-tx,hc.z-tz):Math.atan2(a.x-tx,a.z-tz);if(hc){const cx=hc.x-a.x,cz=hc.z-a.z,cd=Math.hypot(cx,cz);if(cd>6){const ca=Math.atan2(cx,cz),df=Math.atan2(Math.sin(ca-base),Math.cos(ca-base));base+=clamp(df,-.6,.6)*.5;}}a.fdir=fleeDir(a,base);}
+   a.dir=a.fdir;if(a.fs>0){spd=ad.spd;a.fs-=dt;}else spd=ad.tired;}
+  else{a.fs=Math.min(3.5,a.fs+dt*.5);a.wt-=dt;if(a.wt<=0){a.wt=2+Math.random()*4;a.walk=Math.random()<.5;a.dir+=Math.random()*2-1;if(hc&&Math.hypot(hc.x-a.x,hc.z-a.z)>10)a.dir=Math.atan2(hc.x-a.x,hc.z-a.z);}if(a.walk)spd=1.1;}}
+ a.ph+=dt*(spd>0?spd/ad.st*Math.PI:0);
+ if(spd){const nx=a.x+Math.sin(a.dir)*spd*dt,nz=a.z+Math.cos(a.dir)*spd*dt;const h=terrainH(nx,nz);if(!landOK(nx,nz)||normalY(nx,nz)<.7)a.dir+=Math.PI*.6;else{a.x=nx;a.z=nz;}}
+ a.mesh.position.set(a.x,terrainH(a.x,a.z),a.z);if(a.rot==null)a.rot=a.dir;{const df=Math.atan2(Math.sin(a.dir-a.rot),Math.cos(a.dir-a.rot));a.rot+=df*Math.min(1,dt*5);}a.mesh.rotation.y=a.rot;const amp=spd?Math.min(.6,.22+spd*.045):0;a.amp=(a.amp||0)+(amp-(a.amp||0))*Math.min(1,dt*6);
+ a.legs.forEach((l,k)=>{l.rotation.x=Math.sin(a.ph+((k===0||k===3)?0:Math.PI))*a.amp;});
  if(a.hurt>0){a.hurt-=dt;a.mesh.scale.setScalar(1+a.hurt*.4);}else a.mesh.scale.setScalar(1);}
- animTimer-=dt;if(animTimer<=0){animTimer=15;for(let k=animals.length-1;k>=0;k--)if(!animals[k].alive)animals.splice(k,1);if(animals.length<6)spawnAnimal(true);}}
+ animTimer-=dt;if(animTimer<=0){animTimer=15;for(let k=animals.length-1;k>=0;k--)if(!animals[k].alive)animals.splice(k,1);spawnAnimal(true);predatorTick();}}
 function newDay(){for(const c of carcasses.slice())if(c.exp<=day)removeCarcass(c);
 for(const id in removed){if(removed[id]<=day){const e=ENT[id];if(Math.hypot(e.x-pl.x,e.z-pl.z)>12){e.alive=true;e.hp=ED[e.t].hp||1;if(ED[e.t].k==='clay')e.uses=4;setEntVisible(e,true);delete removed[id];}}}
  for(const id in fruitEmpty){if(fruitEmpty[id]<=day){setFruit(ENT[id],true);delete fruitEmpty[id];}}}
@@ -1367,6 +1401,7 @@ function updateAudio(dt){if(!AU.ctx)return;const C=AU.ctx,t=C.currentTime;const 
  if(!on)return;
  crackT-=dt;if(fd<8&&crackT<=0){crackT=.04+Math.random()*.25;nz('highpass',2500+Math.random()*2500,1,.14*(1-fd/8),.02);}
  birdT-=dt;if(birdT<=0){birdT=1.5+Math.random()*5;if(dl>.3&&weather.rain<.3&&pl.y>1&&!cave){const n=2+Math.floor(Math.random()*5),b=2400+Math.random()*2200,pan=Math.random()*1.6-.8,v=.025+forestAt(pl.x,pl.z)*.03;for(let k=0;k<n;k++)tn('sine',b*(1+Math.random()*.25),v,.07,k*.11,b*(1.15+Math.random()*.4),pan);}}
+ if(AU.on&&(hours>=19||hours<5.5)&&Math.random()<dt*.02){const pr=animals.find(a=>a.alive&&AD[a.t].pred);if(pr){const pan=clamp((pr.x-pl.x)/60,-1,1),v=clamp(1-Math.hypot(pr.x-pl.x,pr.z-pl.z)/220,0,1)*.25;if(pr.t==='lion')tn('sawtooth',95,v,1.4,0,60,pan);else tn('sine',320,v*.8,.8,0,900,pan);}}
  bugT-=dt;if(bugT<=0){bugT=.7+Math.random()*1.6;if(dl<.25&&weather.rain<.5&&!cave){const pan=Math.random()*1.6-.8;for(let k=0;k<6;k++)tn('sine',4500+Math.random()*300,.011,.03,k*.06,null,pan);}}}
 
 // ================= Map =================
@@ -1391,7 +1426,7 @@ function drawBigMap(){if(!mapBase)return;try{const g=$('#mapC').getContext('2d')
  const k=S/WORLD;mapMarks(g,x=>(x+HALF)*k,z=>(z+HALF)*k,1.4);g.fillStyle='#ece3cf';g.font='13px sans-serif';g.textAlign='left';g.fillText(`${day}日目`,12,22);}catch(e){}}
 
 // ================= Save / Load =================
-function save(){if(state==='menu')return;try{const data={v:24,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
+function save(){if(state==='menu')return;try{const data={v:25,seed:SEED,day,hours,era,won,spawnBed,sel,bagLv,GR,EQ,hot,armor,removed,fruitEmpty,
  pl:{x:pl.x,y:pl.y,z:pl.z,yaw:pl.yaw,pitch:pl.pitch,hp:Math.max(1,pl.hp),food:pl.food,water:pl.water,warm:pl.warm,stam:pl.stam},
  structs:structs.map(s=>({t:s.t,x:s.x,y:s.y,z:s.z,rot:s.rot,cont:s.cont,st:s.st})),cheat,gitems:gitems.map(o=>({id:o.id,n:o.n,d:o.d,x:o.x,z:o.z,c:o.c})),carries:carries.map(o=>({t:o.t,x:o.x,z:o.z,ry:o.ry})),carcasses:carcasses.map(c=>({t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp}))};localStorage.setItem(SAVE_KEY,JSON.stringify(data));}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SAVE_KEY);return r?JSON.parse(r):null;}catch(e){return null;}}
@@ -1472,7 +1507,7 @@ function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/
  if(invDirty){invDirty=false;renderHotbar();if(state==='inv'&&!drag)renderInv();}
  saveT-=dt;if(saveT<=0){saveT=20;if(playing)save();}
  renderer.render(scene,camera);}
-function updateHUD(){canvas.style.cursor=state==='play'?'none':'';for(const[k]of STATS){const v=clamp(pl[k],0,100);$('#b_'+k).style.width=v+'%';$('#v_'+k).textContent=Math.round(v);}
+function updateHUD(){{const b=pl.bleed>0;$('#vign').style.outline=b?'6px solid rgba(180,20,20,.45)':'';$('#vign').style.outlineOffset='-6px';}canvas.style.cursor=state==='play'?'none':'';for(const[k]of STATS){const v=clamp(pl[k],0,100);$('#b_'+k).style.width=v+'%';$('#v_'+k).textContent=Math.round(v);}
  $('#b_warm').style.background=pl.warm>75?'#e0603e':pl.warm<25?'#5fa0e0':'#e8c88a';
  const hh=Math.floor(hours),mm=Math.floor((hours-hh)*6)*10;$('#clock').textContent=`${day}日目　${hh}:${String(mm).padStart(2,'0')}${hours>=19||hours<5?'　夜':''}　${weatherName()}`;
  const ti=state==='play'?targetInfo():null;$('#target').innerHTML=ti?`<b>${ti[0]}</b><span>${ti[1]}</span>${ti[2]?`<i>${ti[2]}</i>`:''}`:'';
@@ -1489,13 +1524,13 @@ function startGame(data){auInit();$('#loading').style.display='block';
   data.structs.forEach(s=>addStruct(s.t,s.x,s.y,s.z,s.rot,s.cont,s.st));(data.gitems||[]).forEach(o=>addGItem(o.id,o.n,o.d,o.x,o.z,o.c));(data.carries||[]).forEach(o=>addCarry(o.t,o.x,o.z,o.ry));if(pl.carry)setCarry(pl.carry);cheat=!!data.cheat;
   (data.carcasses||[]).forEach(c=>{const m=makeAnimal(c.t);const o={t:c.t,x:c.x,z:c.z,ry:c.ry,exp:c.exp,mesh:m.g,legs:m.legs,alive:true};scene.add(m.g);layCarcass(o);carcasses.push(o);});}
  else{pl.x=SPAWN.x;pl.z=SPAWN.z;pl.y=terrainH(pl.x,pl.z)+.2;pl.yaw=Math.atan2(pl.x,pl.z);msg('ケニアのサバンナで目を覚ました…');msg('枝・小石・チャートを拾おう（F）');}
- for(let k=0;k<6;k++)spawnAnimal(false);
+ for(let k=0;k<8;k++)spawnAnimal(false);
  updateDecor();buildMap();camY=pl.y;
  $('#era').textContent=ERA[era];$('#goal').textContent=GOALS[era];$('#title').classList.remove('on');$('#bCheat').textContent='チートモード：'+(cheat?'ON':'OFF');
  state='play';invDirty=true;lock(true);},30);}
-const existing=loadSave();if(existing&&existing.v===24)$('#bCont').style.display='';
+const existing=loadSave();if(existing&&existing.v===25)$('#bCont').style.display='';
 $('#bCont').onclick=()=>startGame(loadSave());
-$('#bNew').onclick=()=>{if(existing&&existing.v===24&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
+$('#bNew').onclick=()=>{if(existing&&existing.v===25&&!confirm('保存されている島を消して新しく始めますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}startGame(null);};
 $('#bCheat').textContent='チートモード：OFF';
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';lock(true);};
 $('#bReset').onclick=()=>{if(!confirm('この島の進行をすべて消して最初からやり直しますか？'))return;try{localStorage.removeItem(SAVE_KEY);}catch(e){}state='menu';location.reload();};
