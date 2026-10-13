@@ -287,8 +287,8 @@ function aiUpdate(u,dt){const ai=u.ai;ai.think-=dt;if(ai.think<=0){ai.think=rnd(
 
 // ================= 兵の動き（見た目） =================
 function animUnit(u,dt){const v=u.vis;if(!v)return;
- if(!u.alive){v.deadT=(v.deadT||0)+dt;const k=Math.min(1,v.deadT*2.5);v.g.rotation.set(0,u.yaw,0);v.g.rotation.x=-k*Math.PI/2*.98;v.g.position.y=u.y+k*.15;if(v.deadT>9){v.g.position.y-= (v.deadT-9)*.6;}return;}
- v.g.position.set(u.x,u.y,u.z);v.g.rotation.set(0,u.yaw,0);u.ph+=dt*u.spd*1.6;const amp=Math.min(1,u.spd/4)*.7;
+ if(!u.alive){v.deadT=(v.deadT||0)+dt;const k=Math.min(1,v.deadT*2.5);v.g.rotation.set(0,u.yaw+Math.PI,0);v.g.rotation.x=-k*Math.PI/2*.98;v.g.position.y=u.y+k*.15;if(v.deadT>9){v.g.position.y-= (v.deadT-9)*.6;}return;}
+ v.g.position.set(u.x,u.y,u.z);v.g.rotation.set(0,u.yaw+Math.PI,0);u.ph+=dt*u.spd*1.6;const amp=Math.min(1,u.spd/4)*.7;
  v.legR.rotation.x=Math.sin(u.ph)*amp;v.legL.rotation.x=-Math.sin(u.ph)*amp;v.armL.rotation.x=Math.sin(u.ph)*amp*.6;v.torso.position.y=1.0+Math.abs(Math.cos(u.ph))*.04*amp;
  const w=curW(u);let ar=-.4,az=0;
  if(w==='yari'){ar=-1.45;}else if(w==='teppo'){ar=-1.5;v.armL.rotation.x=-1.4;}else if(w==='yumi'){ar=-1.5;v.armL.rotation.x=-1.5;}
