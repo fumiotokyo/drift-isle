@@ -265,7 +265,7 @@ function newUnit(team,isPlayer,name){const u={team,isPlayer,name,cls:'A',lo:null
  ai:{flag:FLAGS[0],tgt:null,think:0,strafe:Math.random()<.5?1:-1,ox:rnd(-8,8),oz:rnd(-8,8),stuck:0,detour:0,dx:0,dz:0,placeCd:rnd(2,6)}};units.push(u);return u;}
 const randLo=c=>{const C=CLS[c],o={};SLOT_K.forEach(k=>o[k]=pick(C[k]));return o;};
 function spawnUnit(u,cls,pt,lo){u.cls=cls;u.lo=lo||randLo(cls);const c=CLS[cls];u.hp=c.hp;u.alive=true;u.w=0;u.cd=0;u.reloadT=0;u.reloadW=null;u.draw=0;u.drawing=false;u.lastHit=99;u.atkT=-1;u.vy=0;u.healT=0;u.buffT=0;u.slowT=0;u.spotT=0;
- u.ammo={};u.loaded={};[u.lo.main,u.lo.sub].forEach(w=>{if(WPN[w].ammo){u.ammo[w]=WPN[w].ammo;u.loaded[w]=1;}});u.items={};[u.lo.item,u.lo.thr].forEach(k=>u.items[k]=WPN[k].cnt);
+ u.ammo={};u.loaded={};u.rlSave={};[u.lo.main,u.lo.sub].forEach(w=>{if(WPN[w].ammo){u.ammo[w]=WPN[w].ammo;u.loaded[w]=1;}});u.items={};[u.lo.item,u.lo.thr].forEach(k=>u.items[k]=WPN[k].cnt);
  const p=pt||spawnPoints(u.team)[0];u.x=p.x+rnd(-5,5);u.z=p.z+rnd(-4,4);u.y=0;u.yaw=u.team===0?0:Math.PI;u.pitch=0;
  if(!u.isPlayer){if(u.vis)scene.remove(u.vis.g);u.vis=makeSoldier(u.team,cls);scene.add(u.vis.g);setWeaponMesh(u.vis,u.lo.main);}
  else{aimOn=false;mouseR=false;setViewWeapon();}}
@@ -456,8 +456,9 @@ function setViewWeapon(){if(viewM)view.remove(viewM);const w=curW(player),W=WPN[
  else if(w==='hashigo'||w==='takeshield'){m.position.set(-.1,0,0);arm.position.set(0,-.12,.12);}
  else{m.position.set(0,.02,-.05);arm.position.set(0,-.09,.12);}
  view.add(viewM);}
-function startReload(u){const w=curW(u),W=WPN[w];if(!W.reload||u.reloadT>0||u.loaded[w]||!(u.ammo[w]>0))return;u.reloadT=W.reload;u.reloadW=w;u.rlStep=-1;if(u.isPlayer)aimOn=false;}
-function cancelReload(u){u.reloadT=0;u.reloadW=null;}
+// 装填を途中でやめたら残り時間を武器ごとに覚えておき、次はその段階から再開する
+function startReload(u){const w=curW(u),W=WPN[w];if(!W.reload||u.reloadT>0||u.loaded[w]||!(u.ammo[w]>0))return;u.rlSave=u.rlSave||{};u.reloadT=u.rlSave[w]||W.reload;delete u.rlSave[w];u.reloadW=w;u.rlStep=-1;if(u.isPlayer)aimOn=false;}
+function cancelReload(u){if(u.reloadT>0&&u.reloadW){u.rlSave=u.rlSave||{};u.rlSave[u.reloadW]=u.reloadT;}u.reloadT=0;u.reloadW=null;}
 function updatePlayer(dt){const u=player;if(!u.alive)return;const w=curW(u),W=WPN[w];
  let f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);const ml=Math.hypot(f,s);const run=keys.ShiftLeft&&f>0;if(run&&aimOn)aimOn=false;
  let sp=CLS[u.cls].spd*(run?1.4:1)*(aimOn?.55:1)*(u.drawing?.6:1)*(u.healT>0?.4:1)*(u.reloadT>0?.6:1)*(W.slow||1)*(u.buffT>0?1.2:1)*(u.slowT>0?.4:1);if(W.heavy)sp*=aimOn?0:.4;
@@ -521,7 +522,7 @@ function animView(u,w,W,dt){if(viewW!==w)setViewWeapon();let px=.32,py=-.32,pz=-
  const bob=u.spd>0?Math.sin(u.ph)*.015:0;view.position.set(0,0,0);viewM.position.set(px+bob,py+Math.abs(bob),pz);viewM.rotation.set(rx,ry,rz);}
 
 function switchSlot(i){const u=player,L=slots(u);if(L[i]===undefined||u.w===i)return;const k=L[i];if(WPN[k].item&&!(u.items[k]>0)){flashMsg('もう無い',700);return;}
- u.w=i;u.drawing=false;u.draw=0;u.healT=0;cancelReload(u);aimOn=false;setViewWeapon();}
+ cancelReload(u);u.w=i;u.drawing=false;u.draw=0;u.healT=0;aimOn=false;setViewWeapon();if(u.rlSave&&u.rlSave[k])startReload(u);}
 
 // ================= 入力 =================
 addEventListener('keydown',e=>{keys[e.code]=true;if(state!=='play')return;
