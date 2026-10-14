@@ -276,7 +276,7 @@ function buildFences(){structs.slice().forEach(removeStruct);const r=mulberry32(
 
 // ================= 兵の見た目 =================
 const SKIN='#d8b090',DARK='#2a2420',CLOTH='#3a3a44';
-function bowGeo(L,noStr){const p=[];for(let k=0;k<9;k++){const t=(k-4)/4,a=t*.9;p.push(B(.035,L*.13,.045,'#3a2a1a',{y:Math.sin(a)*L*.5,z:(Math.cos(a)-1)*-L*.17,rx:a}));}if(!noStr)p.push(B(.008,L,.008,'#f0e8d0',{z:-L*.12}));return M(p);}
+function bowGeo(L,noStr){const p=[];for(let k=0;k<9;k++){const t=(k-4)/4,a=t*.9;p.push(B(.035,L*.13,.045,'#3a2a1a',{y:Math.sin(a)*L*.5,z:(Math.cos(a)-1)*L*.17,rx:-a}));}if(!noStr)p.push(B(.008,L*.78,.008,'#f0e8d0',{z:-L*.065}));return M(p);}
 function weaponGeo(w,O){switch(w){
  case'wakizashi':return M([B(.04,.2,.05,'#2a1a10'),B(.1,.03,.09,'#8a7a40',{y:.11}),B(.02,.55,.045,'#d8dce0',{y:.4})]);
  case'uchigatana':return M([B(.04,.26,.05,'#2a1a10'),B(.12,.03,.1,'#8a7a40',{y:.14}),B(.02,.8,.05,'#d8dce0',{y:.55,rz:.03})]);
@@ -286,7 +286,7 @@ function weaponGeo(w,O){switch(w){
  case'masakari':return M([B(.06,1.4,.06,'#5a3a20',{y:.3}),B(.05,.42,.36,'#9aa0a8',{y:.86,z:.18}),B(.06,.12,.08,'#5a5a5a',{y:.86})]);
  case'kakeya':return M([B(.06,1.1,.06,'#7a5a3a',{y:.2}),CY(.16,.5,'#8a6a44',{y:.82,rx:Math.PI/2},8),CY(.165,.04,'#3a3a3a',{y:.82,z:.2,rx:Math.PI/2},8),CY(.165,.04,'#3a3a3a',{y:.82,z:-.2,rx:Math.PI/2},8)]);
  case'yumi':return bowGeo((O||WPN.yumi).len);
- case'do':return M([B(.06,.07,.75,'#6a4024',{z:.1}),B(.9,.05,.05,'#3a2a1a',{z:.42}),B(.008,.008,.9,'#f0e8d0',{z:.3,ry:Math.PI/2}),B(.04,.12,.06,'#3a2a1a',{y:-.08,z:-.12})]);
+ case'do':{const p=[B(.06,.07,.75,'#6a4024',{z:.1}),B(.9,.05,.05,'#3a2a1a',{z:.42}),B(.04,.12,.06,'#3a2a1a',{y:-.08,z:-.12}),B(.05,.03,.05,'#5a5a5a',{y:.05,z:.1})];if(!(O&&O.noStr))p.push(B(.008,.008,.9,'#f0e8d0',{z:.33,ry:Math.PI/2}));return M(p);}
  case'teppo':{const S=O||WPN.teppo,bl=S.blen*1.28,t=S.thick?.085:.06,p=[B(t,t,bl,'#2a2a2a',{z:bl/2-.29}),B(.09,.12,.75,'#6a4024',{z:-.05,y:-.03}),B(.08,.18,.3,'#6a4024',{z:-.52,y:-.08}),B(.03,.03,.1,'#8a7a40',{z:-.05,y:.06}),B(.015,.015,bl*.8,'#7a5a3a',{z:bl*.32,y:-.06}),B(.02,.03,.02,'#8a7a40',{z:bl-.31,y:t/2+.01})];
   if(S.longSight)p.push(B(.025,.05,.06,'#8a7a40',{z:.12,y:.08}),B(.02,.02,.4,'#5a4a30',{z:.3,y:.1}));if(S.thick)p.push(B(.1,.02,.05,'#8a7a40',{z:bl-.35}));return M(p);}
  case'ozutsu':{const bl=((O||WPN.ozutsu).blen||.95)*1.26;return M([CY(.09,bl,'#2a2a2a',{z:bl/2-.25,rx:Math.PI/2},8),CY(.11,.08,'#8a7a40',{z:bl-.28,rx:Math.PI/2},8),B(.16,.18,.7,'#6a4024',{z:-.15,y:-.06}),B(.12,.24,.3,'#6a4024',{z:-.6,y:-.12}), CY(.12,.06,'#8a7a40',{z:-.1,rx:Math.PI/2},8)]);}
@@ -520,17 +520,25 @@ const view=new THREE.Group();camera.add(view);let viewM=null,swingT=-1,viewW=nul
 const rlG=new THREE.Group();view.add(rlG);
 const rHay=new THREE.Mesh(M([CY(.022,.09,'#e8dcc0',{},8),B(.03,.012,.03,'#c8b890',{y:.05})]),MAT),rRod=new THREE.Mesh(M([CY(.007,.5,'#7a5a3a',{},5)]),MAT),
  rFlask=new THREE.Mesh(M([P(new THREE.SphereGeometry(.045,8,6),'#2a2420',{sy:1.2}),CY(.01,.06,'#8a7a40',{y:.06})]),MAT),
- rCord=new THREE.Mesh(M([B(.012,.012,.25,'#b8a080'),B(.016,.016,.03,'#ff4a20',{z:-.13})]),MAT),rHand=new THREE.Mesh(M([B(.09,.09,.09,SKIN),B(.1,.1,.35,'#3a3a44',{z:.2})]),MAT);
+ rCord=new THREE.Mesh(M([B(.012,.012,.25,'#b8a080'),B(.016,.016,.03,'#ff4a20',{z:-.13})]),MAT),rHand=new THREE.Mesh(M([B(.085,.085,.09,SKIN)]),MAT);
 [rHay,rRod,rFlask,rCord,rHand].forEach(m=>rlG.add(m));rlG.visible=false;
 
 // 弓の手元: 矢・右手・弦（弦は引くと曲がる2本の線）
 const bowG=new THREE.Group();view.add(bowG);bowG.visible=false;
 const bArrow=new THREE.Mesh(M([B(.012,.012,.85,'#c8a878'),P(new THREE.ConeGeometry(.016,.07,4),'#555',{z:-.46,rx:-Math.PI/2}),B(.003,.04,.1,'#f0f0f0',{z:.37})]),MAT),
- bHand=new THREE.Mesh(M([B(.06,.06,.07,SKIN),B(.2,.05,.05,'#3a3a44',{x:.13,y:-.03,z:.05,ry:-.5})]),MAT),bStr1=new THREE.Mesh(new THREE.BoxGeometry(.005,.005,1),new THREE.MeshBasicMaterial({color:0xf0e8d0})),bStr2=bStr1.clone();
+ bHand=new THREE.Mesh(M([B(.07,.07,.08,SKIN)]),MAT),bStr1=new THREE.Mesh(new THREE.BoxGeometry(.005,.005,1),new THREE.MeshBasicMaterial({color:0xf0e8d0})),bStr2=bStr1.clone();
 [bArrow,bHand,bStr1,bStr2].forEach(m=>bowG.add(m));
 const segTo=(m,a,b)=>{m.position.copy(a).add(b).multiplyScalar(.5);m.scale.set(1,1,a.distanceTo(b));m.lookAt(view.localToWorld(b.clone()));};
-function setViewWeapon(){if(viewM)view.remove(viewM);const w=curW(player),W=ws(player,w);viewW=w;viewM=new THREE.Group();const m=new THREE.Mesh(W.bow?bowGeo(W.len,true):weaponGeo(w,W),MAT);viewM.add(m);viewM.userData.m=m;
- const arm=new THREE.Mesh(M([B(.12,.12,.55,'#3a3a44',{z:.2}),B(.1,.1,.1,SKIN,{z:-.08})]),MAT);viewM.add(arm);
+// 腕: 画面の外（肩）から手まで伸びる袖。手の位置は武器ごと（viewM 内の点か、view の点）
+const armG=[0,1].map(()=>{const a=new THREE.Mesh(M([B(.075,.075,1,'#3a3a44',{z:.5}),B(.08,.025,1,'#2a2a30',{z:.5,y:.03})]),MAT),h=new THREE.Mesh(M([B(.07,.07,.085,SKIN)]),MAT);view.add(a);view.add(h);return{a,h};});
+const SHO=[new THREE.Vector3(.34,-.46,0),new THREE.Vector3(-.34,-.46,0)];
+function armTo(i,t,showHand){const A=armG[i];if(!t){A.a.visible=A.h.visible=false;return;}A.a.visible=true;A.h.visible=showHand!==false;const s=SHO[i];A.a.position.copy(s);A.a.scale.set(1,1,Math.max(.05,s.distanceTo(t)-.04));A.a.lookAt(view.localToWorld(t.clone()));A.h.position.copy(t);A.h.quaternion.copy(A.a.quaternion);}
+// 弩の弦と太矢（装填の動き）
+const xG=new THREE.Group();view.add(xG);const xStr1=new THREE.Mesh(new THREE.BoxGeometry(.005,.005,1),new THREE.MeshBasicMaterial({color:0xf0e8d0})),xStr2=xStr1.clone();
+const xBolt=new THREE.Mesh(M([B(.025,.025,.45,'#8a6a44'),P(new THREE.ConeGeometry(.03,.08,4),'#555',{z:.26,rx:Math.PI/2}),B(.005,.05,.08,'#c8b080',{z:-.18})]),MAT);[xStr1,xStr2,xBolt].forEach(m=>xG.add(m));
+const qY180=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI);
+function setViewWeapon(){if(viewM)view.remove(viewM);const w=curW(player),W=ws(player,w);viewW=w;viewM=new THREE.Group();const m=new THREE.Mesh(W.bow?bowGeo(W.len,true):weaponGeo(w,W.xbow?{noStr:1}:W),MAT);viewM.add(m);viewM.userData.m=m;
+ const arm=new THREE.Object3D();
  if(W.pole||w==='masakari'||w==='kakeya'){m.rotation.x=-Math.PI/2.3;m.position.set(0,-.1,w==='nagayari'?-.6:-.15);arm.position.set(0,-.05,.1);}
  else if(W.melee){m.rotation.set(-.5,0,-.2);}
  else if(W.bow){m.scale.setScalar(.92/W.len);m.position.set(0,.1,0);m.rotation.set(0,Math.PI,0);arm.scale.set(.5,.5,.25);arm.position.set(-.01,.1,.0);}
@@ -564,6 +572,7 @@ function updatePlayer(dt){const u=player;if(!u.alive)return;const w=curW(u),W=ws
   else if(mouseL&&!u.loaded[w]&&u.reloadT<=0&&u.ammo[w]>0){startReload(u);mouseL=false;}}
  else if(W.item&&mouseL&&u.cd<=0&&u.healT<=0){mouseL=false;
   if(!(u.items[w]>0)){flashMsg('もう無い',700);}
+  else if((W.bomb||W.proj)&&!mouseR){flashMsg('右クリック長押しで構えて、左クリックで投げる',1000);}
   else if(W.bomb){u.cd=1;u.items[w]--;swingT=0;const dir=dirV();dir.y+=.25;dir.normalize();throwBomb(u,eye(),dir.multiplyScalar(17),w);}
   else if(W.proj){u.cd=.45;u.items[w]--;swingT=0;const dir=dirV();if(W.proj==='stone'){dir.y+=.06;dir.normalize();}fireProj(u,eye(),dir,W.spd,W.dmg,W.proj,W.n);}
   else if(W.spot){u.cd=1;u.items[w]--;swingT=0;const dir=dirV();dir.y+=.05;dir.normalize();fireProj(u,eye(),dir,45,10,'kabura',W.n);}
@@ -575,14 +584,16 @@ function updatePlayer(dt){const u=player;if(!u.alive)return;const w=curW(u),W=ws
  if(u.healT>0){u.healT-=dt;const tg=u.healTgt;if(!tg||!tg.alive||Math.hypot(tg.x-u.x,tg.z-u.z)>4){u.healT=0;}else if(u.healT<=0){tg.hp=Math.min(CLS[tg.cls].hp,tg.hp+WPN.kinsoyaku.amt);u.items.kinsoyaku--;sfx('cap');if(tg!==u)flashMsg(`${tg.name}を手当てした`,900);if(!(u.items.kinsoyaku>0))switchSlot(0);}}
  if(u.reloadT>0){const RW=ws(u,u.reloadW);u.reloadT-=dt;const p=1-u.reloadT/RW.reload;if(RW.matchlock){const st=rlStep(p);if(st!==u.rlStep){u.rlStep=st;if(st>0)sfx(st===3?'ram':'click');}}
   if(u.reloadT<=0){u.loaded[u.reloadW]=1;u.ammo[u.reloadW]--;u.reloadW=null;}}
- const zoom=W.bow?(u.drawing?72-u.draw*22:72):aimOn?(W.gun?35:W.cannon?45:W.xbow?40:72)*(W.zoomM||1):72;camera.fov+=(zoom-camera.fov)*Math.min(1,dt*10);camera.updateProjectionMatrix();
+ const zoom=(W.proj||W.bomb)&&mouseR?64:W.bow?(u.drawing?72-u.draw*22:72):aimOn?(W.gun?35:W.cannon?45:W.xbow?40:72)*(W.zoomM||1):72;camera.fov+=(zoom-camera.fov)*Math.min(1,dt*10);camera.updateProjectionMatrix();
  u.eye+=((u.crouch?1.05:1.62)-u.eye)*Math.min(1,dt*10);camera.position.set(u.x,u.y+u.eye+Math.abs(Math.sin(u.ph))*.04*(u.spd>0?1:0),u.z);u.ph+=dt*u.spd*1.6;camera.rotation.set(u.pitch,u.yaw,0);
  animView(u,w,W,dt);}
-function animView(u,w,W,dt){if(viewW!==w)setViewWeapon();let px=.32,py=-.32,pz=-.55,rx=0,ry=0,rz=0;rlG.visible=false;
+function animView(u,w,W,dt){if(viewW!==w)setViewWeapon();let px=.3,py=-.26,pz=-.58,rx=0,ry=0,rz=0;rlG.visible=false;
  if(W.bow){px=-.16;py=-.22;pz=-.7;if(u.drawing){px=-.12;py=-.16;}}
  else if(W.item){px=.2;py=-.2;pz=-.5;}
- else if(W.gun||W.xbow){px=aimOn?0:.25;py=aimOn?-.14:-.25;pz=-.45;}
- else if(W.cannon){px=aimOn?0:.28;py=aimOn?-.2:-.32;pz=-.5;}
+ else if(W.gun){px=aimOn?0:.24;py=aimOn?-.14:-.2;pz=aimOn?-.45:-.5;}
+ else if(W.xbow){px=aimOn?0:.24;py=aimOn?-.13:-.2;pz=aimOn?-.42:-.52;}
+ else if((W.proj||W.bomb)&&mouseR){px=.3;py=-.1;pz=-.32;rx=.75;rz=-.2;}
+ else if(W.cannon){px=aimOn?0:.27;py=aimOn?-.2:-.25;pz=-.55;}
  if(swingT>=0){swingT+=dt/.35;const p=Math.min(1,swingT);if(W.thrust){pz-=Math.sin(p*Math.PI)*.7;}else if(W.melee){rx=-1.4+p*2.2;rz=.6-p*1.2;px-=p*.3;}else if(W.gun||W.cannon){pz+=Math.sin(p*Math.PI)*(W.cannon?.25:.12);}if(swingT>=1)swingT=-1;}
  if(W.bow&&u.drawing)pz+=.08*u.draw;
  if(u.reloadT>0&&WPN[u.reloadW]&&u.reloadW===w){const RW=W;const p=1-u.reloadT/RW.reload;
@@ -597,21 +608,36 @@ function animView(u,w,W,dt){if(viewW!==w)setViewWeapon();let px=.32,py=-.32,pz=-
    else if(st===5){rFlask.visible=lp>.3;rFlask.position.set(px-.04,py+.12,pz-.02);rFlask.rotation.z=lp>.55?1.9:0;rHand.position.set(px+.06,py+.1,pz+.1);}
    else if(st===6){rCord.visible=true;rCord.position.set(px-.25+lp*.22,py+.06,pz-.02);rCord.rotation.y=-.9;rHand.position.set(px-.29+lp*.22,py+.01,pz+.04);}
    $('#rlT').textContent=`弾込め（${st+1}/${RL_STEPS.length}）${RL_STEPS[st][1]}　あと${u.reloadT.toFixed(1)}秒`;}
-  else{px=.2;py=-.4;rx=-.6;$('#rlT').textContent=`弦を引いて矢を番える… ${u.reloadT.toFixed(1)}秒`;}
+  else{const tilt=p<.15?p/.15:p>.9?(1-p)/.1:1;px=.08;py=-.22-.06*tilt;pz=-.68;rx=-.5*tilt;ry=.55*tilt;$('#rlT').textContent=`${p<.75?'弦を引いて掛け金に掛ける':'太矢を溝に置く'}… ${u.reloadT.toFixed(1)}秒`;}
   $('#rlB').style.width=(p*100)+'%';$('#reload').style.display='block';}
  else if(u.healT>0){$('#rlT').textContent=`${u.healTgt&&u.healTgt!==u?u.healTgt.name+'を':''}金創薬で手当て中… ${u.healT.toFixed(1)}秒`;$('#rlB').style.width=((1-u.healT/WPN.kinsoyaku.time)*100)+'%';$('#reload').style.display='block';}
  else if(W.bow&&u.drawing&&u.nock<1){$('#rlT').textContent='矢をつがえる…';$('#rlB').style.width=(u.nock*100)+'%';$('#reload').style.display='block';}
  else if(W.bow&&u.drawing){$('#rlT').textContent=`引き絞り ${Math.round(u.draw*100)}%（威力 ${Math.round(W.max*(.25+.75*u.draw))}）　左クリックで放つ`;$('#rlB').style.width=(u.draw*100)+'%';$('#reload').style.display='block';}
  else $('#reload').style.display='none';
  const bob=u.spd>0?Math.sin(u.ph)*.015:0;view.position.set(0,0,0);viewM.position.set(px+bob,py+Math.abs(bob),pz);viewM.rotation.set(rx,ry,rz);
- bowG.visible=!!W.bow;if(W.bow){const L=.92,gx=px+bob,gy=py+Math.abs(bob)+.1,tz=pz-.078*L,
+ bowG.visible=!!W.bow;rHand.visible=rlG.visible;if(W.bow){const L=.92,gx=px+bob,gy=py+Math.abs(bob)+.1,tz=pz+.065*L,
    top=new THREE.Vector3(gx,gy+.39*L*2.2/2.2,tz),bot=new THREE.Vector3(gx,gy-.39*L,tz);top.y=gy+.39*L;
    const k=u.drawing?u.draw:0,n=u.drawing?u.nock:0,nockZ=tz+.04+k*.36,nock=new THREE.Vector3(gx+.015,gy,nockZ);
    if(u.drawing&&n>=1){segTo(bStr1,top,nock);segTo(bStr2,bot,nock);}else{const mid=new THREE.Vector3(gx,gy,tz);segTo(bStr1,top,mid);segTo(bStr2,bot,mid);}
    // つがえる: 腰の箙から矢を取り、弦に掛けてから引く
    const start=new THREE.Vector3(gx+.32,gy-.32,pz+.3),aimP=new THREE.Vector3(gx+.02,gy,nockZ-.425);const e=n*n*(3-2*n);
    bArrow.visible=u.drawing&&u.ammo[w]>0&&u.cd<=0;bArrow.position.copy(start).lerp(aimP,e);bArrow.rotation.set((1-e)*-1.1,(1-e)*.4,0);
-   bHand.position.set(gx+.03+(1-e)*.3,gy-.01-(1-e)*.32,(nockZ+.04)*e+(pz+.3)*(1-e));bHand.rotation.set(0,0,0);bHand.visible=u.drawing;}}
+   bHand.position.set(gx+.03+(1-e)*.3,gy-.01-(1-e)*.32,(nockZ+.04)*e+(pz+.3)*(1-e));bHand.rotation.set(0,0,0);bHand.visible=false;}
+ camera.updateMatrixWorld(true);viewM.updateMatrix();const V=(x,y,z)=>new THREE.Vector3(x,y,z).applyMatrix4(viewM.matrix);
+ // 弩: 弦（掛け金に掛かる／放つと前へ戻る）と太矢
+ xG.visible=!!W.xbow;let xHand=null;if(W.xbow){const rel=u.reloadT>0&&u.reloadW===w,p=rel?1-u.reloadT/W.reload:0,ld=u.loaded[w];
+  const sz=rel?(p<.15?-.38:p<.75?-.38+(p-.15)/.6*.28:-.1):ld?-.1:-.38,c=V(0,.02,sz);segTo(xStr1,V(.45,0,-.42),c);segTo(xStr2,V(-.45,0,-.42),c);
+  const bp=rel&&p>.75?Math.min(1,(p-.75)/.15):ld&&!rel?1:0;xBolt.visible=bp>0;if(bp>0){const a=V(.3,-.1,.1),b=V(0,.06,-.33);xBolt.position.copy(a).lerp(b,bp*bp*(3-2*bp));xBolt.quaternion.copy(viewM.quaternion).multiply(qY180);}
+  if(rel)xHand=p<.75?c:xBolt.position.clone();}
+ // 腕
+ let hr=null,hl=null,hrHand=true;
+ if(rlG.visible){hr=rHand.position.clone();hl=V(0,-.04,-.22);hrHand=false;}
+ else if(W.bow){hl=V(0,.1,0);hr=u.drawing?bHand.position.clone():new THREE.Vector3(.2,-.36,-.42);}
+ else if(W.xbow){hr=xHand||V(.06,-.08,-.08);hl=V(-.05,-.07,-.36);}
+ else if(W.gun||W.cannon){hr=V(.07,-.1,-.1);hl=V(-.06,-.08,-.5);}
+ else if(W.pole||w==='masakari'||w==='kakeya'||w==='nodachi'){hr=V(0,-.02,.04);hl=V(0,.02,-.3);}
+ else hr=V(0,-.02,.02);
+ armTo(0,hr,hrHand);armTo(1,hl);}
 
 function switchSlot(i){const u=player,L=slots(u);if(L[i]===undefined||u.w===i)return;const k=L[i];if(WPN[k].item&&!(u.items[k]>0)){flashMsg('もう無い',700);return;}
  cancelReload(u);u.w=i;u.drawing=false;u.draw=0;u.healT=0;aimOn=false;setViewWeapon();if(u.rlSave&&u.rlSave[k])startReload(u);}
