@@ -67,9 +67,9 @@ h1{font-size:64px;margin:0;letter-spacing:.2em;text-shadow:0 3px 0 #000}
 <div class="scr on" id="menu">
  <h1>天下分け目</h1><div class="sub">TENKA WAKEME ― 関ヶ原 十六対十六</div>
  <div>陣営を選ぶ</div>
- <div><button class="btn east sel" data-team="0">東軍（徳川）</button><button class="btn west" data-team="1">西軍（石田）</button></div>
+ <div><button class="btn east sel" data-team="0">東軍（攻め・徳川）</button><button class="btn west" data-team="1">西軍（守り・石田）</button></div>
  <div style="margin-top:14px"><button class="btn" id="bStart">出陣</button></div>
- <div class="help">WASD 移動 / Shift 走る（スタミナ）/ X しゃがむ / Space 跳ぶ / マウス 視点 / ホイール 持ち替え<br>左クリック 攻撃・使う / 右クリック 構える（弓は右長押しで引き絞り、左クリックで放つ）<br>1 主武器 / 2 副武器 / 3 兵科道具 / 4 投擲 / R 弾込め / Tab 戦況 / Esc 一時停止<br>中央の旗の周りに留まると占領。相手の兵力（残り兵数）を0にすれば勝ち。</div>
+ <div class="help">WASD 移動 / Shift 走る（スタミナ）/ X しゃがむ / Space 跳ぶ / マウス 視点 / ホイール 持ち替え<br>左クリック 攻撃・使う / 右クリック 構える（弓は右長押しで引き絞り、左クリックで放つ）<br>1 主武器 / 2 副武器 / 3 兵科道具 / 4 投擲 / R 弾込め / Tab 戦況 / Esc 一時停止<br>突破戦: 東軍（攻め）は陣ごとの旗をすべて奪うと次の陣へ進み、最後に西軍の本陣の旗を落とせば勝ち。西軍（守り）は攻め手の兵力（戦死で減る）を0にすれば勝ち。</div>
 </div>
 <div class="scr" id="deploy">
  <h1 style="font-size:40px">出陣の準備</h1>
@@ -94,9 +94,11 @@ const pick=L=>L[Math.floor(Math.random()*L.length)];
 const angWrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
 const TEAM=[{n:'東軍',c:0x2a5aa8,css:'#3a6ad0',lord:'徳川'},{n:'西軍',c:0xb8322a,css:'#d04a3a',lord:'石田'}];
 const HALFX=100,HALFZ=100;
-const FLAGS=[{n:'旗',x:0,z:0}];
+// 突破戦: 東軍が攻め、西軍が守る。陣（セクター）ごとの旗をすべて取ると次の陣へ。最後に本陣を落とせば攻めの勝ち
+const SECTORS=[{n:'第一陣・南の田',f:[{n:'イ',x:-32,z:48},{n:'ロ',x:32,z:48}]},{n:'第二陣・宿場町',f:[{n:'ハ',x:-42,z:0},{n:'ニ',x:42,z:0}]},{n:'第三陣・北の田',f:[{n:'ホ',x:-32,z:-48},{n:'ヘ',x:32,z:-48}]},{n:'本陣',f:[{n:'本',x:0,z:-72}]}];
+const FLAGS=[];SECTORS.forEach((S,i)=>S.f.forEach(f=>{f.sec=i;FLAGS.push(f);}));
 const BASE=[{x:0,z:88},{x:0,z:-88}];
-const CAP_R=12,TICKETS=200,TEAM_N=16;
+const CAP_R=12,TICKETS=100,SEC_BONUS=30,TEAM_N=16;let curSec=0;
 // 兵科: 4つの枠（主武器・副武器・兵科道具・投擲）を出陣前に選べる
 const CLS={
  A:{n:'侍',role:'近接',hp:130,spd:5.0,main:['nagayari','naginata','masakari','nodachi'],sub:['uchigatana','wakizashi'],item:['horagai'],thr:['ishi']},
@@ -262,11 +264,12 @@ function collideStructs(u,r){for(const s of structs){if(STD[s.kind].soft||s.ladd
   let nx=lx,nz=lz;if(px<pz)nx=Math.sign(lx||1)*(s.hw+r);else nz=Math.sign(lz||1)*(s.hd+r);const c=Math.cos(s.yaw),n=Math.sin(s.yaw);u.x=s.x+nx*c+nz*n;u.z=s.z-nx*n+nz*c;}}
 // 戦場: 中央の通り（z=0）に町家と蔵、旗の広場、両側に田畑・農家・木立・岩。毎回同じ配置（種固定）
 function buildFences(){structs.slice().forEach(removeStruct);const r=mulberry32(1600),Rr=(a,b)=>a+r()*(b-a);
- const free=(x,z,rad)=>Math.abs(x)<96&&Math.abs(z)<78&&!structs.some(s=>Math.hypot(s.x-x,s.z-z)<rad+Math.max(s.hw,s.hd)+.6);
+ const free=(x,z,rad)=>Math.abs(x)<96&&Math.abs(z)<78&&!FLAGS.some(f=>Math.hypot(f.x-x,f.z-z)<rad+6)&&!structs.some(s=>Math.hypot(s.x-x,s.z-z)<rad+Math.max(s.hw,s.hd)+.6);
  for(const sd of[-1,1]){let x=-95;while(x<92){const w=Rr(5,7.5),dp=Rr(5,6.5);if(x+w>-18&&x<18){x=18;continue;}const kura=r()<.18;addStruct(kura?'kura':'ie',x+w/2,sd*(5+dp/2),0,-1,{hw:w/2,hd:dp/2,h:kura?4.6:Rr(3.2,3.8)});x+=w+Rr(2.6,4.5);}}
  for(const sd of[-1,1]){let x=-92;while(x<90){const w=Rr(5,7),dp=Rr(5,6);if(Math.abs(x+w/2)>24&&r()<.65)addStruct(r()<.25?'kura':'ie',x+w/2,sd*(17+dp/2),0,-1,{hw:w/2,hd:dp/2,h:Rr(3.2,4)});x+=w+Rr(4,8);}}
  [[-12,-7,0],[12,7,0],[-6,11,1.57],[6,-11,1.57]].forEach(([x,z,y])=>addStruct('ishigaki',x,z,y,-1));
  addStruct('kuruma',-4,6,.4,-1);addStruct('taru',5,-5,0,-1);addStruct('wara',13,-2.5,0,-1);addStruct('kuruma',-14,2,1.4,-1);addStruct('taru',-2,-9,0,-1);addStruct('wara',2,10,0,-1);
+ [[-10,-63,0],[10,-63,0],[-17,-72,1.57],[17,-72,1.57]].forEach(([x,z,y])=>addStruct('ishigaki',x,z,y,-1));addStruct('taru',-5,-66,0,-1);addStruct('wara',6,-78,0,-1);
  for(const sd of[-1,1]){
   for(let k=0;k<4;k++){let tr=0;while(tr++<60){const x=Rr(-36,36),z=sd*Rr(32,70);if(Math.abs(x)<4)continue;if(free(x,z,6)){addStruct('noka',x,z,Rr(-.3,.3),-1,{hw:Rr(3.5,4.5),hd:Rr(2.8,3.4),h:3});break;}}}
   for(let k=0;k<24;k++){let tr=0;while(tr++<40){const x=Rr(-95,95),z=sd*Rr(26,76);if(inPaddy(x,z,1.5)||Math.abs(x)<3.5)continue;if(free(x,z,1.5)){addStruct('tree',x,z,Rr(0,6),-1,{v:r()<.5?1:0});break;}}}
@@ -331,14 +334,16 @@ const tickets=[TICKETS,TICKETS];
 function newUnit(team,isPlayer,name){const u={team,isPlayer,name,cls:'A',lo:null,x:0,z:0,y:0,vy:0,vx:0,vz:0,yaw:0,pitch:0,hp:100,alive:false,respawn:isPlayer?0:rnd(.5,3),
  w:0,cd:0,ammo:{},loaded:{},reloadT:0,reloadW:null,draw:0,drawing:false,aimT:0,kills:0,deaths:0,lastHit:99,ph:Math.random()*6,spd:0,atkT:-1,vis:null,items:{},healT:0,healTgt:null,
  buffT:0,slowT:0,spotT:0,
- ai:{flag:FLAGS[0],tgt:null,think:0,strafe:Math.random()<.5?1:-1,ox:rnd(-8,8),oz:rnd(-8,8),stuck:0,detour:0,dx:0,dz:0,placeCd:rnd(2,6)}};units.push(u);return u;}
+ ai:{flag:null,tgt:null,think:0,strafe:Math.random()<.5?1:-1,ox:rnd(-8,8),oz:rnd(-8,8),stuck:0,detour:0,dx:0,dz:0,placeCd:rnd(2,6)}};units.push(u);return u;}
 const randLo=c=>{const C=CLS[c],o={};SLOT_K.forEach(k=>o[k]=pick(C[k]));o.mods={};if(MODS[o.main]){o.mods[o.main]={};for(const k in MODS[o.main])o.mods[o.main][k]=pick(Object.keys(MODS[o.main][k].o));}o.head=Math.random()<.5?ARM_DEF[c].head:pick(Object.keys(ARM.head));o.body=Math.random()<.5?ARM_DEF[c].body:pick(Object.keys(ARM.body));return o;};
 function spawnUnit(u,cls,pt,lo){u.cls=cls;u.lo=lo||randLo(cls);const c=CLS[cls];u.hp=c.hp;u.alive=true;u.w=0;u.cd=0;u.reloadT=0;u.reloadW=null;u.draw=0;u.drawing=false;u.lastHit=99;u.atkT=-1;u.vy=0;u.healT=0;u.buffT=0;u.slowT=0;u.spotT=0;
  u.ammo={};u.loaded={};u.rlSave={};u.wsc={};u.stam=100;u.tired=false;u.crouch=false;u.eye=1.62;u.nock=0;[u.lo.main,u.lo.sub].forEach(w=>{if(WPN[w].ammo){u.ammo[w]=WPN[w].ammo;u.loaded[w]=1;}});u.items={};[u.lo.item,u.lo.thr].forEach(k=>u.items[k]=WPN[k].cnt);
- const p=pt||spawnPoints(u.team)[0];u.x=p.x+rnd(-5,5);u.z=p.z+rnd(-4,4);u.y=0;u.yaw=u.team===0?0:Math.PI;u.pitch=0;
+ const SL=spawnPoints(u.team),p=pt||(u.team===1&&SL.length>1?pick(SL.slice(1)):SL[0]);u.x=p.x+rnd(-5,5);u.z=p.z+rnd(-4,4);u.y=0;u.yaw=u.team===0?0:Math.PI;u.pitch=0;
  if(!u.isPlayer){if(u.vis)scene.remove(u.vis.g);u.vis=makeSoldier(u.team,cls,u.lo);scene.add(u.vis.g);setWeaponMesh(u.vis,u.lo.main,u);}
  else{aimOn=false;mouseR=false;setViewWeapon();}}
-function spawnPoints(t){const L=[{n:'本陣',x:BASE[t].x,z:BASE[t].z}];FLAGS.forEach(f=>{if(f.owner===t)L.push({n:f.n,x:f.x,z:f.z+(t?-6:6)});});return L;}
+// 攻め: 本陣＋今の陣と直前の陣で取った旗。守り: 本陣＋次の陣の旗（本陣の旗は除く）
+function spawnPoints(t){const L=[{n:'本陣',x:BASE[t].x,z:BASE[t].z}];FLAGS.forEach(f=>{if(f.owner!==t)return;const ok=t===0?f.sec===curSec||f.sec===curSec-1:f.sec===curSec+1&&f.sec<SECTORS.length-1;if(ok)L.push({n:f.n,x:f.x,z:f.z+(t?-6:6)});});return L;}
+function pickFlag(u){const A=FLAGS.filter(f=>f.sec===curSec);let L=u.team===0?A.filter(f=>f.owner!==0):A.filter(f=>f.owner!==1||f.n0>0);if(!L.length)L=A;u.ai.flag=pick(L);u.ai.ox=rnd(-8,8);u.ai.oz=rnd(-8,8);}
 const slots=u=>u.isPlayer?[u.lo.main,u.lo.sub,u.lo.item,u.lo.thr]:[u.lo.main,u.lo.sub];
 const curW=u=>slots(u)[u.w]||u.lo.main;
 const meleeIdx=u=>WPN[u.lo.main].melee?0:1;
@@ -346,10 +351,10 @@ const meleeIdx=u=>WPN[u.lo.main].melee?0:1;
 // ================= 戦況 =================
 let state='menu',myTeam=0,feedL=[],gameT=0,bleedT=0,aimOn=false,mouseR=false;
 function resetGame(){units.forEach(u=>{if(u.vis)scene.remove(u.vis.g);});units.length=0;arrows.forEach(a=>scene.remove(a.m));arrows.length=0;bombs.forEach(b=>scene.remove(b.m));bombs.length=0;smokes.slice().forEach(removeSmoke);
- tickets[0]=tickets[1]=TICKETS;FLAGS.forEach(f=>{f.owner=-1;f.prog=0;});gameT=0;bleedT=0;feedL=[];renderFeed();aimOn=false;buildFences();
+ tickets[0]=TICKETS;tickets[1]=0;curSec=0;FLAGS.forEach(f=>{f.owner=1;f.prog=-100;});gameT=0;bleedT=0;feedL=[];renderFeed();aimOn=false;buildFences();
  const nm=NAMES.slice().sort(()=>Math.random()-.5);let k=0;
  for(let t=0;t<2;t++)for(let i=0;i<TEAM_N;i++){if(t===myTeam&&i===0){player=newUnit(t,true,'あなた');player.lo=selLo[selCls];player.cls=selCls;continue;}const u=newUnit(t,false,nm[k++%nm.length]);u.cls=CLS_KEYS[i%4];}}
-function killUnit(u,by,head,wn){if(!u.alive)return;u.alive=false;u.deaths++;u.respawn=u.isPlayer?7:rnd(6,9);tickets[u.team]=Math.max(0,tickets[u.team]-1);
+function killUnit(u,by,head,wn){if(!u.alive)return;u.alive=false;u.deaths++;u.respawn=u.isPlayer?7:u.team?rnd(10,13):rnd(6,9);if(u.team===0)tickets[0]=Math.max(0,tickets[0]-1);
  if(by){by.kills++;addFeed(by,u,head,wn);}if(u.vis){u.vis.deadT=0;u.vis.mark.visible=false;}
  if(u.isPlayer){aimOn=false;mouseR=false;openDeploy();}if(by&&by.isPlayer){flashMsg((head?'討ち取った！（頭）':'討ち取った！'),900);}}
 function damage(u,dmg,by,head,wn,gun,pierce){if(!u.alive||(by&&by.team===u.team))return;const H=u.lo?ARM.head[u.lo.head]:null,Bd=u.lo?ARM.body[u.lo.body]:null;
@@ -361,14 +366,15 @@ function damage(u,dmg,by,head,wn,gun,pierce){if(!u.alive||(by&&by.team===u.team)
 function addFeed(a,b,head,wn){feedL.unshift(`<span style="color:${TEAM[a.team].css}">${a.name}</span> 〔${wn||WPN[curW(a)].n}${head?'・頭':''}〕 <span style="color:${TEAM[b.team].css}">${b.name}</span>`);feedL=feedL.slice(0,6);renderFeed();}
 function renderFeed(){$('#feed').innerHTML=feedL.join('<br>');}
 let msgT=0;function flashMsg(t,ms){const m=$('#msg');m.textContent=t;m.style.opacity=1;clearTimeout(msgT);msgT=setTimeout(()=>m.style.opacity=0,ms||1500);}
-function updateFlags(dt){FLAGS.forEach(f=>{const n=[0,0];units.forEach(u=>{if(u.alive&&Math.hypot(u.x-f.x,u.z-f.z)<CAP_R)n[u.team]++;});f.n0=n[0];f.n1=n[1];
-  const d=n[0]-n[1];if(d!==0){const r=Math.min(3,Math.abs(d))*7*dt*Math.sign(d);f.prog=clamp(f.prog+r,-100,100);
-   if(f.owner===1&&f.prog>0||f.owner===0&&f.prog<0){const lost=f.owner;f.owner=-1;if(lost===myTeam)flashMsg(`旗が奪われた`);}
-   if(f.prog>=100&&f.owner!==0){f.owner=0;flashMsg(`${TEAM[0].n}が旗を占領`);sfx('cap');}
-   if(f.prog<=-100&&f.owner!==1){f.owner=1;flashMsg(`${TEAM[1].n}が旗を占領`);sfx('cap');}}
-  f.mat.color.setHex(f.owner<0?0xdddddd:TEAM[f.owner].c);f.ring.material.color.setHex(f.owner<0?0xffffff:TEAM[f.owner].c);f.ban.rotation.z=Math.sin(gameT*2+f.x)*.06;});
- bleedT+=dt;if(bleedT>3){bleedT=0;const o=FLAGS[0].owner;if(o>=0)tickets[1-o]=Math.max(0,tickets[1-o]-1);}
- if(tickets[0]<=0||tickets[1]<=0)endGame(tickets[0]<=0?1:0);}
+function updateFlags(dt){FLAGS.forEach(f=>{const act=f.sec===curSec,n=[0,0];units.forEach(u=>{if(act&&u.alive&&Math.hypot(u.x-f.x,u.z-f.z)<CAP_R)n[u.team]++;});f.n0=n[0];f.n1=n[1];
+  const d=n[0]-n[1];if(act&&d!==0){const r=Math.min(3,Math.abs(d))*7*dt*Math.sign(d);f.prog=clamp(f.prog+r,-100,100);
+   if(f.owner===1&&f.prog>0||f.owner===0&&f.prog<0){const lost=f.owner;f.owner=-1;if(lost===myTeam)flashMsg(`旗「${f.n}」が奪われかけている`);}
+   if(f.prog>=100&&f.owner!==0){f.owner=0;flashMsg(`${TEAM[0].n}が旗「${f.n}」を占領`);sfx('cap');}
+   if(f.prog<=-100&&f.owner!==1){f.owner=1;flashMsg(`${TEAM[1].n}が旗「${f.n}」を奪い返した`);sfx('cap');}}
+  f.mat.color.setHex(f.owner<0?0xdddddd:TEAM[f.owner].c);f.ring.material.color.setHex(f.owner<0?0xffffff:TEAM[f.owner].c);f.ring.visible=act;f.ban.rotation.z=Math.sin(gameT*2+f.x)*.06;});
+ const S=SECTORS[curSec];if(S.f.every(f=>f.owner===0)){if(curSec===SECTORS.length-1){endGame(0);return;}S.f.forEach(f=>f.prog=100);curSec++;tickets[0]+=SEC_BONUS;
+  flashMsg(`${S.n}を突破！ 次は${SECTORS[curSec].n}`+(myTeam?'へ退け':'へ攻め上がれ'),3500);sfx('horn');units.forEach(u=>{if(u.ai)u.ai.flag=null;});}
+ if(tickets[0]<=0)endGame(1);}
 
 // ================= 飛び道具（矢・太矢・石・手裏剣・鏑矢）=================
 const arrows=[];
@@ -466,11 +472,13 @@ function placeStruct(u,kind,yaw){const key=kind==='take'?'takeshield':kind;if(!(
 function aiUpdate(u,dt){const ai=u.ai;ai.think-=dt;if(ai.think<=0){ai.think=rnd(.35,.6);aiThink(u);}
  const w=curW(u),W=ws(u,w);let mx=0,mz=0,run=true,face=null;
  const t=ai.tgt&&ai.tgt.alive?ai.tgt:null;let engaged=false;
+ // 目標の旗（今の陣）。撃ち合い中も旗の外にいれば少しずつ旗へ寄る
+ if(!ai.flag||ai.flag.sec!==curSec||Math.random()<dt*.05)pickFlag(u);const fl=ai.flag,fdx=fl.x+ai.ox-u.x,fdz=fl.z+ai.oz-u.z,fd=Math.hypot(fdx,fdz)||1;
  if(t){const dx=t.x-u.x,dz=t.z-u.z,d=Math.hypot(dx,dz);face=Math.atan2(-dx,-dz);
   if(W.melee){engaged=d<W.range+2;if(d>W.range*.8){mx=dx/d;mz=dz/d;}else{mx=dz/d*ai.strafe*.3;mz=-dx/d*ai.strafe*.3;run=false;}
    if(d<W.range&&u.cd<=0&&Math.abs(angWrap(face-u.yaw))<.4){u.cd=W.cd*rnd(1,1.4);u.atkT=0;meleeHit(u,u.yaw,w);}}
   else{const want=W.gun?rnd(30,65):W.cannon?rnd(25,50):rnd(25,55);run=false;
-   if(d>want+15){mx=dx/d;mz=dz/d;run=true;}else if(d<12){mx=-dx/d;mz=-dz/d;run=true;}else{mx=dz/d*ai.strafe*.25;mz=-dx/d*ai.strafe*.25;engaged=true;}
+   if(d>want+15){mx=dx/d;mz=dz/d;run=true;}else if(d<12){mx=-dx/d;mz=-dz/d;run=true;}else{mx=dz/d*ai.strafe*.25;mz=-dx/d*ai.strafe*.25;engaged=true;if(fd>CAP_R*.6){mx+=fdx/fd*.7;mz+=fdz/fd*.7;}}
    const o=new THREE.Vector3(u.x,u.y+1.5,u.z),aimed=Math.abs(angWrap(face-u.yaw))<.15&&!smokeBlocks(u,t);
    if(W.gun||W.cannon||W.xbow){if(u.loaded[w]){u.aimT+=dt;if(u.aimT>rnd(1.0,2.2)&&aimed){u.aimT=0;u.loaded[w]=0;u.atkT=0;
       if(W.gun){const tg=new THREE.Vector3(t.x+rnd(-.1,.1),t.y+rnd(.9,1.75),t.z);const dir=tg.sub(o).normalize();const err=W.acc[0]*4+d*.00045;dir.x+=rnd(-err,err);dir.y+=rnd(-err,err);dir.z+=rnd(-err,err);dir.normalize();shootRay(u,o,dir,W);}
@@ -479,7 +487,7 @@ function aiUpdate(u,dt){const ai=u.ai;ai.think-=dt;if(ai.think<=0){ai.think=rnd(
     else if(u.ammo[w]>0){if(u.reloadT<=0){u.reloadT=W.reload;u.reloadW=w;}mx*=.3;mz*=.3;}}
    else if(W.bow){if(u.ammo[w]>0&&u.cd<=0){u.drawing=true;u.draw=Math.min(1,u.draw+dt/W.draw);if(u.draw>=rnd(.7,1)&&aimed){const k=u.draw;u.drawing=false;u.draw=0;u.cd=W.cd+rnd(.3,.8);u.ammo[w]--;
       const sp=W.spd*(.4+.6*k);fireProj(u,o,lobDir(u,t,sp,o,.025),sp,W.max*(.25+.75*k),'arrow',W.n,W.pierce);u.atkT=0;}}}}}
- else{u.drawing=false;u.draw=0;const f=ai.flag,tx=f.x+ai.ox,tz=f.z+ai.oz,dx=tx-u.x,dz=tz-u.z,d=Math.hypot(dx,dz);if(d>2.5){mx=dx/d;mz=dz/d;run=d>15;}}
+ else{u.drawing=false;u.draw=0;if(fd>2.5){mx=fdx/fd;mz=fdz/fd;run=fd>15;}}
  if(ai.detour>0){ai.detour-=dt;mx+=ai.dx*1.5;mz+=ai.dz*1.5;}
  // 前に建物や岩があれば、その壁に沿って回り込む
  {const ml0=Math.hypot(mx,mz);if(ml0>.2){const dx=mx/ml0,dz=mz/ml0,rs=rayStruct(new THREE.Vector3(u.x,.9,u.z),new THREE.Vector3(dx,0,dz),3.5);
@@ -683,23 +691,23 @@ function drawMap(g,S){g.clearRect(0,0,S,S);g.fillStyle='rgba(60,80,40,.9)';g.fil
  BASE.forEach((b,t)=>{const[x,y]=mapXY(b.x,b.z,S);g.fillStyle=TEAM[t].css;g.fillRect(x-26*k,y-5*k,52*k,10*k);});
  for(const s of structs){if(s.kind==='yakuro'||s.kind==='hashigo')continue;const[x,y]=mapXY(s.x,s.z,S);g.save();g.translate(x,y);g.rotate(-s.yaw);g.fillStyle=STD[s.kind].bld?(s.kind==='kura'?'#e8e4d8':s.kind==='noka'?'#b8a060':'#5a4a3e'):s.kind==='tree'?'#2e5a2a':s.kind==='rock'||s.kind==='ishigaki'?'#8a8880':s.kind==='take'?'#c8d080':s.ladder?'#e0c070':'#a08060';g.fillRect(-s.hw*k,-Math.max(1,s.hd*k),s.hw*2*k,Math.max(2,s.hd*2*k));g.restore();}
  for(const s of smokes){const[x,y]=mapXY(s.x,s.z,S);g.fillStyle='rgba(230,230,225,.6)';g.beginPath();g.arc(x,y,s.r*k,0,6.283);g.fill();}
- FLAGS.forEach(f=>{const[x,y]=mapXY(f.x,f.z,S);g.strokeStyle='rgba(255,255,255,.4)';g.beginPath();g.arc(x,y,CAP_R*k,0,6.283);g.stroke();g.fillStyle=f.owner<0?'#ddd':TEAM[f.owner].css;g.beginPath();g.arc(x,y,7,0,6.283);g.fill();g.fillStyle='#111';g.font='bold 10px serif';g.textAlign='center';g.textBaseline='middle';g.fillText(f.n,x,y+1);});
+ FLAGS.forEach(f=>{const[x,y]=mapXY(f.x,f.z,S);g.globalAlpha=f.sec===curSec?1:.4;if(f.sec===curSec){g.strokeStyle='rgba(255,255,255,.6)';g.beginPath();g.arc(x,y,CAP_R*k,0,6.283);g.stroke();}g.fillStyle=f.owner<0?'#ddd':TEAM[f.owner].css;g.beginPath();g.arc(x,y,7,0,6.283);g.fill();g.fillStyle='#111';g.font='bold 10px serif';g.textAlign='center';g.textBaseline='middle';g.fillText(f.n,x,y+1);g.globalAlpha=1;});
  for(const u of units){if(!u.alive)continue;const spotted=u.spotT>0&&u.spotBy===myTeam;const vis=u.team===myTeam||spotted||Math.hypot(u.x-player.x,u.z-player.z)<40;if(!vis)continue;const[x,y]=mapXY(u.x,u.z,S);
   if(u.isPlayer){g.fillStyle='#ffe08a';g.save();g.translate(x,y);g.rotate(-u.yaw);g.beginPath();g.moveTo(0,-6);g.lineTo(4,4);g.lineTo(-4,4);g.closePath();g.fill();g.restore();}
   else{g.fillStyle=TEAM[u.team].css;g.fillRect(x-2,y-2,4,4);if(spotted&&u.team!==myTeam){g.strokeStyle='#ff3a2a';g.strokeRect(x-4,y-4,8,8);}}}}
-function renderBoard(){const h=[0,1].map(t=>{const L=units.filter(u=>u.team===t).sort((a,b)=>b.kills-a.kills);return`<table><tr><th style="color:${TEAM[t].css}">${TEAM[t].n}（${TEAM[t].lord}）残 ${tickets[t]}</th><th>兵科</th><th>討</th><th>死</th></tr>`+
+function renderBoard(){const h=[0,1].map(t=>{const L=units.filter(u=>u.team===t).sort((a,b)=>b.kills-a.kills);return`<table><tr><th style="color:${TEAM[t].css}">${TEAM[t].n}（${TEAM[t].lord}）${t?'守り':'攻め 残 '+tickets[t]}</th><th>兵科</th><th>討</th><th>死</th></tr>`+
  L.map(u=>`<tr class="${u.isPlayer?'me':''}"><td>${u.name}</td><td>${CLS[u.cls].n}</td><td>${u.kills}</td><td>${u.deaths}</td></tr>`).join('')+'</table>';});$('#board').innerHTML=h.join('');}
 function endGame(win){if(state==='end')return;state='end';if(document.pointerLockElement)document.exitPointerLock();$('#deploy').classList.remove('on');
- $('#endT').textContent=win===myTeam?'勝利！':'敗北…';$('#endT').style.color=TEAM[win].css;$('#endS').textContent=`${TEAM[win].n}（${TEAM[win].lord}方）の勝ち ／ あなた ${player.kills}討 ${player.deaths}死`;$('#end').classList.add('on');sfx('horn');}
-function updateHud(){$('#tk0').textContent=`東軍 ${tickets[0]}`;$('#tk1').textContent=`西軍 ${tickets[1]}`;
- $('#flags').innerHTML='<div style="display:flex;gap:6px">'+FLAGS.map(f=>{const p=Math.abs(f.prog),c=f.prog>0?TEAM[0].css:f.prog<0?TEAM[1].css:'#888';return`<div class="fl" style="border-color:${f.owner<0?'#fff':TEAM[f.owner].css}"><i style="height:${p}%;background:${c}"></i><span>${f.n}</span></div>`;}).join('')+'</div>';
+ $('#endT').textContent=win===myTeam?'勝利！':'敗北…';$('#endT').style.color=TEAM[win].css;$('#endS').textContent=(win===0?`${TEAM[0].n}が${TEAM[1].n}の本陣を落とした`:`${TEAM[1].n}が守り抜いた（攻め手の兵力が尽きた）`)+` ／ あなた ${player.kills}討 ${player.deaths}死`;$('#end').classList.add('on');sfx('horn');}
+function updateHud(){$('#tk0').textContent=`攻め 東軍 ${tickets[0]}`;$('#tk1').textContent=`守り 西軍 ${curSec+1}/${SECTORS.length}陣`;
+ $('#flags').innerHTML='<div style="display:flex;gap:6px"><span style="align-self:center;font-size:14px;color:#fff;font-weight:bold;text-shadow:0 0 4px #000,0 0 2px #000">'+SECTORS[curSec].n+'</span>'+FLAGS.filter(f=>f.sec===curSec).map(f=>{const p=Math.abs(f.prog),c=f.prog>0?TEAM[0].css:f.prog<0?TEAM[1].css:'#888';return`<div class="fl" style="border-color:${f.owner<0?'#fff':TEAM[f.owner].css}"><i style="height:${p}%;background:${c}"></i><span>${f.n}</span></div>`;}).join('')+'</div>';
  const u=player,mx=CLS[u.cls].hp;$('#hptxt').textContent=`${CLS[u.cls].n}（${CLS[u.cls].role}）体力 ${Math.max(0,Math.ceil(u.hp))} / ${mx}`+(u.buffT>0?'　奮起中':'');$('#hpbar i').style.width=clamp(u.hp/mx*100,0,100)+'%';$('#hpbar i').style.background=u.hp/mx<.3?'#e05a4a':'#e8e0c8';$('#stbar i').style.width=(u.stam||0)+'%';$('#stbar i').style.background=u.tired?'#c87a4a':'#a8d070';
  const w=curW(u),W=WPN[w];$('#ammoN').innerHTML=W.bow?`${u.ammo[w]}<small> 本</small>`:W.ammo?`${u.loaded[w]?1:0}<small> / ${u.ammo[w]}</small>`:W.item?`${u.items[w]||0}`:'';
  $('#wname').textContent=W.n+(aimOn?'（構え）':'')+(W.heavy?'　重い（構え中は動けない）':'')+(W.bow?'　右長押しで引く・左で放つ':'');
  $('#slots').innerHTML=slots(u).map((k,i)=>{const X=WPN[k];const cnt=X.bow?`${u.ammo[k]}`:X.ammo?`${(u.loaded[k]?1:0)+(u.ammo[k]||0)}`:X.item?`×${u.items[k]||0}`:'';const out=X.item&&!u.items[k];
   return`<div class="sl${i===u.w?' on':''}${out?' out':''}"><span class="k">${i+1}</span>${X.n}<span class="c">${cnt}</span></div>`;}).join('');
- const f=FLAGS.find(f=>Math.hypot(f.x-u.x,f.z-u.z)<CAP_R);const cap=$('#cap');if(f&&u.alive){cap.style.display='block';const mine=myTeam===0?f.prog:-f.prog;
-  $('#captxt').textContent=`旗 味方${myTeam?f.n1:f.n0}・敵${myTeam?f.n0:f.n1}`+(f.owner===myTeam?'（自軍）':mine>0?'（占領中）':'（奪取中）');const bi=$('#capbar i');bi.style.background=f.prog>0?TEAM[0].css:TEAM[1].css;
+ const f=FLAGS.find(f=>f.sec===curSec&&Math.hypot(f.x-u.x,f.z-u.z)<CAP_R);const cap=$('#cap');if(f&&u.alive){cap.style.display='block';const mine=myTeam===0?f.prog:-f.prog;
+  $('#captxt').textContent=`旗「${f.n}」 味方${myTeam?f.n1:f.n0}・敵${myTeam?f.n0:f.n1}`+(f.owner===myTeam?'（自軍）':mine>0?'（占領中）':'（奪取中）');const bi=$('#capbar i');bi.style.background=f.prog>0?TEAM[0].css:TEAM[1].css;
   bi.style.width=Math.abs(f.prog)/2+'%';bi.style.left=f.prog>=0?'50%':(50-Math.abs(f.prog)/2)+'%';}else cap.style.display='none';
  drawMap($('#mini').getContext('2d'),170);}
 // 薬籠の回復・梯子の後始末・兵の一時効果
@@ -739,7 +747,7 @@ let last=performance.now(),hudT=0;
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(.05,(now-last)/1000);last=now;
  if(state==='play'||state==='deploy'){gameT+=dt;
   for(const u of units){u.cd-=dt;u.lastHit+=dt;if(u.alive&&u.lastHit>8&&u.hp<CLS[u.cls].hp)u.hp=Math.min(CLS[u.cls].hp,u.hp+6*dt);
-   if(!u.alive){u.respawn-=dt;if(!u.isPlayer&&u.respawn<=0&&tickets[u.team]>0){const L=spawnPoints(u.team);const p=L.length>1&&Math.random()<.6?L[1]:L[0];spawnUnit(u,pick(CLS_KEYS),p);}}
+   if(!u.alive){u.respawn-=dt;if(!u.isPlayer&&u.respawn<=0&&(u.team===1||tickets[0]>0)){const L=spawnPoints(u.team);const p=L.length>1&&Math.random()<.7?pick(L.slice(1)):L[0];spawnUnit(u,pick(CLS_KEYS),p);}}
    else if(!u.isPlayer)aiUpdate(u,dt);
    animUnit(u,dt);}
   if(state==='play')updatePlayer(dt);else if(state==='deploy'&&$('#deploy').classList.contains('on')){if(Math.floor(player.respawn+dt)!==Math.floor(player.respawn))renderDeploy();
