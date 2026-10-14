@@ -30,6 +30,7 @@ h1{font-size:64px;margin:0;letter-spacing:.2em;text-shadow:0 3px 0 #000}
 #cap{position:absolute;top:64px;left:50%;transform:translateX(-50%);width:260px;text-align:center;font-size:15px;display:none;text-shadow:0 1px 0 #000}
 #capbar{height:8px;background:rgba(0,0,0,.5);margin-top:4px;position:relative}#capbar i{position:absolute;top:0;bottom:0;left:50%;width:0}
 #hp{position:absolute;left:20px;bottom:16px;width:190px;font-size:14px;text-shadow:0 1px 0 #000}
+#stbar{height:5px;background:rgba(0,0,0,.5);margin-top:3px}#stbar i{display:block;height:100%;width:100%;background:#a8d070}
 #hpbar{height:10px;background:rgba(0,0,0,.55);margin-top:3px;border:1px solid rgba(240,230,200,.5)}#hpbar i{display:block;height:100%;background:#e8e0c8;width:100%;transition:width .15s}
 #ammo{position:absolute;right:20px;bottom:16px;text-align:right;font-size:15px;text-shadow:0 1px 0 #000}
 #ammo b{font-size:34px}#ammo small{font-size:16px;opacity:.75}
@@ -58,7 +59,7 @@ h1{font-size:64px;margin:0;letter-spacing:.2em;text-shadow:0 3px 0 #000}
  <div id="top"><div class="tk" id="tk0">東軍 0</div><div id="flags"></div><div class="tk" id="tk1">西軍 0</div></div>
  <div id="cap"><div id="captxt"></div><div id="capbar"><i></i></div></div>
  <div id="feed"></div><div id="msg"></div><div id="reload"><span id="rlT"></span><i id="rlB"></i></div>
- <div id="hp"><div id="hptxt"></div><div id="hpbar"><i></i></div></div>
+ <div id="hp"><div id="hptxt"></div><div id="hpbar"><i></i></div><div id="stbar"><i></i></div></div>
  <div id="ammo"><div id="wname"></div><b id="ammoN"></b><div id="slots"></div></div>
 </div>
 <div id="board"></div>
@@ -67,7 +68,7 @@ h1{font-size:64px;margin:0;letter-spacing:.2em;text-shadow:0 3px 0 #000}
  <div>陣営を選ぶ</div>
  <div><button class="btn east sel" data-team="0">東軍（徳川）</button><button class="btn west" data-team="1">西軍（石田）</button></div>
  <div style="margin-top:14px"><button class="btn" id="bStart">出陣</button></div>
- <div class="help">WASD 移動 / Shift 走る / Space 跳ぶ / マウス 視点<br>左クリック 攻撃・使う / 右クリック 構える（弓は右長押しで引き絞り、左クリックで放つ）<br>1 主武器 / 2 副武器 / 3 兵科道具 / 4 投擲 / R 弾込め / Tab 戦況 / Esc 一時停止<br>中央の旗の周りに留まると占領。相手の兵力（残り兵数）を0にすれば勝ち。</div>
+ <div class="help">WASD 移動 / Shift 走る（スタミナ）/ X しゃがむ / Space 跳ぶ / マウス 視点<br>左クリック 攻撃・使う / 右クリック 構える（弓は右長押しで引き絞り、左クリックで放つ）<br>1 主武器 / 2 副武器 / 3 兵科道具 / 4 投擲 / R 弾込め / Tab 戦況 / Esc 一時停止<br>中央の旗の周りに留まると占領。相手の兵力（残り兵数）を0にすれば勝ち。</div>
 </div>
 <div class="scr" id="deploy">
  <h1 style="font-size:40px">出陣の準備</h1>
@@ -110,9 +111,9 @@ const WPN={
  nagayari:{n:'長槍',melee:1,dmg:40,range:4.6,cd:1.1,ang:.4,thrust:1,pole:1,d:'届く距離が最も長い。突き'},
  naginata:{n:'薙刀',melee:1,dmg:46,range:3.3,cd:.95,ang:1.0,pole:1,d:'広く薙ぎ払う'},
  masakari:{n:'大斧（鉞）',melee:1,dmg:80,range:2.6,cd:1.7,ang:.7,sdmg:120,slow:.85,d:'一撃が重い。柵も削れる'},
- nodachi:{n:'大太刀',melee:1,dmg:62,range:3.0,cd:1.25,ang:.8,slow:.9,d:'長く重い太刀'},
- uchigatana:{n:'打刀',melee:1,dmg:40,range:2.5,cd:.7,ang:.7,d:'普通の日本刀。脇差より長い'},
- wakizashi:{n:'脇差',melee:1,dmg:30,range:2.1,cd:.55,ang:.7,d:'短く素早い'},
+ nodachi:{n:'大太刀',melee:1,dmg:48,range:3.0,cd:1.25,ang:.8,slow:.9,d:'長く重い太刀'},
+ uchigatana:{n:'打刀',melee:1,dmg:30,range:2.5,cd:.7,ang:.7,d:'普通の日本刀。脇差より長い'},
+ wakizashi:{n:'脇差',melee:1,dmg:22,range:2.1,cd:.55,ang:.7,d:'短く素早い'},
  kakeya:{n:'掛矢（大槌）',melee:1,dmg:55,range:2.4,cd:1.5,ang:.7,sdmg:230,slow:.85,d:'門や柵を打ち壊す木の大槌'},
  // 鉄砲・大筒（matchlock=史実の装填手順）
  teppo:{n:'火縄銃',gun:1,matchlock:1,dmg:45,ammo:20,reload:20,range:160,acc:[.003,.03],d:'標準の火縄銃。装填20秒'},
@@ -135,6 +136,15 @@ const WPN={
  horoku:{n:'焙烙玉',item:1,bomb:1,dmg:110,rad:7,sdmg:200,fuse:2.6,cnt:2,d:'2.6秒で爆発'},
  kemuri:{n:'煙玉',item:1,bomb:1,smoke:1,fuse:1.2,cnt:2,d:'18秒間、煙で視界をさえぎる'},
  shuriken:{n:'手裏剣',item:1,proj:'shuriken',dmg:22,spd:38,cnt:6,d:'まっすぐ速く飛ぶ'}};
+// 鎧: 頭と胴に1つずつ。def=防御（ダメージを減らす割合）、wt=重さ（移動速度をこの割合だけ下げる）
+const ARM={
+ head:{jingasa:{n:'陣笠',def:.1,wt:0,d:'軽い。頭に矢弾を受けると即死'},hachigane:{n:'鉢金',def:.15,wt:.02,d:'額を守る鉄板。頭に矢弾を受けると即死'},
+  zunari:{n:'頭形兜',def:.3,wt:.05,helm:1,d:'頭に矢弾を受けても一撃では死なない'},suji:{n:'筋兜',def:.45,wt:.09,helm:1,d:'重いが頭をよく守る'}},
+ body:{none:{n:'具足なし',def:0,wt:0,d:'最も軽い'},haramaki:{n:'腹巻',def:.12,wt:.03,d:'軽い胴よろい'},domaru:{n:'胴丸',def:.22,wt:.07,d:'体を包む胴よろい'},
+  tosei:{n:'当世具足',def:.35,wt:.13,d:'戦国の重い具足。袖と草摺つき'},nanban:{n:'南蛮胴',def:.4,wt:.2,bullet:.3,d:'鉄の胴。鉄砲にさらに強い（弾を3割減）'}}};
+const ARM_K=['head','body'],ARM_N=['兜','胴'];
+const ARM_DEF={A:{head:'suji',body:'tosei'},B:{head:'jingasa',body:'haramaki'},C:{head:'hachigane',body:'domaru'},D:{head:'jingasa',body:'none'}};
+const armSpd=u=>u.lo?1-ARM.head[u.lo.head].wt-ARM.body[u.lo.body].wt:1;
 const NAMES=['太郎兵衛','与四郎','弥助','源八','権六','孫三郎','甚五郎','又兵衛','新左衛門','彦七','藤吉','半蔵','喜平次','左近','勘助','市松','虎之助','才蔵','十兵衛','茂助','吉蔵','伝八','清右衛門','久六','八郎','長吉','小平太','善兵衛','佐吉','忠三郎','五郎作','平八'];
 
 // ================= three.js =================
@@ -211,7 +221,7 @@ function buildFences(){structs.slice().forEach(removeStruct);
 
 // ================= 兵の見た目 =================
 const SKIN='#d8b090',DARK='#2a2420',CLOTH='#3a3a44';
-function bowGeo(L){const p=[];for(let k=0;k<9;k++){const t=(k-4)/4,a=t*.9;p.push(B(.035,L*.13,.045,'#3a2a1a',{y:Math.sin(a)*L*.5,z:(Math.cos(a)-1)*-L*.17,rx:a}));}p.push(B(.008,L,.008,'#f0e8d0',{z:-L*.12}));return M(p);}
+function bowGeo(L,noStr){const p=[];for(let k=0;k<9;k++){const t=(k-4)/4,a=t*.9;p.push(B(.035,L*.13,.045,'#3a2a1a',{y:Math.sin(a)*L*.5,z:(Math.cos(a)-1)*-L*.17,rx:a}));}if(!noStr)p.push(B(.008,L,.008,'#f0e8d0',{z:-L*.12}));return M(p);}
 function weaponGeo(w){switch(w){
  case'wakizashi':return M([B(.04,.2,.05,'#2a1a10'),B(.1,.03,.09,'#8a7a40',{y:.11}),B(.02,.55,.045,'#d8dce0',{y:.4})]);
  case'uchigatana':return M([B(.04,.26,.05,'#2a1a10'),B(.12,.03,.1,'#8a7a40',{y:.14}),B(.02,.8,.05,'#d8dce0',{y:.55,rz:.03})]);
@@ -236,14 +246,19 @@ function weaponGeo(w){switch(w){
  case'hashigo':{const p=[B(.04,.8,.04,'#8a6a44',{x:-.12}),B(.04,.8,.04,'#8a6a44',{x:.12})];for(let i=0;i<4;i++)p.push(B(.24,.03,.03,'#9a7a54',{y:-.3+i*.2}));return M(p);}
  case'takeshield':{const p=[];for(let i=0;i<5;i++)p.push(CY(.035,.5,'#9aa850',{x:-.14+i*.07,y:.1},6));p.push(B(.4,.03,.09,'#c8a878',{y:.1}));return M(p);}
  case'yakuro':return M([B(.22,.14,.16,'#3a2a20'),B(.23,.03,.17,'#a8323a',{y:.07})]);}}
-function makeSoldier(team,cls){const C=TEAM[team].css,g=new THREE.Group();
+function makeSoldier(team,cls,lo){const C=TEAM[team].css,g=new THREE.Group();const hd=lo.head,bd=lo.body;
  const torso=new THREE.Group();torso.position.y=1.0;g.add(torso);
- const helm=cls==='A'?[B(.38,.18,.38,DARK,{y:.78}),B(.54,.05,.5,DARK,{y:.7}),P(new THREE.ConeGeometry(.04,.34,3),'#c8a040',{y:1.0,z:.13,rz:.6}),P(new THREE.ConeGeometry(.04,.34,3),'#c8a040',{y:1.0,z:.13,rz:-.6})]
-  :cls==='C'?[B(.3,.08,.3,'#f2ece0',{y:.86}),B(.32,.04,.32,TEAM[team].css,{y:.83})]:[P(new THREE.ConeGeometry(.36,.16,10),DARK,{y:.8})];
- const extra=cls==='A'?[B(.62,.3,.36,DARK,{y:.18}),B(.2,.1,.36,DARK,{x:.32,y:.55}),B(.2,.1,.36,DARK,{x:-.32,y:.55})]:cls==='B'?[B(.14,.1,.1,'#5a4a30',{x:.2,y:.08,z:.16}),B(.14,.1,.1,'#5a4a30',{x:-.2,y:.08,z:.16}),B(.06,.06,.5,'#c8a878',{x:.15,y:.3,z:.16,rz:.8})]
+ const helm=hd==='suji'?[B(.38,.18,.38,DARK,{y:.78}),B(.54,.05,.5,DARK,{y:.7}),B(.46,.14,.06,DARK,{y:.66,z:-.2}),P(new THREE.ConeGeometry(.04,.34,3),'#c8a040',{y:1.0,z:.13,rz:.6}),P(new THREE.ConeGeometry(.04,.34,3),'#c8a040',{y:1.0,z:.13,rz:-.6})]
+  :hd==='zunari'?[P(new THREE.SphereGeometry(.19,8,5,0,6.283,0,1.6),'#3a3a3a',{y:.84}),B(.46,.04,.42,'#3a3a3a',{y:.74}),B(.4,.12,.06,'#3a3a3a',{y:.68,z:-.2})]
+  :hd==='hachigane'?[B(.3,.08,.3,'#f2ece0',{y:.86}),B(.32,.04,.32,TEAM[team].css,{y:.83}),B(.14,.06,.02,'#9aa0a8',{y:.86,z:.155})]:[P(new THREE.ConeGeometry(.36,.16,10),DARK,{y:.8})];
+ const armor=bd==='tosei'?[B(.62,.3,.36,DARK,{y:.18}),B(.2,.1,.36,DARK,{x:.32,y:.55}),B(.2,.1,.36,DARK,{x:-.32,y:.55}),B(.53,.08,.33,'#c8a040',{y:.4})]
+  :bd==='nanban'?[B(.55,.5,.35,'#8a9098',{y:.36}),B(.6,.2,.36,'#6a6e74',{y:.08}),B(.06,.48,.02,'#c8ccd2',{y:.37,z:.18})]
+  :bd==='domaru'?[B(.55,.42,.34,DARK,{y:.28}),B(.58,.16,.35,DARK,{y:.02}),B(.56,.04,.35,C,{y:.42})]
+  :bd==='haramaki'?[B(.54,.22,.34,DARK,{y:.16})]:[];
+ const extra=cls==='A'?[]:cls==='B'?[B(.14,.1,.1,'#5a4a30',{x:.2,y:.08,z:.16}),B(.14,.1,.1,'#5a4a30',{x:-.2,y:.08,z:.16}),B(.06,.06,.5,'#c8a878',{x:.15,y:.3,z:.16,rz:.8})]
   :cls==='C'?[B(.26,.32,.18,'#5a4a30',{y:.3,z:-.26})]:[CY(.08,.6,'#5a4a30',{x:.18,y:.5,z:-.2,rz:.3},6),B(.02,.15,.02,'#f0f0f0',{x:.25,y:.85,z:-.2,rz:.3}),B(.02,.15,.02,'#f0f0f0',{x:.22,y:.86,z:-.17,rz:.3})];
  torso.add(mesh(M([B(.5,.62,.3,C,{y:.31}),B(.52,.16,.32,DARK,{y:.05}),B(.56,.12,.34,DARK,{y:.6}),B(.6,.08,.3,C,{y:.62,x:0}),
-  B(.26,.26,.26,SKIN,{y:.82}),B(.27,.06,.02,'#1a1a1a',{y:.84,z:.135}),...helm,...extra,
+  B(.26,.26,.26,SKIN,{y:.82}),B(.27,.06,.02,'#1a1a1a',{y:.84,z:.135}),...helm,...armor,...extra,
   B(.03,1.4,.03,'#3a2a1a',{y:.95,z:-.2}),B(.02,.75,.5,C,{y:1.2,z:-.2}),B(.025,.22,.5,'#f2ece0',{y:1.48,z:-.2})])));
  const mkArm=x=>{const a=new THREE.Group();a.position.set(x,.56,0);a.add(mesh(M([B(.15,.5,.15,C,{y:-.2}),B(.12,.12,.12,SKIN,{y:-.5})])));torso.add(a);return a;};
  const armR=mkArm(.33),armL=mkArm(-.33);
@@ -263,11 +278,11 @@ function newUnit(team,isPlayer,name){const u={team,isPlayer,name,cls:'A',lo:null
  w:0,cd:0,ammo:{},loaded:{},reloadT:0,reloadW:null,draw:0,drawing:false,aimT:0,kills:0,deaths:0,lastHit:99,ph:Math.random()*6,spd:0,atkT:-1,vis:null,items:{},healT:0,healTgt:null,
  buffT:0,slowT:0,spotT:0,
  ai:{flag:FLAGS[0],tgt:null,think:0,strafe:Math.random()<.5?1:-1,ox:rnd(-8,8),oz:rnd(-8,8),stuck:0,detour:0,dx:0,dz:0,placeCd:rnd(2,6)}};units.push(u);return u;}
-const randLo=c=>{const C=CLS[c],o={};SLOT_K.forEach(k=>o[k]=pick(C[k]));return o;};
+const randLo=c=>{const C=CLS[c],o={};SLOT_K.forEach(k=>o[k]=pick(C[k]));o.head=Math.random()<.5?ARM_DEF[c].head:pick(Object.keys(ARM.head));o.body=Math.random()<.5?ARM_DEF[c].body:pick(Object.keys(ARM.body));return o;};
 function spawnUnit(u,cls,pt,lo){u.cls=cls;u.lo=lo||randLo(cls);const c=CLS[cls];u.hp=c.hp;u.alive=true;u.w=0;u.cd=0;u.reloadT=0;u.reloadW=null;u.draw=0;u.drawing=false;u.lastHit=99;u.atkT=-1;u.vy=0;u.healT=0;u.buffT=0;u.slowT=0;u.spotT=0;
- u.ammo={};u.loaded={};u.rlSave={};[u.lo.main,u.lo.sub].forEach(w=>{if(WPN[w].ammo){u.ammo[w]=WPN[w].ammo;u.loaded[w]=1;}});u.items={};[u.lo.item,u.lo.thr].forEach(k=>u.items[k]=WPN[k].cnt);
+ u.ammo={};u.loaded={};u.rlSave={};u.stam=100;u.tired=false;u.crouch=false;u.eye=1.62;u.nock=0;[u.lo.main,u.lo.sub].forEach(w=>{if(WPN[w].ammo){u.ammo[w]=WPN[w].ammo;u.loaded[w]=1;}});u.items={};[u.lo.item,u.lo.thr].forEach(k=>u.items[k]=WPN[k].cnt);
  const p=pt||spawnPoints(u.team)[0];u.x=p.x+rnd(-5,5);u.z=p.z+rnd(-4,4);u.y=0;u.yaw=u.team===0?0:Math.PI;u.pitch=0;
- if(!u.isPlayer){if(u.vis)scene.remove(u.vis.g);u.vis=makeSoldier(u.team,cls);scene.add(u.vis.g);setWeaponMesh(u.vis,u.lo.main);}
+ if(!u.isPlayer){if(u.vis)scene.remove(u.vis.g);u.vis=makeSoldier(u.team,cls,u.lo);scene.add(u.vis.g);setWeaponMesh(u.vis,u.lo.main);}
  else{aimOn=false;mouseR=false;setViewWeapon();}}
 function spawnPoints(t){const L=[{n:'本陣',x:BASE[t].x,z:BASE[t].z}];FLAGS.forEach(f=>{if(f.owner===t)L.push({n:f.n,x:f.x,z:f.z+(t?-6:6)});});return L;}
 const slots=u=>u.isPlayer?[u.lo.main,u.lo.sub,u.lo.item,u.lo.thr]:[u.lo.main,u.lo.sub];
@@ -283,7 +298,9 @@ function resetGame(){units.forEach(u=>{if(u.vis)scene.remove(u.vis.g);});units.l
 function killUnit(u,by,head,wn){if(!u.alive)return;u.alive=false;u.deaths++;u.respawn=u.isPlayer?7:rnd(6,9);tickets[u.team]=Math.max(0,tickets[u.team]-1);
  if(by){by.kills++;addFeed(by,u,head,wn);}if(u.vis){u.vis.deadT=0;u.vis.mark.visible=false;}
  if(u.isPlayer){aimOn=false;mouseR=false;openDeploy();}if(by&&by.isPlayer){flashMsg((head?'討ち取った！（頭）':'討ち取った！'),900);}}
-function damage(u,dmg,by,head,wn){if(!u.alive||(by&&by.team===u.team))return;if(head)dmg=9999;else if(u.buffT>0)dmg*=.7;u.hp-=dmg;u.lastHit=0;if(by&&!u.isPlayer){u.ai.tgt=by;}
+function damage(u,dmg,by,head,wn,gun){if(!u.alive||(by&&by.team===u.team))return;const H=u.lo?ARM.head[u.lo.head]:null,Bd=u.lo?ARM.body[u.lo.body]:null;
+ if(head){if(H&&H.helm){dmg=dmg*2.5*(1-H.def);head=false;if(u.isPlayer)flashMsg('兜が矢弾を防いだ',700);}else dmg=9999;}else if(Bd){dmg*=1-Bd.def;if(gun&&Bd.bullet)dmg*=1-Bd.bullet;}
+ if(!head&&u.buffT>0)dmg*=.7;u.hp-=dmg;u.lastHit=0;if(by&&!u.isPlayer){u.ai.tgt=by;}
  if(u.isPlayer){$('#dmg').style.boxShadow='inset 0 0 140px rgba(200,0,0,.65)';setTimeout(()=>$('#dmg').style.boxShadow='inset 0 0 120px rgba(200,0,0,0)',250);sfx('hurt');}
  if(by&&by.isPlayer){const h=$('#hit');h.style.opacity=1;h.style.borderColor=head?'#ff5040':'#fff';setTimeout(()=>h.style.opacity=0,120);sfx('hitm');}
  if(u.hp<=0)killUnit(u,by,head,wn);}
@@ -308,20 +325,20 @@ const PGEO={arrow:M([B(.02,.02,.85,'#c8a878'),P(new THREE.ConeGeometry(.025,.1,4
 // kind: arrow/bolt/stone/shuriken/kabura。g=重力の効き
 function fireProj(u,o,dir,spd,dmg,kind,wn){const m=mesh(PGEO[kind],false);scene.add(m);arrows.push({u,p:o.clone(),v:dir.clone().multiplyScalar(spd),m,t:0,stuck:0,dmg,wn,kind,g:kind==='shuriken'?.35:1});
  sfx(kind==='bolt'?'xbow':kind==='stone'||kind==='shuriken'?'swish':kind==='kabura'?'whistle':'bow',u);}
-function unitHitTest(p,team){for(const u of units){if(!u.alive||u.team===team)continue;const dx=p.x-u.x,dz=p.z-u.z;if(dx*dx+dz*dz<.16&&p.y>u.y&&p.y<u.y+1.95)return u;}return null;}
+function unitHitTest(p,team){for(const u of units){if(!u.alive||u.team===team)continue;const dx=p.x-u.x,dz=p.z-u.z;if(dx*dx+dz*dz<.16&&p.y>u.y&&p.y<u.y+(u.crouch?1.3:1.95))return u;}return null;}
 function spotAround(p,team){let n=0;for(const v of units)if(v.alive&&v.team!==team&&Math.hypot(v.x-p.x,v.z-p.z)<20){v.spotT=15;v.spotBy=team;n++;}if(team===myTeam)flashMsg(`鏑矢: 敵${n}人を見つけた`,1200);}
 function updateArrows(dt){for(let i=arrows.length-1;i>=0;i--){const a=arrows[i];a.t+=dt;if(a.stuck){if(a.t>12){scene.remove(a.m);arrows.splice(i,1);}continue;}
  let done=false;for(let s=0;s<3&&!done;s++){a.v.y-=9.8*a.g*dt/3;a.p.addScaledVector(a.v,dt/3);const h=unitHitTest(a.p,a.u.team);
-  if(h){const head=a.p.y-h.y>1.6&&a.kind!=='stone';damage(h,a.dmg,a.u,head,a.wn);if(a.kind==='stone')h.slowT=.8;if(a.kind==='kabura')spotAround(a.p,a.u.team);scene.remove(a.m);arrows.splice(i,1);done=true;break;}
+  if(h){const head=a.p.y-h.y>(h.crouch?1.02:1.6)&&a.kind!=='stone';damage(h,a.dmg,a.u,head,a.wn);if(a.kind==='stone')h.slowT=.8;if(a.kind==='kabura')spotAround(a.p,a.u.team);scene.remove(a.m);arrows.splice(i,1);done=true;break;}
   const st=structAt(a.p.x,a.p.y,a.p.z);if(st){hurtStruct(st,a.kind==='stone'?1:6);a.stuck=1;a.t=0;sfx('thud',a.u);if(a.kind==='kabura')spotAround(a.p,a.u.team);done=true;break;}
   if(a.p.y<=0){a.p.y=.05;a.stuck=1;a.t=0;if(a.kind==='kabura')spotAround(a.p,a.u.team);done=true;break;}}
  if(arrows[i]!==a)continue;a.m.position.copy(a.p);if(!a.stuck){if(a.kind==='shuriken'||a.kind==='stone')a.m.rotation.y+=dt*25;else a.m.lookAt(a.p.x+a.v.x,a.p.y+a.v.y,a.p.z+a.v.z);}
  if(Math.abs(a.p.x)>300||Math.abs(a.p.z)>300){scene.remove(a.m);arrows.splice(i,1);}}}
 function shootRay(u,o,d,W){let best=null,bt=W.range,head=false;const rs=rayStruct(o,d,bt);if(rs)bt=rs.t;
  for(const v of units){if(!v.alive||v.team===u.team)continue;const ox=o.x-v.x,oz=o.z-v.z,a=d.x*d.x+d.z*d.z,b=2*(ox*d.x+oz*d.z),c=ox*ox+oz*oz-.13;const disc=b*b-4*a*c;if(disc<0)continue;
-  const t=(-b-Math.sqrt(disc))/(2*a);if(t<0||t>bt)continue;const y=o.y+d.y*t-v.y;if(y<0||y>1.95)continue;bt=t;best=v;head=y>1.62;}
+  const t=(-b-Math.sqrt(disc))/(2*a);if(t<0||t>bt)continue;const y=o.y+d.y*t-v.y;if(y<0||y>(v.crouch?1.3:1.95))continue;bt=t;best=v;head=y>(v.crouch?1.02:1.62);}
  const gt=d.y<0?-o.y/d.y:1e9;const end=o.clone().addScaledVector(d,Math.min(bt,gt));tracer(o,end);smoke(o.clone().addScaledVector(d,1.2),4,.5);sfx('gun',u);
- if(best)damage(best,W.dmg,u,head,W.n);else if(rs&&rs.t<=bt+1e-6){hurtStruct(rs.s,30);sfx('thud',rs.s);}}
+ if(best)damage(best,W.dmg,u,head,W.n,true);else if(rs&&rs.t<=bt+1e-6){hurtStruct(rs.s,30);sfx('thud',rs.s);}}
 const fx=[];
 function tracer(a,b){const g=new THREE.BufferGeometry().setFromPoints([a,b]);const l=new THREE.Line(g,new THREE.LineBasicMaterial({color:0xfff0c0,transparent:true,opacity:.6}));scene.add(l);fx.push({m:l,t:0,life:.08});}
 const smokeGeo=new THREE.IcosahedronGeometry(.5,0);
@@ -411,7 +428,7 @@ function aiUpdate(u,dt){const ai=u.ai;ai.think-=dt;if(ai.think<=0){ai.think=rnd(
  for(const v of units){if(v===u||!v.alive)continue;const dx=u.x-v.x,dz=u.z-v.z,d2=dx*dx+dz*dz;if(d2<1.2&&d2>1e-4){const d=Math.sqrt(d2);mx+=dx/d*.8;mz+=dz/d*.8;}}
  {const ml0=Math.hypot(mx,mz);if(ml0>.3&&!engaged)face=Math.atan2(-mx,-mz);}
  if(face!=null){const da=angWrap(face-u.yaw);u.yaw+=clamp(da,-6*dt,6*dt);}
- const ml=Math.hypot(mx,mz);const sp=CLS[u.cls].spd*(run?1.25:.75)*(u.drawing?.5:1)*(W.heavy?.45:W.slow||1)*(u.buffT>0?1.2:1)*(u.slowT>0?.4:1);
+ const ml=Math.hypot(mx,mz);const sp=CLS[u.cls].spd*(run?1.25:.75)*(u.drawing?.5:1)*(W.heavy?.45:W.slow||1)*(u.buffT>0?1.2:1)*(u.slowT>0?.4:1)*armSpd(u);
  if(ml>.01){u.vx=mx/ml*sp;u.vz=mz/ml*sp;}else{u.vx=0;u.vz=0;}
  const ox=u.x,oz=u.z;u.x=clamp(u.x+u.vx*dt,-HALFX,HALFX);u.z=clamp(u.z+u.vz*dt,-HALFZ,HALFZ);collideStructs(u,.35);u.spd=ml>.01?sp:0;
  // 引っかかったら: 梯子を掛ける／大斧・掛矢で柵を壊す／横へ回り込む
@@ -447,11 +464,17 @@ const rHay=new THREE.Mesh(M([CY(.022,.09,'#e8dcc0',{},8),B(.03,.012,.03,'#c8b890
  rCord=new THREE.Mesh(M([B(.012,.012,.25,'#b8a080'),B(.016,.016,.03,'#ff4a20',{z:-.13})]),MAT),rHand=new THREE.Mesh(M([B(.09,.09,.09,SKIN),B(.1,.1,.35,'#3a3a44',{z:.2})]),MAT);
 [rHay,rRod,rFlask,rCord,rHand].forEach(m=>rlG.add(m));rlG.visible=false;
 
-function setViewWeapon(){if(viewM)view.remove(viewM);const w=curW(player),W=WPN[w];viewW=w;viewM=new THREE.Group();const m=new THREE.Mesh(weaponGeo(w),MAT);viewM.add(m);viewM.userData.m=m;
+// 弓の手元: 矢・右手・弦（弦は引くと曲がる2本の線）
+const bowG=new THREE.Group();view.add(bowG);bowG.visible=false;
+const bArrow=new THREE.Mesh(M([B(.012,.012,.85,'#c8a878'),P(new THREE.ConeGeometry(.016,.07,4),'#555',{z:-.46,rx:-Math.PI/2}),B(.003,.04,.1,'#f0f0f0',{z:.37})]),MAT),
+ bHand=new THREE.Mesh(M([B(.06,.06,.07,SKIN),B(.2,.05,.05,'#3a3a44',{x:.13,y:-.03,z:.05,ry:-.5})]),MAT),bStr1=new THREE.Mesh(new THREE.BoxGeometry(.005,.005,1),new THREE.MeshBasicMaterial({color:0xf0e8d0})),bStr2=bStr1.clone();
+[bArrow,bHand,bStr1,bStr2].forEach(m=>bowG.add(m));
+const segTo=(m,a,b)=>{m.position.copy(a).add(b).multiplyScalar(.5);m.scale.set(1,1,a.distanceTo(b));m.lookAt(view.localToWorld(b.clone()));};
+function setViewWeapon(){if(viewM)view.remove(viewM);const w=curW(player),W=WPN[w];viewW=w;viewM=new THREE.Group();const m=new THREE.Mesh(W.bow?bowGeo(w==='daikyu'?2.2:1.3,true):weaponGeo(w),MAT);viewM.add(m);viewM.userData.m=m;
  const arm=new THREE.Mesh(M([B(.12,.12,.55,'#3a3a44',{z:.2}),B(.1,.1,.1,SKIN,{z:-.08})]),MAT);viewM.add(arm);
  if(W.pole||w==='masakari'||w==='kakeya'){m.rotation.x=-Math.PI/2.3;m.position.set(0,-.1,w==='nagayari'?-.6:-.15);arm.position.set(0,-.05,.1);}
  else if(W.melee){m.rotation.set(-.5,0,-.2);}
- else if(W.bow){m.scale.setScalar(w==='daikyu'?.42:.6);m.position.set(0,.1,0);m.rotation.set(0,0,-.12);arm.position.set(.02,-.1,.18);}
+ else if(W.bow){m.scale.setScalar(w==='daikyu'?.42:.6);m.position.set(0,.1,0);m.rotation.set(0,Math.PI,0);arm.scale.set(.5,.5,.25);arm.position.set(-.01,.1,.0);}
  else if(W.gun||W.cannon||W.xbow){m.rotation.y=Math.PI;arm.position.set(0,-.1,.1);}
  else if(w==='hashigo'||w==='takeshield'){m.position.set(-.1,0,0);arm.position.set(0,-.12,.12);}
  else{m.position.set(0,.02,-.05);arm.position.set(0,-.09,.12);}
@@ -460,8 +483,9 @@ function setViewWeapon(){if(viewM)view.remove(viewM);const w=curW(player),W=WPN[
 function startReload(u){const w=curW(u),W=WPN[w];if(!W.reload||u.reloadT>0||u.loaded[w]||!(u.ammo[w]>0))return;u.rlSave=u.rlSave||{};u.reloadT=u.rlSave[w]||W.reload;delete u.rlSave[w];u.reloadW=w;u.rlStep=-1;if(u.isPlayer)aimOn=false;}
 function cancelReload(u){if(u.reloadT>0&&u.reloadW){u.rlSave=u.rlSave||{};u.rlSave[u.reloadW]=u.reloadT;}u.reloadT=0;u.reloadW=null;}
 function updatePlayer(dt){const u=player;if(!u.alive)return;const w=curW(u),W=WPN[w];
- let f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);const ml=Math.hypot(f,s);const run=keys.ShiftLeft&&f>0;if(run&&aimOn)aimOn=false;
- let sp=CLS[u.cls].spd*(run?1.4:1)*(aimOn?.55:1)*(u.drawing?.6:1)*(u.healT>0?.4:1)*(u.reloadT>0?.6:1)*(W.slow||1)*(u.buffT>0?1.2:1)*(u.slowT>0?.4:1);if(W.heavy)sp*=aimOn?0:.4;
+ let f=(keys.KeyW?1:0)-(keys.KeyS?1:0),s=(keys.KeyD?1:0)-(keys.KeyA?1:0);const ml=Math.hypot(f,s);if(u.stam<=0)u.tired=true;if(u.tired&&u.stam>25)u.tired=false;const run=keys.ShiftLeft&&f>0&&!u.tired;if(run&&aimOn)aimOn=false;if(run&&u.crouch)u.crouch=false;
+ u.stam=clamp(u.stam+(run&&ml>0?-10:12)*dt,0,100);
+ let sp=CLS[u.cls].spd*(run?1.75:1)*(u.crouch?.5:1)*armSpd(u)*(aimOn?.55:1)*(u.drawing?.6:1)*(u.healT>0?.4:1)*(u.reloadT>0?.6:1)*(W.slow||1)*(u.buffT>0?1.2:1)*(u.slowT>0?.4:1);if(W.heavy)sp*=aimOn?0:.4;
  if(ml>0){f/=ml;s/=ml;const sx=Math.sin(u.yaw),cz=Math.cos(u.yaw);u.vx=(-sx*f+cz*s)*sp;u.vz=(-cz*f-sx*s)*sp;}else{u.vx=0;u.vz=0;}
  u.x=clamp(u.x+u.vx*dt,-HALFX,HALFX);u.z=clamp(u.z+u.vz*dt,-HALFZ,HALFZ);u.spd=ml>0&&sp>0?sp:0;
  u.vy-=20*dt;u.y+=u.vy*dt;if(u.y<=0){u.y=0;u.vy=0;if(keys.Space&&!W.heavy)u.vy=7;}
@@ -470,8 +494,8 @@ function updatePlayer(dt){const u=player;if(!u.alive)return;const w=curW(u),W=WP
  const dirV=()=>{const d=new THREE.Vector3();camera.getWorldDirection(d);return d;},eye=()=>{const o=new THREE.Vector3();camera.getWorldPosition(o);return o;};
  if(W.melee){if(mouseL&&u.cd<=0){u.cd=W.cd;swingT=0;setTimeout(()=>{if(player.alive&&curW(player)===w)meleeHit(player,player.yaw,w);},140);}}
  // 弓: 右クリック長押しで引き絞り、左クリックで放つ
- else if(W.bow){if(mouseR&&u.cd<=0&&u.ammo[w]>0){u.drawing=true;u.draw=Math.min(1,u.draw+dt/W.draw);}else if(!mouseR){u.drawing=false;u.draw=0;}
-  if(mouseL&&u.drawing){mouseL=false;const k=u.draw;u.drawing=false;u.draw=0;if(k>.05){u.cd=W.cd;u.ammo[w]--;const dir=dirV(),e=.004+(1-k)*.01;dir.x+=rnd(-e,e);dir.y+=rnd(-e,e);dir.normalize();const o=eye();o.y-=.05;
+ else if(W.bow){if(mouseR&&u.cd<=0&&u.ammo[w]>0){u.drawing=true;if(u.nock<1)u.nock=Math.min(1,u.nock+dt/.45);else u.draw=Math.min(1,u.draw+dt/W.draw);}else if(!mouseR){u.drawing=false;u.draw=0;u.nock=0;}
+  if(mouseL&&u.drawing&&u.nock>=1){u.nock=0;mouseL=false;const k=u.draw;u.drawing=false;u.draw=0;if(k>.05){u.cd=W.cd;u.ammo[w]--;const dir=dirV(),e=.004+(1-k)*.01;dir.x+=rnd(-e,e);dir.y+=rnd(-e,e);dir.normalize();const o=eye();o.y-=.05;
     fireProj(u,o,dir,W.spd*(.4+.6*k),W.max*(.25+.75*k),'arrow',W.n);}}}
  else if(W.gun||W.cannon||W.xbow){if(mouseL&&u.loaded[w]&&u.reloadT<=0&&u.cd<=0){u.cd=.3;u.loaded[w]=0;mouseL=false;swingT=0;const dir=dirV(),o=eye();
    if(W.gun){const e=W.acc[aimOn?0:1]+(u.spd>0?.015:0);dir.x+=rnd(-e,e);dir.y+=rnd(-e,e);dir.z+=rnd(-e,e);dir.normalize();shootRay(u,o,dir,W);u.pitch+=W.dmg>60?.1:.06;}
@@ -493,7 +517,7 @@ function updatePlayer(dt){const u=player;if(!u.alive)return;const w=curW(u),W=WP
  if(u.reloadT>0){const RW=WPN[u.reloadW];u.reloadT-=dt;const p=1-u.reloadT/RW.reload;if(RW.matchlock){const st=rlStep(p);if(st!==u.rlStep){u.rlStep=st;if(st>0)sfx(st===3?'ram':'click');}}
   if(u.reloadT<=0){u.loaded[u.reloadW]=1;u.ammo[u.reloadW]--;u.reloadW=null;}}
  const zoom=W.bow?(u.drawing?72-u.draw*22:72):aimOn?(W.gun?35:W.cannon?45:W.xbow?40:72):72;camera.fov+=(zoom-camera.fov)*Math.min(1,dt*10);camera.updateProjectionMatrix();
- camera.position.set(u.x,u.y+1.62+Math.abs(Math.sin(u.ph))*.04*(u.spd>0?1:0),u.z);u.ph+=dt*u.spd*1.6;camera.rotation.set(u.pitch,u.yaw,0);
+ u.eye+=((u.crouch?1.05:1.62)-u.eye)*Math.min(1,dt*10);camera.position.set(u.x,u.y+u.eye+Math.abs(Math.sin(u.ph))*.04*(u.spd>0?1:0),u.z);u.ph+=dt*u.spd*1.6;camera.rotation.set(u.pitch,u.yaw,0);
  animView(u,w,W,dt);}
 function animView(u,w,W,dt){if(viewW!==w)setViewWeapon();let px=.32,py=-.32,pz=-.55,rx=0,ry=0,rz=0;rlG.visible=false;
  if(W.bow){px=-.16;py=-.22;pz=-.7;if(u.drawing){px=-.12;py=-.16;}}
@@ -517,9 +541,18 @@ function animView(u,w,W,dt){if(viewW!==w)setViewWeapon();let px=.32,py=-.32,pz=-
   else{px=.2;py=-.4;rx=-.6;$('#rlT').textContent=`弦を引いて矢を番える… ${u.reloadT.toFixed(1)}秒`;}
   $('#rlB').style.width=(p*100)+'%';$('#reload').style.display='block';}
  else if(u.healT>0){$('#rlT').textContent=`${u.healTgt&&u.healTgt!==u?u.healTgt.name+'を':''}金創薬で手当て中… ${u.healT.toFixed(1)}秒`;$('#rlB').style.width=((1-u.healT/WPN.kinsoyaku.time)*100)+'%';$('#reload').style.display='block';}
+ else if(W.bow&&u.drawing&&u.nock<1){$('#rlT').textContent='矢をつがえる…';$('#rlB').style.width=(u.nock*100)+'%';$('#reload').style.display='block';}
  else if(W.bow&&u.drawing){$('#rlT').textContent=`引き絞り ${Math.round(u.draw*100)}%（威力 ${Math.round(W.max*(.25+.75*u.draw))}）　左クリックで放つ`;$('#rlB').style.width=(u.draw*100)+'%';$('#reload').style.display='block';}
  else $('#reload').style.display='none';
- const bob=u.spd>0?Math.sin(u.ph)*.015:0;view.position.set(0,0,0);viewM.position.set(px+bob,py+Math.abs(bob),pz);viewM.rotation.set(rx,ry,rz);}
+ const bob=u.spd>0?Math.sin(u.ph)*.015:0;view.position.set(0,0,0);viewM.position.set(px+bob,py+Math.abs(bob),pz);viewM.rotation.set(rx,ry,rz);
+ bowG.visible=!!W.bow;if(W.bow){const L=(w==='daikyu'?2.2:1.3)*(w==='daikyu'?.42:.6),gx=px+bob,gy=py+Math.abs(bob)+.1,tz=pz-.078*L/(w==='daikyu'?.42:.6)*(w==='daikyu'?.42:.6),
+   top=new THREE.Vector3(gx,gy+.39*L*2.2/2.2,tz),bot=new THREE.Vector3(gx,gy-.39*L,tz);top.y=gy+.39*L;
+   const k=u.drawing?u.draw:0,n=u.drawing?u.nock:0,nockZ=tz+.04+k*.36,nock=new THREE.Vector3(gx+.015,gy,nockZ);
+   if(u.drawing&&n>=1){segTo(bStr1,top,nock);segTo(bStr2,bot,nock);}else{const mid=new THREE.Vector3(gx,gy,tz);segTo(bStr1,top,mid);segTo(bStr2,bot,mid);}
+   // つがえる: 腰の箙から矢を取り、弦に掛けてから引く
+   const start=new THREE.Vector3(gx+.32,gy-.32,pz+.3),aimP=new THREE.Vector3(gx+.02,gy,nockZ-.425);const e=n*n*(3-2*n);
+   bArrow.visible=u.drawing&&u.ammo[w]>0&&u.cd<=0;bArrow.position.copy(start).lerp(aimP,e);bArrow.rotation.set((1-e)*-1.1,(1-e)*.4,0);
+   bHand.position.set(gx+.03+(1-e)*.3,gy-.01-(1-e)*.32,(nockZ+.04)*e+(pz+.3)*(1-e));bHand.rotation.set(0,0,0);bHand.visible=u.drawing;}}
 
 function switchSlot(i){const u=player,L=slots(u);if(L[i]===undefined||u.w===i)return;const k=L[i];if(WPN[k].item&&!(u.items[k]>0)){flashMsg('もう無い',700);return;}
  cancelReload(u);u.w=i;u.drawing=false;u.draw=0;u.healT=0;aimOn=false;setViewWeapon();if(u.rlSave&&u.rlSave[k])startReload(u);}
@@ -528,7 +561,8 @@ function switchSlot(i){const u=player,L=slots(u);if(L[i]===undefined||u.w===i)re
 addEventListener('keydown',e=>{keys[e.code]=true;if(state!=='play')return;
  if(e.code==='Tab'){e.preventDefault();renderBoard();$('#board').classList.add('on');}
  const m=/^Digit([1-4])$/.exec(e.code);if(m&&player.alive)switchSlot(+m[1]-1);
- if(e.code==='KeyR'&&player.alive)startReload(player);});
+ if(e.code==='KeyR'&&player.alive)startReload(player);
+ if(e.code==='KeyX'&&player.alive){player.crouch=!player.crouch;flashMsg(player.crouch?'しゃがむ':'立つ',500);}});
 addEventListener('keyup',e=>{keys[e.code]=false;if(e.code==='Tab')$('#board').classList.remove('on');});
 canvas.addEventListener('mousedown',e=>{if(state!=='play')return;if(!locked){canvas.requestPointerLock();return;}if(e.button===0)mouseL=true;
  if(e.button===2&&player.alive){mouseR=true;const W=WPN[curW(player)];if((W.gun||W.cannon||W.xbow)&&player.reloadT<=0)aimOn=!aimOn;}});
@@ -544,7 +578,7 @@ $('#bStart').onclick=()=>{initAudio();resetGame();$('#menu').classList.remove('o
 $('#bResume').onclick=()=>{$('#pause').classList.remove('on');state='play';canvas.requestPointerLock();};
 $('#bQuit').onclick=()=>{$('#pause').classList.remove('on');$('#hud').style.display='none';$('#menu').classList.add('on');state='menu';};
 $('#bAgain').onclick=()=>{$('#end').classList.remove('on');$('#menu').classList.add('on');state='menu';};
-let selCls='A',selPt=0;const selLo={};CLS_KEYS.forEach(c=>{selLo[c]={};SLOT_K.forEach(k=>selLo[c][k]=CLS[c][k][0]);});
+let selCls='A',selPt=0;const selLo={};CLS_KEYS.forEach(c=>{selLo[c]={...ARM_DEF[c]};SLOT_K.forEach(k=>selLo[c][k]=CLS[c][k][0]);});
 $('#clsBtns').innerHTML=CLS_KEYS.map(k=>`<button class="btn sm" data-cls="${k}">${k}：${CLS[k].n}<br><small>${CLS[k].role}・体力${CLS[k].hp}</small></button>`).join('');
 document.querySelectorAll('[data-cls]').forEach(b=>b.onclick=()=>{selCls=b.dataset.cls;renderDeploy();});
 $('#loadout').onclick=e=>{const b=e.target.closest('[data-w]');if(!b)return;selLo[selCls][b.dataset.k]=b.dataset.w;renderDeploy();};
@@ -553,7 +587,7 @@ $('#spawnmap').onclick=e=>{const r=e.target.getBoundingClientRect(),S=220,mx=(e.
 $('#bDeploy').onclick=()=>{if(player.respawn>0)return;const L=spawnPoints(myTeam);spawnUnit(player,selCls,L[Math.min(selPt,L.length-1)],{...selLo[selCls]});$('#deploy').classList.remove('on');state='play';canvas.requestPointerLock();};
 function openDeploy(first){if(document.pointerLockElement)document.exitPointerLock();state='deploy';$('#deploy').classList.add('on');if(first)player.respawn=0;selPt=0;renderDeploy();}
 function renderDeploy(){document.querySelectorAll('[data-cls]').forEach(b=>b.classList.toggle('sel',b.dataset.cls===selCls));const L=spawnPoints(myTeam);if(selPt>=L.length)selPt=0;
- const lo=selLo[selCls];$('#loadout').innerHTML=SLOT_K.map((k,i)=>`<div class="lo-row"><span class="lbl">${i+1} ${SLOT_N[i]}</span>`+CLS[selCls][k].map(w=>`<button class="btn sm${lo[k]===w?' sel':''}" data-k="${k}" data-w="${w}" title="${WPN[w].d||''}">${WPN[w].n}</button>`).join('')+`<div class="desc">${WPN[lo[k]].d||''}</div></div>`).join('');
+ const lo=selLo[selCls];$('#loadout').innerHTML=SLOT_K.map((k,i)=>`<div class="lo-row"><span class="lbl">${i+1} ${SLOT_N[i]}</span>`+CLS[selCls][k].map(w=>`<button class="btn sm${lo[k]===w?' sel':''}" data-k="${k}" data-w="${w}" title="${WPN[w].d||''}">${WPN[w].n}</button>`).join('')+`<div class="desc">${WPN[lo[k]].d||''}</div></div>`).join('')+ARM_K.map((k,i)=>`<div class="lo-row"><span class="lbl">鎧 ${ARM_N[i]}</span>`+Object.keys(ARM[k]).map(a=>`<button class="btn sm${lo[k]===a?' sel':''}" data-k="${k}" data-w="${a}">${ARM[k][a].n}</button>`).join('')+`<div class="desc">防御${Math.round(ARM[k][lo[k]].def*100)}%・重さ（速さ）-${Math.round(ARM[k][lo[k]].wt*100)}%　${ARM[k][lo[k]].d||''}</div></div>`).join('')+`<div class="desc" style="margin-left:0">合計: 移動速度 ${Math.round(armSpd({lo})*100)}%</div>`;
  $('#spawnT').textContent=player.respawn>0?`出陣まで ${Math.ceil(player.respawn)} 秒`:`出陣地点: ${L[selPt].n}`;$('#bDeploy').style.opacity=player.respawn>0?.4:1;
  const g=$('#spawnmap').getContext('2d');drawMap(g,220);L.forEach((p,i)=>{const[x,y]=mapXY(p.x,p.z,220);g.strokeStyle=i===selPt?'#ffe08a':'#fff';g.lineWidth=i===selPt?3:1.5;g.beginPath();g.arc(x,y,i===selPt?11:8,0,6.283);g.stroke();});}
 function mapXY(x,z,S){return[(x+HALFX+8)/(2*HALFX+16)*S,(z+HALFZ+8)/(2*HALFZ+16)*S];}
@@ -571,7 +605,7 @@ function endGame(win){if(state==='end')return;state='end';if(document.pointerLoc
  $('#endT').textContent=win===myTeam?'勝利！':'敗北…';$('#endT').style.color=TEAM[win].css;$('#endS').textContent=`${TEAM[win].n}（${TEAM[win].lord}方）の勝ち ／ あなた ${player.kills}討 ${player.deaths}死`;$('#end').classList.add('on');sfx('horn');}
 function updateHud(){$('#tk0').textContent=`東軍 ${tickets[0]}`;$('#tk1').textContent=`西軍 ${tickets[1]}`;
  $('#flags').innerHTML='<div style="display:flex;gap:6px">'+FLAGS.map(f=>{const p=Math.abs(f.prog),c=f.prog>0?TEAM[0].css:f.prog<0?TEAM[1].css:'#888';return`<div class="fl" style="border-color:${f.owner<0?'#fff':TEAM[f.owner].css}"><i style="height:${p}%;background:${c}"></i><span>${f.n}</span></div>`;}).join('')+'</div>';
- const u=player,mx=CLS[u.cls].hp;$('#hptxt').textContent=`${CLS[u.cls].n}（${CLS[u.cls].role}）体力 ${Math.max(0,Math.ceil(u.hp))} / ${mx}`+(u.buffT>0?'　奮起中':'');$('#hpbar i').style.width=clamp(u.hp/mx*100,0,100)+'%';$('#hpbar i').style.background=u.hp/mx<.3?'#e05a4a':'#e8e0c8';
+ const u=player,mx=CLS[u.cls].hp;$('#hptxt').textContent=`${CLS[u.cls].n}（${CLS[u.cls].role}）体力 ${Math.max(0,Math.ceil(u.hp))} / ${mx}`+(u.buffT>0?'　奮起中':'');$('#hpbar i').style.width=clamp(u.hp/mx*100,0,100)+'%';$('#hpbar i').style.background=u.hp/mx<.3?'#e05a4a':'#e8e0c8';$('#stbar i').style.width=(u.stam||0)+'%';$('#stbar i').style.background=u.tired?'#c87a4a':'#a8d070';
  const w=curW(u),W=WPN[w];$('#ammoN').innerHTML=W.bow?`${u.ammo[w]}<small> 本</small>`:W.ammo?`${u.loaded[w]?1:0}<small> / ${u.ammo[w]}</small>`:W.item?`${u.items[w]||0}`:'';
  $('#wname').textContent=W.n+(aimOn?'（構え）':'')+(W.heavy?'　重い（構え中は動けない）':'')+(W.bow?'　右長押しで引く・左で放つ':'');
  $('#slots').innerHTML=slots(u).map((k,i)=>{const X=WPN[k];const cnt=X.bow?`${u.ammo[k]}`:X.ammo?`${(u.loaded[k]?1:0)+(u.ammo[k]||0)}`:X.item?`×${u.items[k]||0}`:'';const out=X.item&&!u.items[k];
